@@ -5,7 +5,6 @@ using Orleans.Configuration;
 using Orleans.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 using Shared;
 
 namespace SiloHost
@@ -23,6 +22,7 @@ namespace SiloHost
                 .ConfigureServices((hostContext, services) =>
                 {
                     services.Configure<TraitConfigOptions>(hostContext.Configuration.GetSection("TraitConfig"));
+                    services.AddSingleton<PromptBuilder>();
                 })
                 .Configure<ClusterOptions>(options =>
                 {

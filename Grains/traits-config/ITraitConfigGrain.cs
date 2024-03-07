@@ -8,4 +8,6 @@ namespace Grains;
         Task AddTrait(string traitName, TraitEntry traitEntry);
 
         Task DeleteTrait(string traitName);
+
+        Task<Dictionary<string, TraitEntry>> GetTraitsMap(List<string> traitNames);
     }
