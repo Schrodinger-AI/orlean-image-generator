@@ -2,6 +2,9 @@
 using Newtonsoft.Json;
 using Orleans;
 using Orleans.Runtime;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
+using Shared;
 
 namespace Grains;
 
@@ -9,22 +12,28 @@ public class TraitConfigGrain : Grain, ITraitConfigGrain
 {
     private readonly IPersistentState<TraitState> _traitState;
 
-    public TraitConfigGrain([PersistentState("traitState", "MySqlSchrodingerImageStore")] IPersistentState<TraitState> traitState)
+    private readonly string _filePath;
+
+    public TraitConfigGrain(IOptions<TraitConfigOptions> options, [PersistentState("traitState", "MySqlSchrodingerImageStore")] IPersistentState<TraitState> traitState)
     {
         _traitState = traitState;
+        _filePath = options.Value.FilePath;
     }
 
     public override async Task OnActivateAsync()
     {
+        Console.WriteLine("traits from: "+_filePath);
 
         // Check if the data has already been loaded
         if (_traitState.State.Traits == null || _traitState.State.Traits.Count == 0)
         {
-            var jsonFilePath = "traits.json";
 
-            if (File.Exists(jsonFilePath))
+            Console.WriteLine("traits file exists result: "+File.Exists(_filePath));
+
+            if (File.Exists(_filePath))
             {
-                var jsonData = await File.ReadAllTextAsync(jsonFilePath);
+                Console.WriteLine("Loading traits from "+_filePath);
+                var jsonData = await File.ReadAllTextAsync(_filePath);
                 var traitEntries = JsonConvert.DeserializeObject<List<TraitEntry>>(jsonData);
 
                 if (_traitState.State.Traits == null)
