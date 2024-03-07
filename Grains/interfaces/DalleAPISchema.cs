@@ -39,3 +39,21 @@ public class Result
     [JsonPropertyName("choices")]
     public List<Choice> Choices { get; set; }
 }
+
+public class DalleResponse
+{
+    [JsonPropertyName("created")]
+    public long Created { get; set; }
+
+    [JsonPropertyName("data")]
+    public List<DalleData> Data { get; set; }
+}
+
+public class DalleData
+{
+    [JsonPropertyName("revised_prompt")]
+    public string RevisedPrompt { get; set; }
+
+    [JsonPropertyName("url")]
+    public string Url { get; set; }
+}
