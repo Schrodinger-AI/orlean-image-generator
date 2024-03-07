@@ -7,7 +7,4 @@ namespace WebApi.models
         public List<string> Values { get; set; }
         public string Variation { get; set; }
     }
-
-    
-
 }
