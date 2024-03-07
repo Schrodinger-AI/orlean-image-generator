@@ -1,0 +1,34 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Grains", "Grains\Grains.csproj", "{DFA5753E-93ED-44AE-B3E2-82F4D1B27A5E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SiloHost", "SiloHost\SiloHost.csproj", "{9A34C4B9-3F24-4107-B953-5E38F6F85418}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebApiClient", "WebApiClient\WebApiClient.csproj", "{F3606A64-42D6-4379-B317-204CC22FAB52}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{DFA5753E-93ED-44AE-B3E2-82F4D1B27A5E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DFA5753E-93ED-44AE-B3E2-82F4D1B27A5E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DFA5753E-93ED-44AE-B3E2-82F4D1B27A5E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DFA5753E-93ED-44AE-B3E2-82F4D1B27A5E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9A34C4B9-3F24-4107-B953-5E38F6F85418}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9A34C4B9-3F24-4107-B953-5E38F6F85418}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9A34C4B9-3F24-4107-B953-5E38F6F85418}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9A34C4B9-3F24-4107-B953-5E38F6F85418}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F3606A64-42D6-4379-B317-204CC22FAB52}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F3606A64-42D6-4379-B317-204CC22FAB52}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F3606A64-42D6-4379-B317-204CC22FAB52}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F3606A64-42D6-4379-B317-204CC22FAB52}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

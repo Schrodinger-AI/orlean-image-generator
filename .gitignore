@@ -1,0 +1,9 @@
+# Ignore build output directories
+**/bin/
+**/obj/
+
+# Ignore Node.js packages
+**/node_modules/
+
+# Ignore Visual Studio user-specific files
+**/.vs/
