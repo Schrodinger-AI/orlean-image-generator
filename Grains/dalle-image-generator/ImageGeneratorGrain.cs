@@ -11,6 +11,8 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
 {
     private readonly PromptBuilder _promptBuilder;
 
+    private Dictionary<string, Task<DalleResponse>> _imageDataTaskMap = new Dictionary<string, Task<DalleResponse>>();
+
     private readonly IPersistentState<ImageGenerationState> _imageGenerationState;
 
     public ImageGeneratorGrain([PersistentState("imageGenerationState", "MySqlSchrodingerImageStore")] IPersistentState<ImageGenerationState> imageGeneratorState, PromptBuilder promptBuilder)
@@ -41,40 +43,11 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
         {
             string finalPrompt = await generatePrompt(request);
 
-            // Call the DALL-E API to generate an image
-            // Generate the image data
             // Start the image data generation process
             Task<DalleResponse> imageDataTask = RunDalleAsync(finalPrompt);
 
-            // Specify an action that will be executed when the image data generation process is complete
-#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-            imageDataTask.ContinueWith(async completedTask =>
-            {
-                // Check if the task is faulted (an exception was thrown)
-                if (completedTask.IsFaulted)
-                {
-                    // Handle the error
-                    Console.Error.WriteLine(completedTask.Exception);
-                }
-                else
-                {
-                    DalleResponse result = completedTask.Result;
-
-                    // Check if the Data list is not empty
-                    if (result.Data != null && result.Data.Count > 0)
-                    {
-                        // Extract the URL from the result
-                        string imageUrl = result.Data[0].Url;
-
-                        // Update the image map with the URL of the image
-                        _imageGenerationState.State.ImageMap[imageRequestId] = Task.FromResult(imageUrl);
-
-                        // Write the state to the storage provider
-                        await _imageGenerationState.WriteStateAsync();
-                    }
-                }
-            });
-#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+            // Store the task in a non-persistent dictionary
+            _imageDataTaskMap[imageRequestId] = imageDataTask;
 
             // Store the traits in the image generation request map
             _imageGenerationState.State.ImageGenerationRequestMap[imageRequestId] = request;
@@ -121,9 +94,66 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
         }
     }
 
-    public Task<ImageQueryResponseOk> QueryImages(ImageQueryRequest request)
+
+    public async Task<ImageQueryResponse> queryImage(string imageRequestId)
     {
-        throw new NotImplementedException();
+        if (_imageDataTaskMap.TryGetValue(imageRequestId, out Task<DalleResponse> imageDataTask))
+        {
+            try
+            {
+                // Wait for the task to complete and get the result
+                DalleResponse result = await imageDataTask;
+
+                // Extract the URL from the result
+                string imageUrl = result.Data[0].Url;
+
+                // Convert the image URL to base64
+                string base64Image = await ConvertImageUrlToBase64(imageUrl);
+
+                // Store the base64 image in the grain state
+                _imageGenerationState.State.ImageMap[imageRequestId] = base64Image;
+                await _imageGenerationState.WriteStateAsync();
+
+                // Get the traits from the ImageGenerationRequest
+                var request = _imageGenerationState.State.ImageGenerationRequestMap[imageRequestId];
+                var traits = request.NewTraits.Concat(request.BaseImage.Traits).ToList();
+
+                // Generate the ImageQueryResponseOk
+                var response = new ImageQueryResponseOk
+                {
+                    Images = new List<ImageDescription>
+                {
+                    new ImageDescription
+                    {
+                        ExtraData = imageUrl,
+                        Image = base64Image,
+                        Traits = traits
+                    }
+                }
+                };
+                return response;
+            }
+            catch (Exception e)
+            {
+                // Handle the error and return an ImageQueryResponseNotOk
+                return new ImageQueryResponseNotOk { Error = e.Message };
+            }
+        }
+        else
+        {
+            // Handle the error
+            return new ImageQueryResponseNotOk { Error = "Image request not found" };
+        }
+    }
+
+    public async Task<string> ConvertImageUrlToBase64(string imageUrl)
+    {
+        using (var client = new HttpClient())
+        {
+            byte[] imageBytes = await client.GetByteArrayAsync(imageUrl);
+            string base64Image = Convert.ToBase64String(imageBytes);
+            return base64Image;
+        }
     }
 
     public async Task<Dictionary<string, TraitEntry>> lookupTraitDefinitions(List<Trait> requestTraits)

@@ -64,13 +64,15 @@ namespace Shared
             public string RequestId { get; set; }
         }
 
-        public class ImageQueryResponseOk
+        public abstract class ImageQueryResponse {}
+
+        public class ImageQueryResponseOk : ImageQueryResponse
         {
             [JsonPropertyName("images")]
             public List<ImageDescription> Images { get; set; }
         }
 
-        public class ImageQueryResponseNotOk
+        public class ImageQueryResponseNotOk : ImageQueryResponse
         {
             [JsonPropertyName("error")]
             public string Error { get; set; }
