@@ -35,7 +35,7 @@ namespace Shared
     public class ImageGenerationRequest
     {
         [JsonPropertyName("seed")]
-        public string Seed { get; set; }
+        public string? Seed { get; set; }
 
         [JsonPropertyName("newTraits")]
         public List<Trait> NewTraits { get; set; }

@@ -2,26 +2,25 @@ using System.Net.Http.Headers;
 using System.Text;
 using Newtonsoft.Json;
 using Orleans;
+using Orleans.Runtime;
 using Shared;
 
 namespace Grains;
 
-public class ImageGeneratorGrain : Grain<ImageGenerationState>
+public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
 {
     private readonly PromptBuilder _promptBuilder;
 
-    private Dictionary<string, Task<string>> imageMap = new Dictionary<string, Task<string>>();
-    private Dictionary<string, ImageGenerationRequest> imageGenerationRequestMap = new Dictionary<string, ImageGenerationRequest>();
+    private readonly IPersistentState<ImageGenerationState> _imageGenerationState;
 
-
-    public ImageGeneratorGrain(PromptBuilder promptBuilder)
+    public ImageGeneratorGrain([PersistentState("imageGenerationState", "MySqlSchrodingerImageStore")] IPersistentState<ImageGenerationState> imageGeneratorState, PromptBuilder promptBuilder)
     {
         _promptBuilder = promptBuilder;
+        _imageGenerationState = imageGeneratorState;
     }
 
     public async Task<string> generatePrompt(ImageGenerationRequest imageGenerationRequest)
     {
-
         List<Trait> newTraits = imageGenerationRequest.NewTraits;
         List<Trait> baseTraits = imageGenerationRequest.BaseImage.Traits;
 
@@ -36,7 +35,7 @@ public class ImageGeneratorGrain : Grain<ImageGenerationState>
         return prompt;
     }
 
-    public async Task<ImageGenerationResponse> GenerateImage(ImageGenerationRequest request, string imageRequestId)
+    public async Task<ImageGenerationResponse> generateImageAsync(ImageGenerationRequest request, string imageRequestId)
     {
         try
         {
@@ -48,7 +47,7 @@ public class ImageGeneratorGrain : Grain<ImageGenerationState>
             Task<DalleResponse> imageDataTask = RunDalleAsync(finalPrompt);
 
             // Specify an action that will be executed when the image data generation process is complete
-            #pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
             imageDataTask.ContinueWith(async completedTask =>
             {
                 // Check if the task is faulted (an exception was thrown)
@@ -68,20 +67,20 @@ public class ImageGeneratorGrain : Grain<ImageGenerationState>
                         string imageUrl = result.Data[0].Url;
 
                         // Update the image map with the URL of the image
-                        this.State.ImageMap[imageRequestId] = Task.FromResult(imageUrl);
+                        _imageGenerationState.State.ImageMap[imageRequestId] = Task.FromResult(imageUrl);
 
                         // Write the state to the storage provider
-                        await this.WriteStateAsync();
+                        await _imageGenerationState.WriteStateAsync();
                     }
                 }
             });
-            #pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
 
             // Store the traits in the image generation request map
-            this.State.ImageGenerationRequestMap[imageRequestId] = request;
+            _imageGenerationState.State.ImageGenerationRequestMap[imageRequestId] = request;
 
             // Write the state to the storage provider
-            await this.WriteStateAsync();
+            await _imageGenerationState.WriteStateAsync();
 
             var response = new ImageGenerationResponseOk
             {
