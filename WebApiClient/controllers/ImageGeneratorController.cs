@@ -28,4 +28,14 @@ public class ImageGeneratorController : ControllerBase
 
         return response;
     }
+
+    [HttpPost("query")]
+    public async Task<ImageQueryResponse> queryImage(ImageQueryRequest imageQueryRequest)
+    {
+        var imageGeneratorGrain = _client.GetGrain<IImageGeneratorGrain>(imageQueryRequest.RequestId);
+
+        var imageQueryResponse = await imageGeneratorGrain.queryImageAsync(imageQueryRequest.RequestId);
+
+        return imageQueryResponse;
+    }
 }

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Text;
 using Newtonsoft.Json;
@@ -69,6 +70,8 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
 
     public async Task<DalleResponse> RunDalleAsync(string prompt)
     {
+        Console.WriteLine("about to call Dalle API to generate image for prompt: "+prompt);
+
         using (var client = new HttpClient())
         {
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Environment.GetEnvironmentVariable("OPENAI_API_KEY"));
@@ -90,19 +93,30 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
 
             DalleResponse dalleResponse = JsonConvert.DeserializeObject<DalleResponse>(jsonResponse);
 
+            Console.WriteLine("dalleResponse: "+dalleResponse);
+
             return dalleResponse;
         }
     }
 
-
-    public async Task<ImageQueryResponse> queryImage(string imageRequestId)
+    public async Task<ImageQueryResponse> queryImageAsync(string imageRequestId)
     {
+        //check if the imageRequestId exists in the dictionary
+        if (!_imageDataTaskMap.ContainsKey(imageRequestId))
+        {
+            return new ImageQueryResponseNotOk { Error = "Image request not found" };
+        }
+
         if (_imageDataTaskMap.TryGetValue(imageRequestId, out Task<DalleResponse> imageDataTask))
         {
             try
             {
+                var stopwatch = Stopwatch.StartNew();
                 // Wait for the task to complete and get the result
                 DalleResponse result = await imageDataTask;
+
+                Console.WriteLine("Awaiting imageDataTask took: "+stopwatch.ElapsedMilliseconds+" ms");
+                stopwatch.Restart();
 
                 // Extract the URL from the result
                 string imageUrl = result.Data[0].Url;
@@ -112,7 +126,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
 
                 // Store the base64 image in the grain state
                 _imageGenerationState.State.ImageMap[imageRequestId] = base64Image;
-                await _imageGenerationState.WriteStateAsync();
+                //await _imageGenerationState.WriteStateAsync();
 
                 // Get the traits from the ImageGenerationRequest
                 var request = _imageGenerationState.State.ImageGenerationRequestMap[imageRequestId];
@@ -148,10 +162,14 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
 
     public async Task<string> ConvertImageUrlToBase64(string imageUrl)
     {
+        var stopwatch = Stopwatch.StartNew();
         using (var client = new HttpClient())
         {
             byte[] imageBytes = await client.GetByteArrayAsync(imageUrl);
+            Console.WriteLine("Size of base64 data: "+imageBytes.Length+" bytes");
             string base64Image = Convert.ToBase64String(imageBytes);
+            Console.WriteLine("converting imageData to base64 took: "+stopwatch.ElapsedMilliseconds+" ms");
+            stopwatch.Restart();
             return base64Image;
         }
     }
@@ -177,4 +195,9 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
         return prompt;
     }
 
+    public int GetSizeOfBase64Data(string base64Data)
+    {
+        byte[] data = Convert.FromBase64String(base64Data);
+        return data.Length;
+    }
 }
