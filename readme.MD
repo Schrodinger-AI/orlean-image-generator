@@ -22,7 +22,7 @@ Orlean Solution contains 3 projects
 
 ### MySQL Docker
 
-- Start MySQL via docker using [docker-compose](./setup-guide/docker-compose.yml)
+- Start MySQL via docker using [docker-compose](./setup-guide/database/docker-compose.yml)
 
 ### Database Setup
 
