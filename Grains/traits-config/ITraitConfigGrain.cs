@@ -1,13 +1,16 @@
 using Orleans;
+using Shared;
 namespace Grains;
 
     public interface ITraitConfigGrain : ISchrodingerGrain, IGrainWithStringKey
     {
         Task<Dictionary<string, TraitEntry>> GetAllTraits();
         Task<TraitEntry> GetTraitByName(string traitName);
-        Task AddTrait(string traitName, TraitEntry traitEntry);
+        Task<AddTraitAPIResponse> AddTrait(TraitEntry traitEntry);
 
-        Task DeleteTrait(string traitName);
+        Task<AddTraitsAPIResponse> AddTraits(List<TraitEntry> traitEntries);
 
-        Task<Dictionary<string, TraitEntry>> GetTraitsMap(List<string> traitNames);
+        Task<DeleteTraitAPIResponse> DeleteTrait(string traitName);
+
+        Dictionary<string, TraitEntry> GetTraitsMap(List<string> traitNames);
     }

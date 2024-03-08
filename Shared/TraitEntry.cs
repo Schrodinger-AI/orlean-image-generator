@@ -1,4 +1,4 @@
-namespace Grains;
+namespace Shared;
 
 public class TraitEntry
 {

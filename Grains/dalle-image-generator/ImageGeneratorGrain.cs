@@ -191,7 +191,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
         }
     }
 
-    public async Task<Dictionary<string, TraitEntry>> lookupTraitDefinitions(List<Trait> requestTraits)
+    public Dictionary<string, TraitEntry> lookupTraitDefinitions(List<Trait> requestTraits)
     {
         // Extract trait names from the request
         var traitNames = requestTraits.Select(t => t.Name).ToList();
@@ -200,9 +200,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
         var traitConfigGrain = GrainFactory.GetGrain<ITraitConfigGrain>("traitConfigGrain");
 
         // Retrieve the trait definitions from the TraitConfigGrain
-        var traitDefinitions = await traitConfigGrain.GetTraitsMap(traitNames);
-
-        return traitDefinitions;
+       return traitConfigGrain.GetTraitsMap(traitNames);
     }
 
     public async Task<String> generatePrompt(List<Trait> requestTraits, Dictionary<string, TraitEntry> traitDefinitions)
