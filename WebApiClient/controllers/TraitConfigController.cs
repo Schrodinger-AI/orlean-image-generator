@@ -1,12 +1,13 @@
 using Grains;
 using Microsoft.AspNetCore.Mvc;
 using Orleans;
+using Shared;
 using WebApi.models;
 
 namespace WebApi.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("traits")]
     public class TraitsController : ControllerBase
     {
         private readonly IClusterClient _client;
@@ -16,27 +17,28 @@ namespace WebApi.Controllers
             _client = client;
         }
 
-        [HttpPost]
-        public async Task<ActionResult> AddTrait(AddTraitConfigRequest addTraitConfigRequest)
+        [HttpPost("add")]
+        public async Task<AddTraitsAPIResponse> AddTraits(List<TraitEntry> traitEntries)
         {
             var traitConfigGrain = _client.GetGrain<ITraitConfigGrain>("traitConfigGrain");
-            await traitConfigGrain.AddTrait(addTraitConfigRequest.Name, new TraitEntry(addTraitConfigRequest.Name, addTraitConfigRequest.Values, addTraitConfigRequest.Variation));
-            return Ok("Trait added successfully");
+            var traitAPIResponse = await traitConfigGrain.AddTraits(traitEntries);
+            return traitAPIResponse;
         }
 
         [HttpDelete("{name}")]
-        public async Task<ActionResult> DeleteTrait(string name)
+        public async Task<DeleteTraitAPIResponse> DeleteTrait(string name)
         {
             var traitConfigGrain = _client.GetGrain<ITraitConfigGrain>("traitConfigGrain");
-            try
-            {
-                await traitConfigGrain.DeleteTrait(name);
-                return Ok("Trait deleted successfully");
-            }
-            catch (KeyNotFoundException)
-            {
-                return NotFound();
-            }
+            var deleteTraitAPIResponse = await traitConfigGrain.DeleteTrait(name);
+            return deleteTraitAPIResponse;
+        }
+
+        [HttpPost("clear")]
+        public async Task<ClearAllTraitsAPIResponse> clearAllTraits()
+        {
+            var traitConfigGrain = _client.GetGrain<ITraitConfigGrain>("traitConfigGrain");
+            var clearAllTraitsAPIResponse = await traitConfigGrain.ClearAllTraits();
+            return clearAllTraitsAPIResponse;
         }
 
         [HttpGet("{name}")]

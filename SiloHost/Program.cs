@@ -15,10 +15,6 @@ namespace SiloHost
         {
             var host = new SiloHostBuilder()
                 .UseLocalhostClustering()
-                .ConfigureAppConfiguration((hostingContext, config) =>
-                {
-                    config.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
-                })
                 .ConfigureServices((hostContext, services) =>
                 {
                     services.Configure<TraitConfigOptions>(hostContext.Configuration.GetSection("TraitConfig"));

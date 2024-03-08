@@ -1,7 +1,6 @@
 
 using Orleans;
 using Orleans.Runtime;
-using Microsoft.Extensions.Options;
 using Shared;
 
 namespace Grains;
@@ -69,7 +68,7 @@ public class TraitConfigGrain : Grain, ITraitConfigGrain
 
             List<string> traitNames = traitEntries.Select(trait => trait.Name).ToList();
 
-            Dictionary<string, TraitEntry> traitMap = GetTraitsMap(traitNames);
+            Dictionary<string, TraitEntry> traitMap = await GetTraitsMap(traitNames);
 
             // return the list of traits entered to the memory and persisted to db
             return new AddTraitsResponseOk(traitMap)
@@ -133,25 +132,25 @@ public class TraitConfigGrain : Grain, ITraitConfigGrain
 
     }
 
-    public async Task<ClearTraitsAPIResponse> ClearTraits()
+    public async Task<ClearAllTraitsAPIResponse> ClearAllTraits()
     {
         try
         {
             long totalTraitsCount = GetTraitsCount();
             _traitState.State.Traits.Clear();
             await _traitState.WriteStateAsync();
-            return new ClearTraitsResponseOk()
+            return new ClearAllTraitsResponseOk()
             {
-                TotalTraitsCount = totalTraitsCount
+                ClearedTraitsCount = totalTraitsCount
             };
         }
         catch (Exception ex)
         {
-            return new ClearTraitsResponseNotOk(ex.Message);
+            return new ClearAllTraitsResponseNotOk(ex.Message);
         }
     }
 
-    public Dictionary<string, TraitEntry> GetTraitsMap(List<string> traitNames)
+    public Task<Dictionary<string, TraitEntry>> GetTraitsMap(List<string> traitNames)
     {
         var traits = new Dictionary<string, TraitEntry>();
 
@@ -168,7 +167,7 @@ public class TraitConfigGrain : Grain, ITraitConfigGrain
             }
         }
 
-        return traits;
+        return Task.FromResult(traits);
     }
 
     public Dictionary<string, TraitEntry> GetTraitsMap()

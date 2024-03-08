@@ -21,14 +21,14 @@ public class PromptGeneratorGrain : Grain, IPromptGeneratorGrain
         IEnumerable<Trait> traits = newTraits.Concat(baseTraits);
 
         // Extract trait names from the request
-        Dictionary<string, TraitEntry> traitDefinitions = lookupTraitDefinitions(traits.ToList());
+        Dictionary<string, TraitEntry> traitDefinitions = await lookupTraitDefinitions(traits.ToList());
 
         string prompt = await generatePrompt(traits.ToList(), traitDefinitions);
             
         return prompt;
     }
 
-    public Dictionary<string, TraitEntry> lookupTraitDefinitions(List<Trait> requestTraits)
+    public async Task<Dictionary<string, TraitEntry>> lookupTraitDefinitions(List<Trait> requestTraits)
     {
         // Extract trait names from the request
         var traitNames = requestTraits.Select(t => t.Name).ToList();
@@ -37,7 +37,9 @@ public class PromptGeneratorGrain : Grain, IPromptGeneratorGrain
         var traitConfigGrain = GrainFactory.GetGrain<ITraitConfigGrain>("traitConfigGrain");
 
         // Retrieve the trait definitions from the TraitConfigGrain
-        return traitConfigGrain.GetTraitsMap(traitNames);
+        var response = await traitConfigGrain.GetTraitsMap(traitNames);
+
+        return response;
     }
 
     public async Task<String> generatePrompt(List<Trait> requestTraits, Dictionary<string, TraitEntry> traitDefinitions)

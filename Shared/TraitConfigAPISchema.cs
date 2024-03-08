@@ -19,6 +19,21 @@ namespace Shared
         public string Error { get; set; } = error;
     }
 
+    public abstract class ClearAllTraitsAPIResponse { }
+
+    public class ClearAllTraitsResponseOk() : ClearAllTraitsAPIResponse
+    {
+        [JsonPropertyName("clearedTraitsCount")]
+        public long ClearedTraitsCount { get; set; }
+
+    }
+
+    public class ClearAllTraitsResponseNotOk(string error) : ClearAllTraitsAPIResponse
+    {
+        [JsonPropertyName("error")]
+        public string Error { get; set; } = error;
+    }
+
     public abstract class AddTraitAPIResponse { }
 
     public class AddTraitResponseOk(TraitEntry addedTrait) : AddTraitAPIResponse

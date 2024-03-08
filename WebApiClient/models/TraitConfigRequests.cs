@@ -1,10 +1,13 @@
+using System.Text.Json.Serialization;
+using Shared;
+
 namespace WebApi.models
 
 {
     public class AddTraitConfigRequest
     {
-        public string Name { get; set; }
-        public List<string> Values { get; set; }
-        public string Variation { get; set; }
+        [JsonPropertyName("traitEntries")]
+        public List<TraitEntry> TraitEntries { get; set; }
     }
+
 }

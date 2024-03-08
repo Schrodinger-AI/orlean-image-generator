@@ -10,7 +10,9 @@ namespace Grains;
 
         Task<AddTraitsAPIResponse> AddTraits(List<TraitEntry> traitEntries);
 
+        Task<ClearAllTraitsAPIResponse> ClearAllTraits();
+
         Task<DeleteTraitAPIResponse> DeleteTrait(string traitName);
 
-        Dictionary<string, TraitEntry> GetTraitsMap(List<string> traitNames);
+        Task<Dictionary<string, TraitEntry>> GetTraitsMap(List<string> traitNames);
     }
