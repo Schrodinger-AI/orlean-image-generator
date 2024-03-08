@@ -1,0 +1,316 @@
+{
+	"info": {
+		"_postman_id": "65ef5f13-576f-44c0-bbda-57f16002cd0f",
+		"name": "Orlean Image Generator",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "32324385"
+	},
+	"item": [
+		{
+			"name": "trait-config",
+			"item": [
+				{
+					"name": "add traits - config",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "[\n    {\n       \"name\":\"hat\",\n       \"values\":[\n          \"alpine hat\",\n          \"ascot cap\",\n          \"aviator hat\",\n          \"balaclava\",\n          \"baseball cap\",\n          \"baseball helmet\",\n          \"beanie\",\n          \"beret\",\n          \"boater hat\",\n          \"bobble hat\",\n          \"bonnet\",\n          \"boonie hat\",\n          \"bowler hat\",\n          \"breton hat\",\n          \"bucket hat\",\n          \"calash\",\n          \"campaign hat\",\n          \"capuchon\",\n          \"cartwheel hat\",\n          \"chef's hat\",\n          \"chullo\",\n          \"cloche hat\",\n          \"conical hat\",\n          \"cossack hat\",\n          \"cowboy hat\",\n          \"cricket hat\",\n          \"crown\",\n          \"crown of leaves\",\n          \"deerstalker\",\n          \"derby hat\",\n          \"diadem\",\n          \"epigonation hat\",\n          \"fedora\",\n          \"fez\",\n          \"flower crown\",\n          \"gamsbart hat\",\n          \"gatsby hat\",\n          \"geta hat\",\n          \"halo\",\n          \"havelock hat\",\n          \"headband\",\n          \"headscarf\",\n          \"hennin\",\n          \"hennin hat\",\n          \"homburg hat\",\n          \"jester hat\",\n          \"jokduri hat\",\n          \"jughead hat\",\n          \"juliet cap\",\n          \"kabuto hat\",\n          \"kangol hat\",\n          \"keffiyeh hat\",\n          \"kippah\",\n          \"kofia hat\",\n          \"kransen hat\",\n          \"lavalli\\u00e8re hat\",\n          \"macaroni hat\",\n          \"mantilla hat\",\n          \"mariner hat\",\n          \"mary poppins hat\",\n          \"moosk hat\",\n          \"mortarboard\",\n          \"mortarboard hat\",\n          \"mush hat\",\n          \"newsboy cap\",\n          \"paludamentum hat\",\n          \"panama hat\",\n          \"pillbox hat\",\n          \"pillbox hat\",\n          \"pith helmet\",\n          \"planter's hat\",\n          \"pompom hat\",\n          \"pork pie hat\",\n          \"quaker hat\",\n          \"rastacap\",\n          \"sailor hat\",\n          \"santa hat\",\n          \"shako hat\",\n          \"shower cap\",\n          \"slouch hat\",\n          \"sombrero\",\n          \"stetson hat\",\n          \"sun hat\",\n          \"tiara\",\n          \"top hat\",\n          \"toque\",\n          \"trapper hat\",\n          \"trilby\",\n          \"turban\",\n          \"ushanka\",\n          \"visor\",\n          \"zucchetto\"\n       ],\n       \"variation\":\"The cat is wearing %s.\"\n    },\n    {\n       \"name\":\"eye\",\n       \"values\":[\n          \"is wearing 3d glasses\",\n          \"has abstract eyes\",\n          \"has adorable eyes\",\n          \"has amethyst eyes\",\n          \"has angry eyes\",\n          \"is wearing blindfold\",\n          \"has blue beams eyes\",\n          \"has bored eyes\",\n          \"has calm eyes\",\n          \"has captivating eyes\",\n          \"has careless eyes\",\n          \"has chill eyes\",\n          \"has closed eyes\",\n          \"has coins eyes\",\n          \"has concerned eyes\",\n          \"has cosmic eyes\",\n          \"has crystalized eyes\",\n          \"has curious eyes\",\n          \"has daydreaming eyes\",\n          \"has dazzling eyes\",\n          \"has determined eyes\",\n          \"has dreamy eyes\",\n          \"has electric eyes\",\n          \"has elemental eyes\",\n          \"has enigmatic eyes\",\n          \"has exotic eyes\",\n          \"is wearing eyepatch\",\n          \"has fiery eyes\",\n          \"has fire eyes\",\n          \"has focused eyes\",\n          \"has geometric eyes\",\n          \"has glittering eyes\",\n          \"has glowing eyes\",\n          \"has heart eyes\",\n          \"has holographic eyes\",\n          \"has hopeful eyes\",\n          \"has illustrious eyes\",\n          \"has indifferent eyes\",\n          \"has infinite eyes\",\n          \"has iridescent eyes\",\n          \"has joyful eyes\",\n          \"has laser eyes eyes\",\n          \"has lightning eyes\",\n          \"has luminous eyes\",\n          \"has magical eyes\",\n          \"has meditating eyes\",\n          \"has mesmerizing eyes\",\n          \"has moon eyes\",\n          \"has mysterious eyes\",\n          \"has mystical eyes\",\n          \"has mythical eyes\",\n          \"has nebula eyes\",\n          \"has neon-lit eyes\",\n          \"has oceanic eyes\",\n          \"has pensive eyes\",\n          \"has pixelated eyes\",\n          \"has poetic eyes\",\n          \"has prismatic eyes\",\n          \"has quirky eyes\",\n          \"has radiant eyes\",\n          \"has rainbow eyes\",\n          \"has red eyes\",\n          \"has reflective eyes\",\n          \"has relaxed eyes\",\n          \"has resplendent eyes\",\n          \"has ruby eyes\",\n          \"has sad eyes\",\n          \"has serene eyes\",\n          \"has shimmering eyes\",\n          \"has shining eyes\",\n          \"has sleepy eyes\",\n          \"has sparkling eyes\",\n          \"has spiral eyes\",\n          \"has starry eyes\",\n          \"has striking eyes\",\n          \"has sublime eyes\",\n          \"is wearing sun glasses\",\n          \"has surreal eyes\",\n          \"has suspicious eyes\",\n          \"has timeless eyes\",\n          \"has tired eyes\",\n          \"has translucent eyes\",\n          \"has vibrant eyes\",\n          \"has white eyes\",\n          \"is wide eyed\"\n       ],\n       \"variation\":\"The cat %s.\"\n    },\n    {\n       \"name\":\"mouth\",\n       \"values\":[\n          \"alluring\",\n          \"angelic\",\n          \"bewitching\",\n          \"blissful\",\n          \"bold\",\n          \"bubble gum\",\n          \"captivating\",\n          \"charismatic\",\n          \"charming\",\n          \"chewing\",\n          \"chic\",\n          \"chirpy\",\n          \"chuckle\",\n          \"closed\",\n          \"coy\",\n          \"dazzling\",\n          \"divine\",\n          \"eccentric\",\n          \"elegant\",\n          \"enchanting\",\n          \"energetic\",\n          \"enigmatic\",\n          \"facemask\",\n          \"fierce\",\n          \"frown\",\n          \"gaiter\",\n          \"gleaming\",\n          \"grass\",\n          \"grin\",\n          \"growl\",\n          \"intense\",\n          \"juicy\",\n          \"kiss\",\n          \"laughing\",\n          \"lipstick\",\n          \"meh\",\n          \"melodious\",\n          \"mesmerizing\",\n          \"mysterious\",\n          \"mystic\",\n          \"playful\",\n          \"pout\",\n          \"pursed\",\n          \"quirky\",\n          \"radiant\",\n          \"relaxed\",\n          \"rhythmic\",\n          \"sassy\",\n          \"scroll\",\n          \"sensual\",\n          \"serene\",\n          \"smile\",\n          \"smirk\",\n          \"smoking\",\n          \"subtle\",\n          \"surprised\",\n          \"tongue out\",\n          \"toothpick\",\n          \"wheat straw\",\n          \"whimsical\",\n          \"whistling\",\n          \"witty\",\n          \"zesty\",\n          \"bored\",\n          \"unshaven\",\n          \"cigarette\",\n          \"dumbfounded\",\n          \"jovial\",\n          \"small grin\",\n          \"rage\",\n          \"discomfort\",\n          \"pipe\",\n          \"cigar\",\n          \"have diamond grill\",\n          \"chewing pizza\"\n       ],\n       \"variation\":\"The cat has %s mouth.\"\n    },\n    {\n       \"name\":\"clothes\",\n       \"values\":[\n          \"anime school uniform\",\n          \"bandolier\",\n          \"beekeeper suit\",\n          \"biker vest\",\n          \"black holes t\",\n          \"black suit\",\n          \"black t\",\n          \"blazer\",\n          \"blouse\",\n          \"boater jacket\",\n          \"bolero jacket\",\n          \"bone necklace\",\n          \"bone tee\",\n          \"cape\",\n          \"caveman pelt\",\n          \"chef's whites\",\n          \"cloak\",\n          \"construction vest\",\n          \"cowboy dress\",\n          \"cyberpunk jacket\",\n          \"denim jacket\",\n          \"dhoti pants\",\n          \"dirndl\",\n          \"dress\",\n          \"duster coat\",\n          \"fairytale ball gown\",\n          \"firefighter uniform\",\n          \"futuristic jumpsuit\",\n          \"guayabera\",\n          \"hanbok\",\n          \"hawaiian\",\n          \"hip hop clothes\",\n          \"hoodie\",\n          \"jeans\",\n          \"jodhpurs\",\n          \"judge's robes\",\n          \"jumpsuit\",\n          \"kilt\",\n          \"kimono\",\n          \"kings robe\",\n          \"lab coat\",\n          \"lace top\",\n          \"leather jacket\",\n          \"leather punk jacket\",\n          \"lumberjack shirt\",\n          \"maid uniform\",\n          \"martial arts gi\",\n          \"nascar suit\",\n          \"navy striped tee\",\n          \"nurse scrubs\",\n          \"off-shoulder top\",\n          \"overalls\",\n          \"pajamas\",\n          \"peacoat\",\n          \"pilot uniform\",\n          \"pimp coat\",\n          \"police uniform\",\n          \"polo shirt\",\n          \"poncho\",\n          \"postman uniform\",\n          \"prison jumpsuit\",\n          \"prom dress\",\n          \"puffy vest\",\n          \"raincoat\",\n          \"ripped jeans\",\n          \"robe\",\n          \"roman gladiator attire\",\n          \"romper\",\n          \"sari\",\n          \"shawl\",\n          \"skirt\",\n          \"sleeveless t\",\n          \"smoking jacket\",\n          \"smoking jacket (duplicate, consider it as repetition or emphasis)\",\n          \"space suit\",\n          \"striped tee\",\n          \"stunt jacket\",\n          \"sweater\",\n          \"tailcoat\",\n          \"tanktop\",\n          \"tie dye\",\n          \"toga\",\n          \"tracksuit\",\n          \"trench coat\",\n          \"tunic\",\n          \"turtleneck\",\n          \"tuxedo tee\",\n          \"varsity jacket\",\n          \"vest\",\n          \"vietnam jacket\",\n          \"waitstaff apron\",\n          \"wool turtleneck\",\n          \"work vest\",\n          \"zookeeper uniform\",\n          \"zoot suit\"\n       ],\n       \"variation\":\"The cat is wearing %s.\"\n    },\n    {\n       \"name\":\"shoes\",\n       \"values\":[\n          \"almond-toe shoes\",\n          \"ankle boots\",\n          \"ballet flats\",\n          \"ballet pointe shoes\",\n          \"ballroom dance shoes\",\n          \"baseball cleats\",\n          \"basketball shoes\",\n          \"boat shoes\",\n          \"boots\",\n          \"bowling shoes\",\n          \"brogues\",\n          \"character shoes\",\n          \"chelsea boots\",\n          \"chelsea heeled boots\",\n          \"chelsea sneakers\",\n          \"chelseas\",\n          \"chukka boots\",\n          \"chukka sneakers\",\n          \"climbing shoes\",\n          \"clogs\",\n          \"combat boots\",\n          \"combat mules\",\n          \"combat sandals\",\n          \"cowboy boots\",\n          \"cricket shoes\",\n          \"cross training shoes\",\n          \"cuban heels\",\n          \"cycling shoes\",\n          \"derby loafers\",\n          \"derby shoes\",\n          \"desert boots\",\n          \"driving shoes\",\n          \"espadrille wedges\",\n          \"espadrilles\",\n          \"field hockey shoes\",\n          \"figure skating shoes\",\n          \"flip-flops\",\n          \"football cleats\",\n          \"gladiator sandals\",\n          \"golf shoes\",\n          \"high heels\",\n          \"hiking boots\",\n          \"huaraches\",\n          \"ice hockey skates\",\n          \"jazz shoes\",\n          \"jelly sandals\",\n          \"kitten heel mules\",\n          \"kitten heels\",\n          \"lace-up booties\",\n          \"loafers\",\n          \"lug sole shoes\",\n          \"mary janes\",\n          \"moccasins\",\n          \"monk loafers\",\n          \"monk straps\",\n          \"mule shoes\",\n          \"mules\",\n          \"oxfords\",\n          \"peep-toe shoes\",\n          \"platform shoes\",\n          \"pointed-toe boots\",\n          \"rain booties\",\n          \"rain boots\",\n          \"rain sandals\",\n          \"roller skates\",\n          \"rollerblades\",\n          \"running shoes\",\n          \"saddle oxfords\",\n          \"saddle shoes\",\n          \"sandals\",\n          \"skate shoes\",\n          \"ski boots\",\n          \"slingback heels\",\n          \"slingbacks\",\n          \"slip-on shoes\",\n          \"slip-resistant shoes\",\n          \"slippers\",\n          \"sneakers\",\n          \"snow boots\",\n          \"snowboard boots\",\n          \"soccer cleats\",\n          \"sock boots\",\n          \"split toe shoes\",\n          \"spool heels\",\n          \"square-toe shoes\",\n          \"stilettos\",\n          \"surf booties\",\n          \"t-strap shoes\",\n          \"tap shoes\",\n          \"tassel loafers\",\n          \"tassel loafers\",\n          \"thigh-high boots\",\n          \"thong sandals\",\n          \"track shoes\",\n          \"wading boots\",\n          \"water shoes\",\n          \"wedges\",\n          \"wingtip shoes\",\n          \"winklepickers\",\n          \"woven sandals\",\n          \"wrestling shoes\"\n       ],\n       \"variation\":\"The cat is wearing %s.\"\n    },\n    {\n       \"name\":\"weapon\",\n       \"values\":[\n          \"arbalest\",\n          \"arrow\",\n          \"axe\",\n          \"baton\",\n          \"battleaxe\",\n          \"bec de corbin\",\n          \"bill-guisarme\",\n          \"billhook\",\n          \"blowgun\",\n          \"bludgeon\",\n          \"bo staff\",\n          \"boar spear\",\n          \"bomb\",\n          \"boomerang\",\n          \"bow\",\n          \"brass knuckles\",\n          \"broadsword\",\n          \"bullwhip\",\n          \"cane\",\n          \"cannon\",\n          \"chain\",\n          \"chakram\",\n          \"claymore\",\n          \"club\",\n          \"crossbow\",\n          \"crossbow pistol\",\n          \"cudgel\",\n          \"cutlass\",\n          \"dagger\",\n          \"dagger-axe\",\n          \"dane axe\",\n          \"falchion\",\n          \"flail\",\n          \"flamberge\",\n          \"gauntlet\",\n          \"glaive-guisarme\",\n          \"glove\",\n          \"grenade\",\n          \"halberd\",\n          \"hammer\",\n          \"javelin\",\n          \"katana\",\n          \"knuckle-duster\",\n          \"kunai\",\n          \"lance\",\n          \"lantern shield\",\n          \"lucerne hammer\",\n          \"mace\",\n          \"mallet\",\n          \"man catcher\",\n          \"military fork\",\n          \"morning star\",\n          \"morning star flail\",\n          \"nunchaku\",\n          \"pike\",\n          \"pike-guisarme\",\n          \"pistol\",\n          \"polearm\",\n          \"pollaxe\",\n          \"quarterstaff\",\n          \"ranseur\",\n          \"rapier\",\n          \"rifle\",\n          \"sai\",\n          \"scepter\",\n          \"scimitar\",\n          \"shield\",\n          \"shotgun\",\n          \"shuriken\",\n          \"slingshot\",\n          \"spear\",\n          \"staff\",\n          \"stiletto\",\n          \"sword\",\n          \"swordstaff\",\n          \"throwing star\",\n          \"tomahawk\",\n          \"trident\",\n          \"wand\",\n          \"war banner\",\n          \"war drum\",\n          \"war fan\",\n          \"war flail\",\n          \"war glaive\",\n          \"war horn\",\n          \"war scythe\",\n          \"war sickle\",\n          \"war standard\",\n          \"war trident\",\n          \"warhammer\",\n          \"warpick\",\n          \"whip\"\n       ],\n       \"variation\":\"The cat is holding a %s.\"\n    },\n    {\n       \"name\":\"accessory\",\n       \"values\":[\n          \"silver hoop earrings\",\n          \"silver stud earrings\",\n          \"gold hoop earrings\",\n          \"gold stud  earrings\",\n          \"diamond stud earrings\",\n          \"cross earrings\",\n          \"angel wings\",\n          \"ankle bracelet\",\n          \"anklet\",\n          \"arm band\",\n          \"armlet\",\n          \"badge\",\n          \"bandana\",\n          \"batwing cloak\",\n          \"bell\",\n          \"bowtie\",\n          \"bracelet\",\n          \"brooch\",\n          \"butterfly clip\",\n          \"butterfly necklace\",\n          \"cameo brooch\",\n          \"charm bracelet\",\n          \"clockwork key\",\n          \"collar\",\n          \"crescent moon pin\",\n          \"crystal arm band\",\n          \"crystal ball\",\n          \"crystal pendant\",\n          \"cuff\",\n          \"devil horns\",\n          \"dragonfly brooch\",\n          \"earrings\",\n          \"feathered armband\",\n          \"feathered headdress\",\n          \"fishbone necklace\",\n          \"flower chain\",\n          \"flower ring\",\n          \"garter\",\n          \"gem-studded collar\",\n          \"gemstone ring\",\n          \"gloves\",\n          \"glyph charm\",\n          \"heart pendant\",\n          \"horned headpiece\",\n          \"lace gloves\",\n          \"leather cuff\",\n          \"lock and key\",\n          \"locket\",\n          \"medallion\",\n          \"moon and stars anklet\",\n          \"moonstone\",\n          \"mystic amulet\",\n          \"necklace\",\n          \"nose ring\",\n          \"padlock\",\n          \"patch\",\n          \"pawprint pendant\",\n          \"pendant\",\n          \"pocket watch\",\n          \"ribbon bow\",\n          \"ribbon choker\",\n          \"ring\",\n          \"rune pendant\",\n          \"scarf\",\n          \"snake armlet\",\n          \"snakehead circlet\",\n          \"spiderweb cape\",\n          \"spiderweb necklace\",\n          \"spiral armlet\",\n          \"star pendant\",\n          \"sunburst pin\",\n          \"suspenders\",\n          \"viking crown\",\n          \"whisker pendant\",\n          \"winged anklet\",\n          \"winged brooch\",\n          \"wristwatch\",\n          \"wearing horns\"\n       ],\n       \"variation\":\"The cat is wearing %s.\"\n    },\n    {\n       \"name\":\"pet\",\n       \"values\":[\n          \"alpaca cria\",\n          \"baby alien\",\n          \"baby astronaut\",\n          \"baby bilby\",\n          \"baby camel\",\n          \"baby centaur\",\n          \"baby chimpanzee\",\n          \"baby comet\",\n          \"baby cyborg\",\n          \"baby dingo\",\n          \"baby dragon\",\n          \"baby dwarf\",\n          \"baby echidna\",\n          \"baby elephant\",\n          \"baby elf\",\n          \"baby fairy\",\n          \"baby glowing jellyfish\",\n          \"baby gnome\",\n          \"baby goat\",\n          \"baby gorilla\",\n          \"baby griffin\",\n          \"baby hippo\",\n          \"baby kraken\",\n          \"baby lemur\",\n          \"baby martian\",\n          \"baby mermaid\",\n          \"baby numbat\",\n          \"baby orangutan\",\n          \"baby pegasus\",\n          \"baby phoenix\",\n          \"baby platypus\",\n          \"baby quokka\",\n          \"baby raccoon\",\n          \"baby rhino\",\n          \"baby robot\",\n          \"baby rocket\",\n          \"baby seal\",\n          \"baby skunk\",\n          \"baby sloth\",\n          \"baby spaceship\",\n          \"baby sphinx\",\n          \"baby star\",\n          \"baby sugar glider\",\n          \"baby tapir\",\n          \"baby tasmanian devil\",\n          \"baby ufo\",\n          \"baby unicorn\",\n          \"baby wallaby\",\n          \"baby wizard\",\n          \"baby wombat\",\n          \"baby yeti\",\n          \"baby zebra\",\n          \"bat\",\n          \"bear cub\",\n          \"bee\",\n          \"bird\",\n          \"butterfly\",\n          \"calf\",\n          \"chameleon\",\n          \"chick\",\n          \"cricket\",\n          \"dragonfly\",\n          \"duckling\",\n          \"fawn\",\n          \"ferret\",\n          \"fish\",\n          \"fox\",\n          \"frog\",\n          \"gecko\",\n          \"giraffe calf\",\n          \"goldfish\",\n          \"guinea pig\",\n          \"hamster\",\n          \"hedgehog\",\n          \"kangaroo joey\",\n          \"kitten\",\n          \"koala\",\n          \"ladybug\",\n          \"lamb\",\n          \"lion cub\",\n          \"lizard\",\n          \"meerkat pup\",\n          \"monkey\",\n          \"mouse\",\n          \"otter pup\",\n          \"owl\",\n          \"panda\",\n          \"parrot\",\n          \"penguin\",\n          \"piglet\",\n          \"pony\",\n          \"puppy\",\n          \"rabbit\",\n          \"snail\",\n          \"squirrel\",\n          \"tiger cub\",\n          \"turtle\"\n       ],\n       \"variation\":\"The cat has a pet %s.\"\n    },\n    {\n       \"name\":\"style\",\n       \"values\":[\n          \"alien\",\n          \"ape\",\n          \"artist\",\n          \"cosmic\",\n          \"dead cat\",\n          \"emoji\",\n          \"ghost\",\n          \"graffiti\",\n          \"human\",\n          \"knight\",\n          \"mermaid\",\n          \"monster\",\n          \"mummy\",\n          \"pirate\",\n          \"quantum\",\n          \"robot\",\n          \"rockstar\",\n          \"samurai\",\n          \"spirit\",\n          \"superhero\",\n          \"sushi\",\n          \"time-traveler\",\n          \"troll\",\n          \"vampire\",\n          \"viking\",\n          \"werewolve\",\n          \"wizard\",\n          \"zen master\",\n          \"zombie\"\n       ],\n       \"variation\":\"The cat is %s style.\"\n    }\n ]",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5069/traits/add",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5069",
+							"path": [
+								"traits",
+								"add"
+							],
+							"query": [
+								{
+									"key": "Authorization",
+									"value": "Bearer 0xsecret123",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "delete trait",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Name\": \"belly\",\n  \"Values\": [\n                \"Fat\",\n                \"Bloated\"\n            ],\n  \"Variation\": \"sleeping on floor\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5069/traits/:name",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5069",
+							"path": [
+								"traits",
+								":name"
+							],
+							"query": [
+								{
+									"key": "Authorization",
+									"value": "Bearer 0xsecret123",
+									"disabled": true
+								}
+							],
+							"variable": [
+								{
+									"key": "name",
+									"value": "eye"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get all traits",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Name\": \"belly\",\n  \"Values\": [\n                \"Fat\",\n                \"Bloated\"\n            ],\n  \"Variation\": \"sleeping on floor\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5069/traits/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5069",
+							"path": [
+								"traits",
+								""
+							],
+							"query": [
+								{
+									"key": "Authorization",
+									"value": "Bearer 0xsecret123",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get a trait",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Name\": \"belly\",\n  \"Values\": [\n                \"Fat\",\n                \"Bloated\"\n            ],\n  \"Variation\": \"sleeping on floor\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5069/traits/:name",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5069",
+							"path": [
+								"traits",
+								":name"
+							],
+							"query": [
+								{
+									"key": "Authorization",
+									"value": "Bearer 0xsecret123",
+									"disabled": true
+								}
+							],
+							"variable": [
+								{
+									"key": "name",
+									"value": "hat"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "prompt",
+			"item": [
+				{
+					"name": "generate prompt",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"baseImage\": {\n    \"traits\": [\n        {\n            \"name\": \"eye\",\n            \"value\": \"has captivating eyes\"\n        }\n    ]\n  },\n    \"newTraits\": [\n        {\n        \"name\": \"mouth\",\n        \"value\": \"chirpy\"\n       }\n    ]\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5069/prompt/generate",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5069",
+							"path": [
+								"prompt",
+								"generate"
+							],
+							"query": [
+								{
+									"key": "Authorization",
+									"value": "Bearer 0xsecret123",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "image-generation",
+			"item": [
+				{
+					"name": "generate image",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"baseImage\": {\n    \"traits\": [\n        {\n            \"name\": \"eye\",\n            \"value\": \"has captivating eyes\"\n        }\n    ]\n  },\n    \"newTraits\": [\n        {\n        \"name\": \"mouth\",\n        \"value\": \"chirpy\"\n       },\n       {\n        \"name\": \"shoes\",\n        \"value\": \"ankle boots\"\n       }\n    ]\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5069/image/generate",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5069",
+							"path": [
+								"image",
+								"generate"
+							],
+							"query": [
+								{
+									"key": "Authorization",
+									"value": "Bearer 0xsecret123",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get Image",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"requestId\": \"ImageRequest_e0189922-bfdf-4dab-af5b-702a7cd0d585\"\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5069/image/query",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5069",
+							"path": [
+								"image",
+								"query"
+							],
+							"query": [
+								{
+									"key": "Authorization",
+									"value": "Bearer 0xsecret123",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

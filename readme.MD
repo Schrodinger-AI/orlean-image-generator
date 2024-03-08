@@ -18,10 +18,6 @@ Orlean Solution contains 3 projects
 3. WebApiClient
 
 
-## Project Tech Specs and Logic
-
-
-
 ## Project Setup Guide
 
 ### MySQL Docker
@@ -31,18 +27,35 @@ Orlean Solution contains 3 projects
 ### Database Setup
 
 - OrleanRuntime needs system tables in the database to manage the persistence of inmemory states in Grains
-- Refer to [orleans-database-setup](./setup-guide/orleans-database-setup.MD)
-- Ensure all database tables, procedures and viewas are created (compare the created entities with the sql script)
+- Refer to [orleans-database-setup](./setup-guide/database/orleans-database-setup.MD)
+- Ensure all database tables, procedures and views are created (compare the created entities with the sql script)
 
 ### Environment Variables
 
 - Use the document [orleans-environment-variables](./setup-guide/orleans-environment-variables.MD)
 
+### How to Run
 
-## Dependency List
+1. Navigate to `SiloHost` directory
+
+```sh
+dotnet run
+```
+
+Ensure the SiloHost startup is successful
+
+2. Navigate to `WebApiClient` directory
+
+```sh
+dotnet run
+```
+
+Ensure the WebApiClient startup is successful
 
 
+### Orleans Image Generation API - Usage
 
-## API Specifications
+1. Traits are to be configured via API, traits can be added by copying `traits.json` content in this director
 
-
+- or refer to the postman collection in this directory
+[orlean-image-generator-postman-collection](./setup-guide/postman/Orlean%20Image%20Generator.postman_collection.json)

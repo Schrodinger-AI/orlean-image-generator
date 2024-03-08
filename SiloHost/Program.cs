@@ -3,7 +3,6 @@ using Microsoft.Extensions.Logging;
 using Orleans;
 using Orleans.Configuration;
 using Orleans.Hosting;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Shared;
 
@@ -23,7 +22,7 @@ namespace SiloHost
                 .Configure<ClusterOptions>(options =>
                 {
                     options.ClusterId = "dev";
-                    options.ServiceId = "OrleansService";
+                    options.ServiceId = "OrleansImageGeneratorService";
                 })
                 .UseAdoNetClustering(options =>
                 {
@@ -43,7 +42,9 @@ namespace SiloHost
                 {
                     logging.AddConsole();
                     logging.SetMinimumLevel(LogLevel.Debug); // Set log level to Debug for more detailed logging
-                }).Build();
+                })
+                .UseDashboard(options => { })
+                .Build();
 
             await host.StartAsync();
 
