@@ -2,7 +2,6 @@ using Grains;
 using Microsoft.AspNetCore.Mvc;
 using Orleans;
 using Shared;
-using WebApi.models;
 
 namespace WebApi.Controllers
 {

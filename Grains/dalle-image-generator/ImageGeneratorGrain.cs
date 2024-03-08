@@ -11,9 +11,10 @@ namespace Grains;
 
 public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
 {
+
     private readonly PromptBuilder _promptBuilder;
 
-    private Dictionary<string, Task<DalleResponse>> _imageDataTaskMap = new Dictionary<string, Task<DalleResponse>>();
+    private Task<DalleResponse> _imageDataTask;
 
     private readonly IPersistentState<ImageGenerationState> _imageGenerationState;
 
@@ -23,36 +24,29 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
         _imageGenerationState = imageGeneratorState;
     }
 
-    public async Task<string> generatePrompt(ImageGenerationRequest imageGenerationRequest)
-    {
-        List<Trait> newTraits = imageGenerationRequest.NewTraits;
-        List<Trait> baseTraits = imageGenerationRequest.BaseImage.Traits;
-
-        //collect the newTraits from the request and combine it with trats from the base image
-        IEnumerable<Trait> traits = newTraits.Concat(baseTraits);
-
-        // Extract trait names from the request
-        Dictionary<string, TraitEntry> traitDefinitions = await lookupTraitDefinitions(traits.ToList());
-
-        string prompt = await generatePrompt(traits.ToList(), traitDefinitions);
-
-        return prompt;
-    }
-
     public async Task<ImageGenerationResponse> generateImageAsync(ImageGenerationRequest request, string imageRequestId)
     {
         try
         {
-            string finalPrompt = await generatePrompt(request);
+            List<Trait> newTraits = request.NewTraits;
+            List<Trait> baseTraits = request.BaseImage.Traits;
+
+            //collect the newTraits from the request and combine it with trats from the base image
+            IEnumerable<Trait> traits = newTraits.Concat(baseTraits);
+
+            // Extract trait names from the request
+            Dictionary<string, TraitEntry> traitDefinitions = await lookupTraitDefinitions(traits.ToList());
+
+            string prompt = await generatePrompt(traits.ToList(), traitDefinitions);
 
             // Start the image data generation process
-            Task<DalleResponse> imageDataTask = RunDalleAsync(finalPrompt);
+            Task<DalleResponse> imageDataTask = RunDalleAsync(prompt);
 
             // Store the task in a non-persistent dictionary
-            _imageDataTaskMap[imageRequestId] = imageDataTask;
+            _imageDataTask = imageDataTask;
 
             // Store the traits in the image generation request map
-            _imageGenerationState.State.ImageGenerationRequestMap[imageRequestId] = request;
+            _imageGenerationState.State.ImageGenerationRequest = request;
 
             // Write the state to the storage provider
             await _imageGenerationState.WriteStateAsync();
@@ -103,23 +97,17 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
     public async Task<ImageQueryResponse> queryImageAsync(string imageRequestId)
     {
         // Check if the ImageQueryResponse exists in the state
-        if (_imageGenerationState.State.ImageResponseMap.TryGetValue(imageRequestId, out ImageQueryResponse existingResponse))
+        if (_imageGenerationState.State.ImageQueryResponse != null)
         {
-            return existingResponse;
+            return _imageGenerationState.State.ImageQueryResponse;
         }
 
-        // Check if the imageRequestId exists in the dictionary
-        if (!_imageDataTaskMap.ContainsKey(imageRequestId))
-        {
-            return new ImageQueryResponseNotOk { Error = "Image request not found" };
-        }
-
-        if (_imageDataTaskMap.TryGetValue(imageRequestId, out Task<DalleResponse> imageDataTask))
+        if (_imageDataTask != null)
         {
             try
             {
                 // Wait for the task to complete and get the result
-                DalleResponse result = await imageDataTask;
+                DalleResponse result = await _imageDataTask;
 
                 // Extract the URL from the result
                 string imageUrl = result.Data[0].Url;
@@ -129,11 +117,8 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
 
                 Console.WriteLine("Size of base64 string: " + GetSizeOfBase64String(base64Image) + " bytes");
 
-                // Store the base64 image in the grain state
-                _imageGenerationState.State.ImageMap[imageRequestId] = base64Image;
-
                 // Get the traits from the ImageGenerationRequest
-                var request = _imageGenerationState.State.ImageGenerationRequestMap[imageRequestId];
+                var request = _imageGenerationState.State.ImageGenerationRequest;
                 var traits = request.NewTraits.Concat(request.BaseImage.Traits).ToList();
 
                 // Generate the ImageQueryResponseOk
@@ -151,7 +136,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
                 };
 
                 // Store the ImageQueryResponse in the state
-                _imageGenerationState.State.ImageResponseMap[imageRequestId] = response;
+                _imageGenerationState.State.ImageQueryResponse = response;
 
                 // Persist the state to the database
                 await _imageGenerationState.WriteStateAsync();
@@ -200,9 +185,9 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
         var traitConfigGrain = GrainFactory.GetGrain<ITraitConfigGrain>("traitConfigGrain");
 
         // Retrieve the trait definitions from the TraitConfigGrain
-       var response = await traitConfigGrain.GetTraitsMap(traitNames);
+        var response = await traitConfigGrain.GetTraitsMap(traitNames);
 
-       return response;
+        return response;
     }
 
     public async Task<String> generatePrompt(List<Trait> requestTraits, Dictionary<string, TraitEntry> traitDefinitions)

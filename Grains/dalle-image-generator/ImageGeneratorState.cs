@@ -4,12 +4,8 @@ namespace Grains;
 
 public class ImageGenerationState
 {
-    public Dictionary<string, string> ImageMap { get; set; } = new Dictionary<string, string>();
-
-    public Dictionary<string, string> ImageUrlMap { get; set; } = new Dictionary<string, string>();
-
-    public Dictionary<string, ImageQueryResponse> ImageResponseMap { get; set; } = new Dictionary<string, ImageQueryResponse>();
-
-
-    public Dictionary<string, ImageGenerationRequest> ImageGenerationRequestMap { get; set; } = new Dictionary<string, ImageGenerationRequest>();
+    public string? RequestId { get; set; }
+    public string? ImageUrl { get; set; }
+    public ImageQueryResponse? ImageQueryResponse { get; set; }
+    public ImageGenerationRequest? ImageGenerationRequest { get; set; }
 }
