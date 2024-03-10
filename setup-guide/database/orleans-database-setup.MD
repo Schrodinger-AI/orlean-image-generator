@@ -20,9 +20,9 @@ docker-compose up -d
 
 #### Copy all sql files
 
-docker cp ./01-MySQL-Main.sql database-db-1/01-MySQL-Main.sql
-docker cp ./02-MySQL-Clustering.sql database-db-1/02-MySQL-Clustering.sql
-docker cp ./03-MySQL-Persistence.sql database-db-1/03-MySQL-Persistence.sql
+docker cp ./01-MySQL-Main.sql database-db-1:/01-MySQL-Main.sql
+docker cp ./02-MySQL-Clustering.sql database-db-1:/02-MySQL-Clustering.sql
+docker cp ./03-MySQL-Persistence.sql database-db-1:/03-MySQL-Persistence.sql
 
 #### Run SQL files on database docker instance
 
