@@ -5,30 +5,53 @@ Execute the steps listed below:
 
 ## MySQL Setup
 
-```sh
-docker-compose up -d
-```
-
-### Create Database entities
+- You are in project root directory
+- Change to directory with database setup files
 
 ```sh
 cd setup-guide/database/
 ```
 
-#### Create OrleansQuery
+- Start mysql docker container
 
 ```sh
-mysql -uroot -p --database=orleans_image_generator < ./01-MySQL-Main.sql
+docker-compose up -d
 ```
 
-#### Create Orleans Membership
+#### Copy all sql files
+
+docker cp ./01-MySQL-Main.sql database-db-1/01-MySQL-Main.sql
+docker cp ./02-MySQL-Clustering.sql database-db-1/02-MySQL-Clustering.sql
+docker cp ./03-MySQL-Persistence.sql database-db-1/03-MySQL-Persistence.sql
+
+#### Run SQL files on database docker instance
+
+1. connect to terminal 
 
 ```sh
-mysql -uroot -p --database=orleans_image_generator < ./02-MySQL-Clustering.sql
+docker exec -it database-db-1 bash
 ```
 
-#### Create OrleansStorage table and insert static data
+2. open sql bash for the database
 
 ```sh
-mysql -uroot -p --database=orleans_image_generator < ./03-MySQL-Persistence.sql
+mysql -u root -p orleans_image_generator
+```
+
+3. It will prompt for password
+
+type in the password and press enter
+
+4. execute the sql scripts
+
+```sh
+source 01-MySQL-Main.sql
+```
+
+```sh
+source 02-MySQL-Clustering.sql
+```
+
+```sh
+source 03-MySQL-Persistence.sql
 ```
