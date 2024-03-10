@@ -55,3 +55,170 @@ source 02-MySQL-Clustering.sql
 ```sh
 source 03-MySQL-Persistence.sql
 ```
+
+#### verification of tables and stored-procedures
+
+1. run the command to show all tables
+
+```sh
+show tables;
+```
+
+it should show 4 tables:
+
+```
+mysql> show tables;
++-----------------------------------+
+| Tables_in_orleans_image_generator |
++-----------------------------------+
+| OrleansMembershipTable            |
+| OrleansMembershipVersionTable     |
+| OrleansQuery                      |
+| OrleansStorage                    |
++-----------------------------------+
+4 rows in set (0.01 sec)
+```
+
+2. run the commands to check the procedures
+
+
+```sh
+SELECT ROUTINE_NAME 
+FROM INFORMATION_SCHEMA.ROUTINES 
+WHERE ROUTINE_TYPE="PROCEDURE" 
+AND ROUTINE_SCHEMA="orleans_image_generator"
+AND ROUTINE_NAME="ClearStorage";
+```
+
+Expected output:
+
+```
+mysql> SELECT ROUTINE_NAME 
+    -> FROM INFORMATION_SCHEMA.ROUTINES 
+    -> WHERE ROUTINE_TYPE="PROCEDURE" 
+    -> AND ROUTINE_SCHEMA="orleans_image_generator"
+    -> AND ROUTINE_NAME="ClearStorage";
++--------------+
+| ROUTINE_NAME |
++--------------+
+| ClearStorage |
++--------------+
+1 row in set (0.01 sec)
+```
+
+```sh
+SELECT ROUTINE_NAME 
+FROM INFORMATION_SCHEMA.ROUTINES 
+WHERE ROUTINE_TYPE="PROCEDURE" 
+AND ROUTINE_SCHEMA="orleans_image_generator"
+AND ROUTINE_NAME="InsertMembershipKey";
+```
+
+Expected Output:
+
+```
+mysql> SELECT ROUTINE_NAME 
+    -> FROM INFORMATION_SCHEMA.ROUTINES 
+    -> WHERE ROUTINE_TYPE="PROCEDURE" 
+    -> AND ROUTINE_SCHEMA="orleans_image_generator"
+    -> AND ROUTINE_NAME="InsertMembershipKey";
++---------------------+
+| ROUTINE_NAME        |
++---------------------+
+| InsertMembershipKey |
++---------------------+
+1 row in set (0.01 sec)
+```
+
+
+```sh
+SELECT ROUTINE_NAME 
+FROM INFORMATION_SCHEMA.ROUTINES 
+WHERE ROUTINE_TYPE="PROCEDURE" 
+AND ROUTINE_SCHEMA="orleans_image_generator"
+AND ROUTINE_NAME="WriteToStorage";
+```
+
+Expected Output:
+
+```
+mysql> SELECT ROUTINE_NAME 
+    -> FROM INFORMATION_SCHEMA.ROUTINES 
+    -> WHERE ROUTINE_TYPE="PROCEDURE" 
+    -> AND ROUTINE_SCHEMA="orleans_image_generator"
+    -> AND ROUTINE_NAME="WriteToStorage";
++----------------+
+| ROUTINE_NAME   |
++----------------+
+| WriteToStorage |
++----------------+
+1 row in set (0.02 sec)
+```
+
+3. run the commands to check the indexes
+
+```sh
+SELECT 'OrleansMembershipVersionTable.PRIMARY' AS 'IndexName', EXISTS (    SELECT 1    FROM INFORMATION_SCHEMA.STATISTICS     WHERE TABLE_SCHEMA = 'orleans_image_generator' AND TABLE_NAME = 'OrleansMembershipVersionTable'    AND INDEX_NAME = 'PRIMARY') AS 'IndexExists';
+```
+
+Expected Output:
+
+```
+mysql> SELECT 'OrleansMembershipVersionTable.PRIMARY' AS 'IndexName', EXISTS (    SELECT 1    FROM INFORMATION_SCHEMA.STATISTICS     WHERE TABLE_SCHEMA = 'orleans_image_generator'     AND TABLE_NAME = 'OrleansMembershipVersionTable'    AND INDEX_NAME = 'PRIMARY') AS 'IndexExists';
++---------------------------------------+-------------+
+| IndexName                             | IndexExists |
++---------------------------------------+-------------+
+| OrleansMembershipVersionTable.PRIMARY |           1 |
++---------------------------------------+-------------+
+1 row in set (0.00 sec)
+```
+
+```sh
+SELECT 'OrleansMembershipVersionTable.PRIMARY' AS 'IndexName', EXISTS (    SELECT 1    FROM INFORMATION_SCHEMA.STATISTICS     WHERE TABLE_SCHEMA = 'orleans_image_generator' AND TABLE_NAME = 'OrleansQuery' AND INDEX_NAME = 'PRIMARY') AS 'IndexExists';
+```
+
+Expected Output:
+
+```
+mysql> SELECT 'OrleansMembershipVersionTable.PRIMARY' AS 'IndexName', EXISTS (    SELECT 1    FROM INFORMATION_SCHEMA.STATISTICS     WHERE TABLE_SCHEMA = 'orleans_image_generator' AND TABLE_NAME = 'OrleansQuery' AND INDEX_NAME = 'PRIMARY') AS 'IndexExists';
++---------------------------------------+-------------+
+| IndexName                             | IndexExists |
++---------------------------------------+-------------+
+| OrleansMembershipVersionTable.PRIMARY |           1 |
++---------------------------------------+-------------+
+1 row in set (0.01 sec)
+```
+
+```sh
+SELECT 'OrleansMembershipVersionTable.PRIMARY' AS 'IndexName', EXISTS (    SELECT 1    FROM INFORMATION_SCHEMA.STATISTICS     WHERE TABLE_SCHEMA = 'orleans_image_generator' AND TABLE_NAME = 'OrleansStorage' AND INDEX_NAME = 'IX_OrleansStorage') AS 'IndexExists';
+```
+
+Expected Output:
+
+
+```
+mysql> SELECT 'OrleansMembershipVersionTable.PRIMARY' AS 'IndexName', EXISTS (    SELECT 1    FROM INFORMATION_SCHEMA.STATISTICS     WHERE TABLE_SCHEMA = 'orleans_image_generator' AND TABLE_NAME = 'OrleansStorage' AND INDEX_NAME = 'IX_OrleansStorage') AS 'IndexExists';
++---------------------------------------+-------------+
+| IndexName                             | IndexExists |
++---------------------------------------+-------------+
+| OrleansMembershipVersionTable.PRIMARY |           1 |
++---------------------------------------+-------------+
+1 row in set (0.00 sec)
+```
+
+```sh
+SELECT 'OrleansMembershipTable.PRIMARY' AS 'IndexName', EXISTS (    SELECT 1    FROM INFORMATION_SCHEMA.STATISTICS     WHERE TABLE_SCHEMA = 'orleans_image_generator' AND TABLE_NAME = 'OrleansMembershipTable' AND INDEX_NAME = 'PRIMARY') AS 'IndexExists';
+```
+
+Expected Output:
+
+
+```
+mysql> SELECT 'OrleansMembershipTable.PRIMARY' AS 'IndexName', EXISTS (    SELECT 1    FROM INFORMATION_SCHEMA.STATISTICS     WHERE TABLE_SCHEMA = 'orleans_image_generator' AND TABLE_NAME = 'OrleansMembershipTable' AND INDEX_NAME = 'PRIMARY') AS 'IndexExists';
++--------------------------------+-------------+
+| IndexName                      | IndexExists |
++--------------------------------+-------------+
+| OrleansMembershipTable.PRIMARY |           1 |
++--------------------------------+-------------+
+1 row in set (0.01 sec)
+```
