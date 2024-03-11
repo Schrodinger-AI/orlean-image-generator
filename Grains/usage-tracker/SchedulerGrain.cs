@@ -24,6 +24,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IImageGenerationRequestSta
     private readonly ILogger<SchedulerGrain> _logger;
     
     private IGrainReminder? _reminder;
+    private readonly IDisposable? _timer;
 
     public SchedulerGrain(
         [PersistentState("masterTrackerState", "MySqlSchrodingerImageStore")]
@@ -33,7 +34,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IImageGenerationRequestSta
         ILogger<SchedulerGrain> logger)
     {
         // Register timer
-        timerRegistry.RegisterTimer(
+        _timer = timerRegistry.RegisterTimer(
             this,
             asyncCallback: static async state =>
             {
@@ -274,6 +275,8 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IImageGenerationRequestSta
         {
             _reminderRegistry.UnregisterReminder(_reminder);
         }
+        
+        _timer?.Dispose();
     }
 
     #endregion
