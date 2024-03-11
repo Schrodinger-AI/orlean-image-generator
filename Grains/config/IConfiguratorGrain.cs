@@ -1,8 +1,10 @@
 using System.Collections.Immutable;
+using Orleans;
+using Shared;
 
 namespace UnitTests.Grains;
 
-public interface IConfiguratorGrain
+public interface IConfiguratorGrain: ISchrodingerGrain, IGrainWithStringKey
 {
     Task<ImmutableSortedSet<string>> GetAllConfigIdsAsync();
     Task<string> GetCurrentConfigIdAsync();

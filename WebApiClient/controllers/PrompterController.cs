@@ -2,6 +2,7 @@ using Grains;
 using Microsoft.AspNetCore.Mvc;
 using Orleans;
 using Shared;
+using UnitTests.Grains;
 
 namespace WebApi.Controllers
 {
@@ -9,7 +10,7 @@ namespace WebApi.Controllers
     [Route("prompt")]
     public class PrompterController : ControllerBase
     {
-        private static string _identifier = "main";
+        private string _configuratorIdentifier = "configurator";
         private readonly IClusterClient _client;
 
         public PrompterController(IClusterClient client)
@@ -22,7 +23,7 @@ namespace WebApi.Controllers
         {
             try
             {
-                var prompterGrain = _client.GetGrain<IPrompterGrain>(_identifier);
+                var prompterGrain = _client.GetGrain<IPrompterGrain>(setPromptConfigRequest.Identifier);
                 var res = await prompterGrain.SetConfigAsync(new PrompterConfig
                 {
                     ConfigText = setPromptConfigRequest.ConfigText,
@@ -31,13 +32,16 @@ namespace WebApi.Controllers
                 });
                 if (res)
                 {
-                    return new PrompterResponseOk {Result = "success"};
+                    var configuratorGrain = _client.GetGrain<IConfiguratorGrain>(_configuratorIdentifier);
+                    await configuratorGrain.SetCurrentConfigIdAsync(setPromptConfigRequest.Identifier);
+                    return new PrompterResponseOk { Result = "success" };
                 }
-                return new PrompterResponseNotOk {Error = "set prompt config fail error, invalid input"};
+
+                return new PrompterResponseNotOk { Error = "set prompt config fail error, invalid input" };
             }
             catch (Exception e)
             {
-                return new PrompterResponseNotOk {Error = "set prompt config error, msg: " + e.Message};
+                return new PrompterResponseNotOk { Error = "set prompt config error, msg: " + e.Message };
             }
         }
 
@@ -48,11 +52,11 @@ namespace WebApi.Controllers
             {
                 var prompterGrain = _client.GetGrain<IPrompterGrain>(getPromptConfigRequest.Identifier);
                 var result = await prompterGrain.GetConfigAsync();
-                return new PrompterResponseOk {Result = result};
+                return new PrompterResponseOk { Result = result };
             }
             catch (Exception e)
             {
-                return new PrompterResponseNotOk {Error = "get prompt config error, msg: " + e.Message};
+                return new PrompterResponseNotOk { Error = "get prompt config error, msg: " + e.Message };
             }
         }
 
@@ -61,43 +65,75 @@ namespace WebApi.Controllers
         {
             try
             {
-                var promptCreatorGrain = _client.GetGrain<IPrompterGrain>(_identifier);
+                var configuratorGrain = _client.GetGrain<IConfiguratorGrain>(_configuratorIdentifier);
+                var currentConfigId = await configuratorGrain.GetCurrentConfigIdAsync();
+                var promptCreatorGrain = _client.GetGrain<IPrompterGrain>(currentConfigId);
                 var result = await promptCreatorGrain.GeneratePromptAsync(promptGenerationRequest);
                 if (!string.IsNullOrEmpty(result))
                 {
-                    return new PrompterResponseOk {Result = result};
+                    return new PrompterResponseOk { Result = result };
                 }
 
-                return new PrompterResponseNotOk {Error = "generate prompt fail, invalid input"};
+                return new PrompterResponseNotOk { Error = "generate prompt fail, invalid input" };
             }
             catch (Exception e)
             {
-                return new PrompterResponseNotOk {Error = "generate prompt error, msg: " + e.Message};
+                return new PrompterResponseNotOk { Error = "generate prompt error, msg: " + e.Message };
             }
         }
 
         [HttpPost("switch-identifier")]
         public async Task<PrompterResponse> SwitchIdentifier(SwitchIdentifierRequest switchIdentifierRequest)
         {
-            _identifier = switchIdentifierRequest.Identifier;
+            var configuratorGrain = _client.GetGrain<IConfiguratorGrain>(_configuratorIdentifier);
+            var allConfigIds = await configuratorGrain.GetAllConfigIdsAsync();
+            if (!allConfigIds.Contains(switchIdentifierRequest.Identifier))
+            {
+                return new PrompterResponseNotOk { Error = "switch identifier fail, invalid identifier" };
+            }
+
+            await configuratorGrain.SetCurrentConfigIdAsync(switchIdentifierRequest.Identifier);
             return new PrompterResponseOk { Result = await Task.FromResult("success") };
         }
-        
+
         [HttpPost("get-current-config")]
         public async Task<PrompterResponse> GetCurrenConfig()
         {
             try
             {
-                var prompterGrain = _client.GetGrain<IPrompterGrain>(_identifier);
+                var configuratorGrain = _client.GetGrain<IConfiguratorGrain>(_configuratorIdentifier);
+                var currentConfigId = await configuratorGrain.GetCurrentConfigIdAsync();
+                var prompterGrain = _client.GetGrain<IPrompterGrain>(currentConfigId);
                 var result = await prompterGrain.GetConfigAsync();
-                return new PrompterResponseOk {Result = result};
+                return new PrompterResponseOk { Result = result };
             }
             catch (Exception e)
             {
-                return new PrompterResponseNotOk {Error = "get current prompt config error, msg: " + e.Message};
+                return new PrompterResponseNotOk { Error = "get current prompt config error, msg: " + e.Message };
             }
         }
-        
+
+        [HttpPost("get-all-configs")]
+        public async Task<PrompterResponse> GetAllConfigs()
+        {
+            try
+            {
+                List<PrompterConfig> result = new List<PrompterConfig>();
+                var configuratorGrain = _client.GetGrain<IConfiguratorGrain>(_configuratorIdentifier);
+                var allConfigIds = await configuratorGrain.GetAllConfigIdsAsync();
+                foreach (var prompterGrain in allConfigIds.Select(
+                             configId => _client.GetGrain<IPrompterGrain>(configId)))
+                {
+                    var config = await prompterGrain.GetConfigAsync();
+                    result.Add(config);
+                }
+
+                return new PrompterResponseOk { Result = result };
+            }
+            catch (Exception e)
+            {
+                return new PrompterResponseNotOk { Error = "get current prompt config error, msg: " + e.Message };
+            }
+        }
     }
-    
 }
