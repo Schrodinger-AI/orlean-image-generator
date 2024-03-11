@@ -43,7 +43,7 @@ namespace Shared
         [JsonPropertyName("baseImage")]
         public ImageDescription BaseImage { get; set; }
 
-        [JsonPropertyName("numberOfImages")]
+        [JsonPropertyName("numImages")]
         public int? NumberOfImages { get; set; }
     }
 

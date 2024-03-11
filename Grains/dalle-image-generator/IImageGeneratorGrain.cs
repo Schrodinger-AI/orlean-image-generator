@@ -6,6 +6,5 @@ namespace Grains;
     {
         Task<ImageGenerationResponse> GenerateImageAsync(ImageGenerationRequest imageGenerationRequest, string imageRequestId);
 
-        Task<ImageQueryResponse> QueryImageAsync(string imageRequestId);
-
+        Task<ImageQueryResponse> QueryImageAsync();
     }

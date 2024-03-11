@@ -7,11 +7,11 @@ namespace WebApi.Controllers;
 
 [ApiController]
 [Route("image")]
-public class ImageGeneratorController : ControllerBase
+public class MultiImageGeneratorController : ControllerBase
 {
     private readonly IClusterClient _client;
 
-    public ImageGeneratorController(IClusterClient client)
+    public MultiImageGeneratorController(IClusterClient client)
     {
         _client = client;
     }
@@ -22,9 +22,9 @@ public class ImageGeneratorController : ControllerBase
         //generate a new UUID with a prefix of "imageRequest"        
         string imageRequestId = "ImageRequest_" + Guid.NewGuid().ToString();
 
-        var imageGeneratorGrain = _client.GetGrain<IImageGeneratorGrain>(imageRequestId);
+        var multiImageGeneratorGrain = _client.GetGrain<IMultiImageGeneratorGrain>(imageRequestId);
 
-        var response = await imageGeneratorGrain.GenerateImageAsync(imageGenerationRequest, imageRequestId);
+        var response = await multiImageGeneratorGrain.GenerateMultipleImagesAsync(imageGenerationRequest, imageRequestId);
 
         return response;
     }
@@ -32,9 +32,9 @@ public class ImageGeneratorController : ControllerBase
     [HttpPost("query")]
     public async Task<ImageQueryResponse> queryImage(ImageQueryRequest imageQueryRequest)
     {
-        var imageGeneratorGrain = _client.GetGrain<IImageGeneratorGrain>(imageQueryRequest.RequestId);
+        var multiImageGeneratorGrain = _client.GetGrain<IMultiImageGeneratorGrain>(imageQueryRequest.RequestId);
 
-        var imageQueryResponse = await imageGeneratorGrain.QueryImageAsync(imageQueryRequest.RequestId);
+        var imageQueryResponse = await multiImageGeneratorGrain.QueryMultipleImagesAsync();
 
         return imageQueryResponse;
     }

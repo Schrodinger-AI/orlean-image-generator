@@ -93,7 +93,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
         }
     }
 
-    public async Task<ImageQueryResponse> QueryImageAsync(string imageRequestId)
+    public async Task<ImageQueryResponse> QueryImageAsync()
     {
         // Check if the ImageQueryResponse exists in the state
         if (_imageGenerationState.State.ImageQueryResponse != null)

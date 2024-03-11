@@ -15,6 +15,9 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
 
     public async Task<ImageGenerationResponse> GenerateMultipleImagesAsync(ImageGenerationRequest request, string multiImageRequestId)
     {
+        _multiImageGenerationState.State.RequestId = multiImageRequestId;
+        await _multiImageGenerationState.WriteStateAsync();
+
         for (int i = 0; i < request.NumberOfImages; i++)
         {
             //generate a new UUID with a prefix of "imageRequest"        
@@ -23,6 +26,8 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
             var imageGeneratorGrain = GrainFactory.GetGrain<IImageGeneratorGrain>(imageRequestId);
 
             var imageGenerationResponse = await imageGeneratorGrain.GenerateImageAsync(request, imageRequestId);
+
+            Console.WriteLine("Image generation submitted for request: "+ imageRequestId + " with response: " + imageGenerationResponse);
 
             if (imageGenerationResponse is ImageGenerationResponseNotOk)
             {
@@ -51,7 +56,7 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
         return response;
     }
 
-    public async Task<ImageQueryResponse> QueryMultipleImagesAsync(string requestId)
+    public async Task<ImageQueryResponse> QueryMultipleImagesAsync()
     {
         var imageGenerationRequestIds = _multiImageGenerationState.State.ImageGenerationRequestIds;
 
@@ -61,7 +66,7 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
         {
             var imageGeneratorGrain = GrainFactory.GetGrain<IImageGeneratorGrain>(imageGenerationRequestId);
 
-            var response = await imageGeneratorGrain.QueryImageAsync(imageGenerationRequestId);
+            var response = await imageGeneratorGrain.QueryImageAsync();
 
             if (response is ImageQueryResponseNotOk notOkResponse)
             {
