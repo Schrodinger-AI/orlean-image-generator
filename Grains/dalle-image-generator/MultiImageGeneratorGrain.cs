@@ -16,6 +16,20 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
         _promptBuilder = promptBuilder;
     }
 
+    public async Task NotifyImageGenerationStatus(string imageRequestId, ImageGenerationStatus status, string? error)
+    {
+        var imageGenerationNotification = new ImageGenerationTracker
+        {
+            RequestId = imageRequestId,
+            Status = status,
+            Error = error
+        };
+
+        _multiImageGenerationState.State.imageGenerationTrackers[imageGenerationNotification.RequestId] = imageGenerationNotification;
+
+        await _multiImageGenerationState.WriteStateAsync();
+    }
+
     public async Task<MultiImageGenerationGrainResponse> GenerateMultipleImagesAsync(List<Trait> traits, int NumberOfImages, string multiImageRequestId)
     {
         try
@@ -71,15 +85,6 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
                 Errors = _multiImageGenerationState.State.Errors
             };
         }
-    }
-
-    public async Task<string> HandleImageGenerationNotification(ImageGenerationNotification imageGenerationNotification)
-    {
-        _multiImageGenerationState.State.imageGenerationTracker[imageGenerationNotification.RequestId] = imageGenerationNotification;
-
-        await _multiImageGenerationState.WriteStateAsync();
-
-        return "Notification received";
     }
 
     public async Task<Dictionary<string, TraitEntry>> lookupTraitDefinitions(List<Trait> requestTraits)
