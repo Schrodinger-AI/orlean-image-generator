@@ -1,5 +1,4 @@
 using Orleans;
-using Orleans.Runtime;
 using Shared;
 
 namespace Grains;
@@ -7,12 +6,10 @@ namespace Grains;
 public class PromptGeneratorGrain : Grain, IPromptGeneratorGrain
 {
     private readonly PromptBuilder _promptBuilder;
-    private readonly IPersistentState<PromptConfigState> _promptConfigState;
     
-    public PromptGeneratorGrain(PromptBuilder promptBuilder, [PersistentState("promptConfigState", "MySqlSchrodingerImageStore")] IPersistentState<PromptConfigState> promptConfigState)
+    public PromptGeneratorGrain(PromptBuilder promptBuilder)
     {
         _promptBuilder = promptBuilder;
-        _promptConfigState = promptConfigState;
     }
 
     public async Task<string> GeneratePrompt(PromptGenerationRequest promptGenerationRequest) {

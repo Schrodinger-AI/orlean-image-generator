@@ -25,6 +25,9 @@ namespace Shared
 
     public class PromptGenerationRequest
     {
+        [JsonPropertyName("identifier")]
+        public string Identifier { get; set; }
+        
         [JsonPropertyName("newAttributes")]
         public List<Trait> NewTraits { get; set; }
 
@@ -32,7 +35,7 @@ namespace Shared
         public ImageDescription BaseImage { get; set; }
     }
     
-    public class SetPromptStateRequest
+    public class SetPromptConfigRequest
     {
         [JsonPropertyName("identifier")]
         public string Identifier { get; set; }
@@ -47,15 +50,21 @@ namespace Shared
         public string ValidationTestCase { get; set; }
     }
     
-    public abstract class PromptCreatorResponse {}
+    public class GetPromptConfigRequest
+    {
+        [JsonPropertyName("identifier")]
+        public string Identifier { get; set; }
+    }
+    
+    public abstract class PrompterResponse {}
 
-    public class PromptCreatorResponseOk : PromptCreatorResponse
+    public class PrompterResponseOk : PrompterResponse
     {
         [JsonPropertyName("result")]
         public object Result { get; set; }
     }
 
-    public class PromptCreatorResponseNotOk : PromptCreatorResponse
+    public class PrompterResponseNotOk : PrompterResponse
     {
         [JsonPropertyName("error")]
         public string Error { get; set; }
