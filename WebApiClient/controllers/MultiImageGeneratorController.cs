@@ -51,7 +51,7 @@ public class MultiImageGeneratorController : ControllerBase
 
         var imageQueryResponse = await multiImageGeneratorGrain.QueryMultipleImagesAsync();
 
-        if (imageQueryResponse.IsSuccessful)
+        if (imageQueryResponse.Status == ImageGenerationStatus.SuccessfulCompletion || imageQueryResponse.Status == ImageGenerationStatus.InProgress)
         {
             List<ImageDescription> images = imageQueryResponse.Images ?? [];
             return new ImageQueryResponseOk { Images = images };
