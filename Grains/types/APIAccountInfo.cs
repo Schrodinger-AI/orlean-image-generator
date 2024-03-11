@@ -6,4 +6,5 @@ public class APIAccountInfo
     public string Email { get; set; }
     public string ApiKey { get; set; }
     public int Tier { get; set; }
+    public int MaxQuota { get; set; }
 }

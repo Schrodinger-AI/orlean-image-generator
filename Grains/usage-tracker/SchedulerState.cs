@@ -2,7 +2,7 @@ using Grains.types;
 
 namespace Grains.usage_tracker;
 
-public class MasterTrackerState
+public class SchedulerState
 {
     public Dictionary<string, RequestAccountUsageInfo> PendingImageGenerationRequests { get; set; }
     public Dictionary<string, RequestAccountUsageInfo> StartedImageGenerationRequests { get; set; }
@@ -12,6 +12,6 @@ public class MasterTrackerState
     /// </summary>
     public Dictionary<string, RequestAccountUsageInfo> CompletedImageGenerationRequests { get; set; }
     
-    public List<ApiInformation> ApiInformationList { get; set; }
+    public List<APIAccountInfo> ApiAccountInfoList { get; set; }
     
 }
