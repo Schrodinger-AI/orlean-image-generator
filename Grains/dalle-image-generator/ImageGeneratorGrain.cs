@@ -11,7 +11,6 @@ namespace Grains;
 
 public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
 {
-
     private readonly PromptBuilder _promptBuilder;
 
     private Task<DalleResponse> _imageDataTask;
@@ -24,7 +23,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
         _imageGenerationState = imageGeneratorState;
     }
 
-    public async Task<ImageGenerationResponse> generateImageAsync(ImageGenerationRequest request, string imageRequestId)
+    public async Task<ImageGenerationResponse> GenerateImageAsync(ImageGenerationRequest request, string imageRequestId)
     {
         try
         {
@@ -94,7 +93,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
         }
     }
 
-    public async Task<ImageQueryResponse> queryImageAsync(string imageRequestId)
+    public async Task<ImageQueryResponse> QueryImageAsync(string imageRequestId)
     {
         // Check if the ImageQueryResponse exists in the state
         if (_imageGenerationState.State.ImageQueryResponse != null)

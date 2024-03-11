@@ -4,7 +4,7 @@ namespace Shared
 {
     public class Trait
     {
-        [JsonPropertyName("name")]
+        [JsonPropertyName("traitType")]
         public string Name { get; set; }
 
         [JsonPropertyName("value")]
@@ -16,7 +16,7 @@ namespace Shared
         [JsonPropertyName("image")]
         public string? Image { get; set; } = null;
 
-        [JsonPropertyName("traits")]
+        [JsonPropertyName("attributes")]
         public List<Trait> Traits { get; set; } = [];
 
         [JsonPropertyName("extraData")]
@@ -25,7 +25,7 @@ namespace Shared
 
     public class PromptGenerationRequest
     {
-        [JsonPropertyName("newTraits")]
+        [JsonPropertyName("newAttributes")]
         public List<Trait> NewTraits { get; set; }
 
         [JsonPropertyName("baseImage")]
@@ -37,11 +37,14 @@ namespace Shared
         [JsonPropertyName("seed")]
         public string? Seed { get; set; }
 
-        [JsonPropertyName("newTraits")]
+        [JsonPropertyName("newAttributes")]
         public List<Trait> NewTraits { get; set; }
 
         [JsonPropertyName("baseImage")]
         public ImageDescription BaseImage { get; set; }
+
+        [JsonPropertyName("numberOfImages")]
+        public int? NumberOfImages { get; set; }
     }
 
     public abstract class ImageGenerationResponse {}

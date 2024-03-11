@@ -24,7 +24,7 @@ public class ImageGeneratorController : ControllerBase
 
         var imageGeneratorGrain = _client.GetGrain<IImageGeneratorGrain>(imageRequestId);
 
-        var response = await imageGeneratorGrain.generateImageAsync(imageGenerationRequest, imageRequestId);
+        var response = await imageGeneratorGrain.GenerateImageAsync(imageGenerationRequest, imageRequestId);
 
         return response;
     }
@@ -34,7 +34,7 @@ public class ImageGeneratorController : ControllerBase
     {
         var imageGeneratorGrain = _client.GetGrain<IImageGeneratorGrain>(imageQueryRequest.RequestId);
 
-        var imageQueryResponse = await imageGeneratorGrain.queryImageAsync(imageQueryRequest.RequestId);
+        var imageQueryResponse = await imageGeneratorGrain.QueryImageAsync(imageQueryRequest.RequestId);
 
         return imageQueryResponse;
     }
