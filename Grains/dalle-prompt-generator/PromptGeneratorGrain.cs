@@ -6,7 +6,7 @@ namespace Grains;
 public class PromptGeneratorGrain : Grain, IPromptGeneratorGrain
 {
     private readonly PromptBuilder _promptBuilder;
-
+    
     public PromptGeneratorGrain(PromptBuilder promptBuilder)
     {
         _promptBuilder = promptBuilder;
@@ -48,5 +48,4 @@ public class PromptGeneratorGrain : Grain, IPromptGeneratorGrain
         var prompt = await _promptBuilder.GenerateFinalPromptFromSentences(ImageGenerationConstants.DALLE_BASE_PROMPT, sentences);
         return prompt;
     }
-
 }

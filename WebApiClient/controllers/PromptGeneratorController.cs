@@ -16,12 +16,11 @@ namespace WebApi.Controllers
             _client = client;
         }
 
-        [HttpPost("generate")]
         public async Task<ActionResult> generatePrompt(PromptGenerationRequest promptGenerationRequest)
         {
             var promptGeneratorGrain = _client.GetGrain<IPromptGeneratorGrain>("promptGeneratorGrain");
             var prompt = await promptGeneratorGrain.GeneratePrompt(promptGenerationRequest);
             return Ok(prompt);
-        }   
+        }
     }
 }
