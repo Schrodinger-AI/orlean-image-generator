@@ -31,6 +31,10 @@ namespace Shared
     {
         public string RequestId { get; set; }
 
+        public string Prompt { get; set; }
+
+        public List<Trait> Traits { get; set; }
+
         public bool IsSuccessful { get; set; } = false;
         public List<string>? Errors { get; set; }
     }

@@ -25,6 +25,9 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
         // Extract trait names from the request
         string prompt = await generatePrompt([.. traits]);
 
+        _multiImageGenerationState.State.Prompt = prompt;
+        _multiImageGenerationState.State.Traits = traits;
+
         for (int i = 0; i < NumberOfImages; i++)
         {
             //generate a new UUID with a prefix of "imageRequest"        
@@ -32,7 +35,7 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
 
             var imageGeneratorGrain = GrainFactory.GetGrain<IImageGeneratorGrain>(imageRequestId);
 
-            var imageGenerationGrainResponse = await imageGeneratorGrain.GenerateImageFromPromptAsync(traits, imageRequestId, prompt);
+            var imageGenerationGrainResponse = await imageGeneratorGrain.GenerateImageFromPromptAsync(imageRequestId, prompt);
 
             Console.WriteLine("Image generation submitted for request: " + imageRequestId + " with response: " + imageGenerationGrainResponse);
 
@@ -62,11 +65,14 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
         _multiImageGenerationState.State.IsSuccessful = IsSuccessful;
         await _multiImageGenerationState.WriteStateAsync();
 
+        //TODO refactor this to return a single response
         if (!IsSuccessful)
         {
             return new MultiImageGenerationGrainResponse
             {
                 RequestId = multiImageRequestId,
+                Traits = traits,
+                Prompt = prompt,
                 IsSuccessful = false,
                 Errors = _multiImageGenerationState.State.Errors
             };
@@ -76,6 +82,8 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
             return new MultiImageGenerationGrainResponse
             {
                 RequestId = multiImageRequestId,
+                Traits = traits,
+                Prompt = prompt,
                 IsSuccessful = true,
             };
         }
@@ -119,6 +127,7 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
             {
                 if (grainResponse.IsSuccessful && grainResponse.Image != null)
                 {
+                    grainResponse.Image.Traits = _multiImageGenerationState.State.Traits;
                     allImages.Add(grainResponse.Image);
                 }
             }

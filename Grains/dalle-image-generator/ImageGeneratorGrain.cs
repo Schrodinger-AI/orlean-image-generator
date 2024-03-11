@@ -21,18 +21,38 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
     }
 
 
-    public async Task<ImageGenerationGrainResponse> GenerateImageFromPromptAsync(List<Trait> traits, string imageRequestId, string prompt)
+    public async Task<ImageGenerationGrainResponse> GenerateImageFromPromptAsync(string imageRequestId, string prompt)
     {
         try
         {
             // Start the image data generation process
             Task<DalleResponse> imageDataTask = RunDalleAsync(prompt);
 
+            // imageDataTask.ContinueWith(async task =>
+            // {
+            //     if (task.IsFaulted)
+            //     {
+            //         // Handle the error
+            //         Exception ex = task.Exception;
+            //         // Call a function on a grain
+            //         var errorHandlingGrain = GrainFactory.GetGrain<IErrorHandlingGrain>(Guid.NewGuid().ToString());
+            //         await errorHandlingGrain.HandleErrorAsync(ex);
+            //     }
+            //     else
+            //     {
+            //         // The task completed successfully
+            //         DalleResponse response = task.Result;
+            //         // Call a function on a grain
+            //         var successHandlingGrain = GrainFactory.GetGrain<ISuccessHandlingGrain>(Guid.NewGuid().ToString());
+            //         await successHandlingGrain.HandleSuccessAsync(response);
+            //     }
+            // });
+
             // Store the task in a non-persistent dictionary
             _imageDataTask = imageDataTask;
 
-            // Store the traits in the image generation request map
-            _imageGenerationState.State.Traits = traits;
+            _imageGenerationState.State.RequestId = imageRequestId;
+            _imageGenerationState.State.Prompt = prompt;
 
             // Write the state to the storage provider
             await _imageGenerationState.WriteStateAsync();
@@ -114,15 +134,11 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
 
                 Console.WriteLine("Size of base64 string: " + GetSizeOfBase64String(base64Image) + " bytes");
 
-                // Get the traits from the ImageGenerationRequest
-                var traits = _imageGenerationState.State.Traits;
-
                 // Generate the ImageQueryResponseOk
                 var image = new ImageDescription
                 {
                     ExtraData = imageUrl,
                     Image = base64Image,
-                    Traits = traits
                 };
 
 
