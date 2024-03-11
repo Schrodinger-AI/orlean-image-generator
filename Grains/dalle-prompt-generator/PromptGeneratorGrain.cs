@@ -1,4 +1,7 @@
+using Microsoft.ClearScript.V8;
+using Newtonsoft.Json;
 using Orleans;
+using Orleans.Runtime;
 using Shared;
 
 namespace Grains;
@@ -6,10 +9,12 @@ namespace Grains;
 public class PromptGeneratorGrain : Grain, IPromptGeneratorGrain
 {
     private readonly PromptBuilder _promptBuilder;
-
-    public PromptGeneratorGrain(PromptBuilder promptBuilder)
+    private readonly IPersistentState<PromptConfigState> _promptConfigState;
+    
+    public PromptGeneratorGrain(PromptBuilder promptBuilder, [PersistentState("promptConfigState", "MySqlSchrodingerImageStore")] IPersistentState<PromptConfigState> promptConfigState)
     {
         _promptBuilder = promptBuilder;
+        _promptConfigState = promptConfigState;
     }
 
     public async Task<string> GeneratePrompt(PromptGenerationRequest promptGenerationRequest) {

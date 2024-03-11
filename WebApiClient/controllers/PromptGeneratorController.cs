@@ -23,13 +23,5 @@ namespace WebApi.Controllers
             var prompt = await promptGeneratorGrain.GeneratePrompt(promptGenerationRequest);
             return Ok(prompt);
         }
-        
-        [HttpPost("generateTest")]
-        public async Task<PromptGenerationResponse> generatePromptTest(PromptGenerationRequest promptGenerationRequest)
-        {
-            var promptGrain = _client.GetGrain<IPromptGrain>("promptGrain");
-            var promptGenerationResponse = await promptGrain.generatePrompt(promptGenerationRequest);
-            return promptGenerationResponse;
-        }
     }
 }
