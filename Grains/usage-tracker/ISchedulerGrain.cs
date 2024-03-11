@@ -3,7 +3,7 @@ using Shared;
 
 namespace Grains.usage_tracker;
 
-public interface ISchedulerGrain : Orleans.IGrainWithStringKey
+public interface ISchedulerGrain : ISchrodingerGrain, Orleans.IGrainWithStringKey
 {
     Task<IReadOnlyDictionary<string, RequestAccountUsageInfo>> GetFailedImageGenerationRequestsAsync();
     Task<IReadOnlyDictionary<string, RequestAccountUsageInfo>> GetStartedImageGenerationRequestsAsync();

@@ -25,19 +25,23 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IImageGenerationRequestSta
     private readonly ILogger<SchedulerGrain> _logger;
     
     private IGrainReminder? _reminder;
-    private readonly IDisposable? _timer;
+    private IDisposable? _timer;
 
     public SchedulerGrain(
         [PersistentState("masterTrackerState", "MySqlSchrodingerImageStore")]
         IPersistentState<SchedulerState> masterTrackerState,
-        ITimerRegistry timerRegistry,
         //IReminderRegistry reminderRegistry,
         ILogger<SchedulerGrain> logger)
     {
-        // Register timer
-        _timer = timerRegistry.RegisterTimer(
-            this,
-            asyncCallback: static async state =>
+        //_reminderRegistry = reminderRegistry;
+        _logger = logger;
+        
+        _masterTrackerState = masterTrackerState;
+    }
+    
+    public override Task OnActivateAsync()
+    {
+        _timer = RegisterTimer(asyncCallback: static async state =>
             {
                 var scheduler = (SchedulerGrain)state;
                 await scheduler.DoScheduling();
@@ -47,11 +51,17 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IImageGenerationRequestSta
             state: this,
             dueTime: TimeSpan.Zero,
             period: TimeSpan.FromSeconds(1));
-
-        //_reminderRegistry = reminderRegistry;
-        _logger = logger;
         
-        _masterTrackerState = masterTrackerState;
+        if(_masterTrackerState.State.CompletedImageGenerationRequests == null)
+            _masterTrackerState.State.CompletedImageGenerationRequests = new Dictionary<string, RequestAccountUsageInfo>();
+        if(_masterTrackerState.State.FailedImageGenerationRequests == null)
+            _masterTrackerState.State.FailedImageGenerationRequests = new Dictionary<string, RequestAccountUsageInfo>();
+        if(_masterTrackerState.State.PendingImageGenerationRequests == null)
+            _masterTrackerState.State.PendingImageGenerationRequests = new Dictionary<string, RequestAccountUsageInfo>();
+        if(_masterTrackerState.State.StartedImageGenerationRequests == null)
+            _masterTrackerState.State.StartedImageGenerationRequests = new Dictionary<string, RequestAccountUsageInfo>();
+        
+        return base.OnActivateAsync();
     }
 
     public async Task ReportFailedImageGenerationRequestAsync(RequestStatus requestStatus)
@@ -60,7 +70,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IImageGenerationRequestSta
         var unixTimestamp = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
         info.FailedTimestamp = unixTimestamp;
         _masterTrackerState.State.FailedImageGenerationRequests.Add(requestStatus.RequestId, info);
-        await Task.CompletedTask;
+        await _masterTrackerState.WriteStateAsync();
     }
 
     public async Task ReportCompletedImageGenerationRequestAsync(RequestStatus requestStatus)
@@ -69,7 +79,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IImageGenerationRequestSta
         var unixTimestamp = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
         info.CompletedTimestamp = unixTimestamp;
         _masterTrackerState.State.CompletedImageGenerationRequests.Add(requestStatus.RequestId, info);
-        await Task.CompletedTask;
+        await _masterTrackerState.WriteStateAsync();
     }
 
     public Task<IReadOnlyDictionary<string, RequestAccountUsageInfo>> GetFailedImageGenerationRequestsAsync()
@@ -108,6 +118,9 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IImageGenerationRequestSta
         List<string> addedApiKeys = new();
         foreach (var apiKeyEntry in apiKeyEntries)
         {
+            if(_masterTrackerState.State.ApiAccountInfoList == null)
+                _masterTrackerState.State.ApiAccountInfoList = new List<APIAccountInfo>();
+            
             _masterTrackerState.State.ApiAccountInfoList.Add(new APIAccountInfo
             {
                 ApiKey = apiKeyEntry.ApiKey,
@@ -126,6 +139,10 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IImageGenerationRequestSta
     public async Task<List<string>> RemoveApiKeys(List<string> apiKey)
     {
         List<string> removedApiKeys = new();
+        
+        if(_masterTrackerState.State.ApiAccountInfoList == null)
+            return removedApiKeys;
+        
         _masterTrackerState.State.ApiAccountInfoList.RemoveAll(apiInfo =>
         {
             if (apiKey.Contains(apiInfo.ApiKey))
@@ -143,6 +160,8 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IImageGenerationRequestSta
 
     public Task<IReadOnlyList<APIAccountInfo>> GetAllApiKeys()
     {
+        if(_masterTrackerState.State.ApiAccountInfoList == null)
+            return Task.FromResult<IReadOnlyList<APIAccountInfo>>(new List<APIAccountInfo>());
         return Task.FromResult<IReadOnlyList<APIAccountInfo>>(_masterTrackerState.State.ApiAccountInfoList);
     }
 
@@ -157,6 +176,10 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IImageGenerationRequestSta
         // 5. Schedule the task, update the account usage info
         
         Dictionary<string, int> apiQuota = new();
+        
+        if(_masterTrackerState.State.ApiAccountInfoList == null)
+            return;
+        
         foreach (var apiInfo in _masterTrackerState.State.ApiAccountInfoList)
         {
             apiQuota[apiInfo.ApiKey] = apiInfo.MaxQuota;
