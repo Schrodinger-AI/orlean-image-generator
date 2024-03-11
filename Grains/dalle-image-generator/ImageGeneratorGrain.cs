@@ -13,11 +13,21 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
 {
     private Task<DalleResponse> _imageDataTask;
 
+    private string apiKey;
+
+
     private readonly IPersistentState<ImageGenerationState> _imageGenerationState;
 
     public ImageGeneratorGrain([PersistentState("imageGenerationState", "MySqlSchrodingerImageStore")] IPersistentState<ImageGenerationState> imageGeneratorState, PromptBuilder promptBuilder)
     {
         _imageGenerationState = imageGeneratorState;
+    }
+
+    public async Task SetImageGenerationRequestData(string prompt, string imageRequestId, string parentRequestId) {
+        _imageGenerationState.State.ParentRequestId = parentRequestId;
+        _imageGenerationState.State.RequestId = imageRequestId;
+        _imageGenerationState.State.Prompt = prompt;
+        await _imageGenerationState.WriteStateAsync();
     }
 
     public async Task<ImageGenerationGrainResponse> GenerateImageFromPromptAsync(string prompt, string imageRequestId, string parentRequestId)
