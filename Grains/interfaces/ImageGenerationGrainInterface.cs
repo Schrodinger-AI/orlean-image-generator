@@ -18,7 +18,7 @@ public interface IMultiImageGeneratorGrain : ISchrodingerGrain, IGrainWithString
 {
     Task<MultiImageGenerationGrainResponse> GenerateMultipleImagesAsync(List<Attribute> traits, int NumberOfImages, string multiImageRequestId);
 
-    Task<string> HandleImageGenerationNotification(ImageGenerationNotification imageGenerationNotification);
+    Task NotifyImageGenerationStatus(string imageRequestId, ImageGenerationStatus status, string? error);
 
     Task<MultiImageQueryGrainResponse> QueryMultipleImagesAsync();
 }

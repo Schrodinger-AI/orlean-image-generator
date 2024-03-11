@@ -56,20 +56,24 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
         ImageGenerationGrainResponse imageGenerationResponse = await GenerateImageFromPromptAsync(_imageGenerationState.State.Prompt, _imageGenerationState.State.RequestId, _imageGenerationState.State.ParentRequestId);
 
         //load the scheduler Grain and update with 
+        var parentGeneratorGrain = GrainFactory.GetGrain<IMultiImageGeneratorGrain>(_imageGenerationState.State.ParentRequestId);
 
         if (imageGenerationResponse.IsSuccessful)
         {
             // Handle the case where the image generation is successful
             _timer.Dispose();
 
-            // TODO notify Scheduler and parentGrain
+            // notify about successful completion to parentGrain
+            await parentGeneratorGrain.NotifyImageGenerationStatus(_imageGenerationState.State.RequestId, ImageGenerationStatus.SuccessfulCompletion, null);
 
-            return;
+            // TODO - notify the scheduler grain about the successful completion
         }
         else
         {
-            // TODO notify Scheduler and parentGrain
+            // notify about failed completion to parentGrain
+            await parentGeneratorGrain.NotifyImageGenerationStatus(_imageGenerationState.State.RequestId, ImageGenerationStatus.FailedCompletion, imageGenerationResponse.Error);
 
+            // TODO - notify the scheduler grain about the failed completion
         }
 
         // set apiKey to null
