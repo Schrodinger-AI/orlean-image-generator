@@ -8,13 +8,13 @@ namespace Grains;
 
 public class PromptCreatorGrain : Grain, IPromptCreatorGrain
 {
-    private readonly IPersistentState<PromptConfigState> _promptConfigState;
+    private readonly IPersistentState<PromptCreatorState> _promptCreatorState;
 
     public PromptCreatorGrain(
-        [PersistentState("promptConfigState", "MySqlSchrodingerImageStore")]
-        IPersistentState<PromptConfigState> promptConfigState)
+        [PersistentState("promptCreatorState", "MySqlSchrodingerImageStore")]
+        IPersistentState<PromptCreatorState> promptCreatorState)
     {
-        _promptConfigState = promptConfigState;
+        _promptCreatorState = promptCreatorState;
     }
 
     public async void SetPromptState(SetPromptStateRequest setPromptStateRequest)
@@ -22,25 +22,25 @@ public class PromptCreatorGrain : Grain, IPromptCreatorGrain
         var scriptContent = setPromptStateRequest.ScriptContent;
         var configText = setPromptStateRequest.ConfigText;
 
-        _promptConfigState.State.ConfigText = configText;
-        _promptConfigState.State.ScriptContent = scriptContent;
+        _promptCreatorState.State.ConfigText = configText;
+        _promptCreatorState.State.ScriptContent = scriptContent;
 
-        await _promptConfigState.WriteStateAsync();
+        await _promptCreatorState.WriteStateAsync();
     }
 
     public Task<PromptConfigOptions> ReadPromptState()
     {
         return Task.FromResult(new PromptConfigOptions
         {
-            ConfigText = _promptConfigState.State.ConfigText,
-            ScriptContent = _promptConfigState.State.ScriptContent
+            ConfigText = _promptCreatorState.State.ConfigText,
+            ScriptContent = _promptCreatorState.State.ScriptContent
         });
     }
 
     public Task<string> Generate(PromptGenerationRequest promptGenerationRequest)
     {
-        var scriptContent = _promptConfigState.State.ScriptContent;
-        var configText = _promptConfigState.State.ConfigText;
+        var scriptContent = _promptCreatorState.State.ScriptContent;
+        var configText = _promptCreatorState.State.ConfigText;
         
         if (string.IsNullOrEmpty(scriptContent) || configText == null)
         {
