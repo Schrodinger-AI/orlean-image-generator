@@ -26,7 +26,9 @@ public class PrompterGrain : Grain, IPrompterGrain
     {
         _prompterState.State.ConfigText = config.ConfigText;
         _prompterState.State.ScriptContent = config.ScriptContent;
+        // It's used to run GeneratePromptAsync method to valid whether configText and ScriptContent are correct
         _prompterState.State.ValidationTestCase = config.ValidationTestCase;
+        // Run GeneratePromptAsync method to valid configText and ScriptContent, assign value to ValiationOk
         _prompterState.State.ValiationOk = await RunValidationTestAsync();
         await _prompterState.WriteStateAsync();
         return _prompterState.State.ValiationOk;
@@ -38,7 +40,8 @@ public class PrompterGrain : Grain, IPrompterGrain
         {
             ConfigText = _prompterState.State.ConfigText,
             ScriptContent = _prompterState.State.ScriptContent,
-            ValidationTestCase = _prompterState.State.ValidationTestCase
+            ValidationTestCase = _prompterState.State.ValidationTestCase,
+            ValidationOk = _prompterState.State.ValiationOk
         });
     }
 
