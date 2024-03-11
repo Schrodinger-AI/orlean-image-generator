@@ -33,6 +33,7 @@ namespace WebApi.Controllers
                 if (res)
                 {
                     var configuratorGrain = _client.GetGrain<IConfiguratorGrain>(_configuratorIdentifier);
+                    await configuratorGrain.AddConfigIdAsync(setPromptConfigRequest.Identifier);
                     await configuratorGrain.SetCurrentConfigIdAsync(setPromptConfigRequest.Identifier);
                     return new PrompterResponseOk { Result = "success" };
                 }
