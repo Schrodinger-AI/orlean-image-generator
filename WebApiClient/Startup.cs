@@ -1,11 +1,7 @@
-using Microsoft.Extensions.Logging;
 using Orleans;
 using Orleans.Hosting;
 using Orleans.Configuration;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
+using Shared;
 using Grains;
 
 public class Startup
@@ -22,7 +18,7 @@ public class Startup
                     options.ClusterId = "dev";
                     options.ServiceId = "OrleansService";
                 })
-                .ConfigureApplicationParts(parts => parts.AddApplicationPart(typeof(ISchrodingerGrain).Assembly).WithReferences())
+                .ConfigureApplicationParts(parts => parts.AddApplicationPart(typeof(ImageGeneratorGrain).Assembly).WithReferences())
                 .ConfigureLogging(logging =>
                 {
                     logging.AddConsole();

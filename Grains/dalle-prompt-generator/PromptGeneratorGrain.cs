@@ -12,7 +12,7 @@ public class PromptGeneratorGrain : Grain, IPromptGeneratorGrain
         _promptBuilder = promptBuilder;
     }
 
-    public async Task<string> generatePrompt(PromptGenerationRequest promptGenerationRequest) {
+    public async Task<string> GeneratePrompt(PromptGenerationRequest promptGenerationRequest) {
 
         List<Trait> newTraits = promptGenerationRequest.NewTraits;
         List<Trait> baseTraits = promptGenerationRequest.BaseImage.Traits;
@@ -21,14 +21,14 @@ public class PromptGeneratorGrain : Grain, IPromptGeneratorGrain
         IEnumerable<Trait> traits = newTraits.Concat(baseTraits);
 
         // Extract trait names from the request
-        Dictionary<string, TraitEntry> traitDefinitions = await lookupTraitDefinitions(traits.ToList());
+        Dictionary<string, TraitEntry> traitDefinitions = await LookupTraitDefinitions(traits.ToList());
 
-        string prompt = await generatePrompt(traits.ToList(), traitDefinitions);
+        string prompt = await GeneratePrompt(traits.ToList(), traitDefinitions);
             
         return prompt;
     }
 
-    public async Task<Dictionary<string, TraitEntry>> lookupTraitDefinitions(List<Trait> requestTraits)
+    public async Task<Dictionary<string, TraitEntry>> LookupTraitDefinitions(List<Trait> requestTraits)
     {
         // Extract trait names from the request
         var traitNames = requestTraits.Select(t => t.Name).ToList();
@@ -42,7 +42,7 @@ public class PromptGeneratorGrain : Grain, IPromptGeneratorGrain
         return response;
     }
 
-    public async Task<String> generatePrompt(List<Trait> requestTraits, Dictionary<string, TraitEntry> traitDefinitions)
+    public async Task<String> GeneratePrompt(List<Trait> requestTraits, Dictionary<string, TraitEntry> traitDefinitions)
     {
         var sentences = await _promptBuilder.GenerateSentences(requestTraits, traitDefinitions);
         var prompt = await _promptBuilder.GenerateFinalPromptFromSentences(ImageGenerationConstants.DALLE_BASE_PROMPT, sentences);

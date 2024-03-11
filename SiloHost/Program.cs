@@ -37,7 +37,7 @@ namespace SiloHost
                     options.UseJsonFormat = false;
                     Console.WriteLine("Connection string: " + options.ConnectionString);
                 })
-                .ConfigureApplicationParts(parts => parts.AddApplicationPart(typeof(ISchrodingerGrain).Assembly).WithReferences())
+                .ConfigureApplicationParts(parts => parts.AddApplicationPart(typeof(ImageGeneratorGrain).Assembly).WithReferences())
                 .ConfigureLogging(logging =>
                 {
                     logging.AddConsole();

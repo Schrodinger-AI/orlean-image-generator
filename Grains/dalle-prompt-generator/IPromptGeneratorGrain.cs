@@ -5,5 +5,5 @@ namespace Grains;
     public interface IPromptGeneratorGrain : ISchrodingerGrain, IGrainWithStringKey
     {
 
-        Task<string> generatePrompt(PromptGenerationRequest promptGenerationRequest);
+        Task<string> GeneratePrompt(PromptGenerationRequest promptGenerationRequest);
     }
