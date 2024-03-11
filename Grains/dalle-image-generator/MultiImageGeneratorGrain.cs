@@ -35,7 +35,7 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
 
             var imageGeneratorGrain = GrainFactory.GetGrain<IImageGeneratorGrain>(imageRequestId);
 
-            var imageGenerationGrainResponse = await imageGeneratorGrain.GenerateImageFromPromptAsync(imageRequestId, prompt);
+            var imageGenerationGrainResponse = await imageGeneratorGrain.GenerateImageFromPromptAsync(prompt, imageRequestId, multiImageRequestId);
 
             Console.WriteLine("Image generation submitted for request: " + imageRequestId + " with response: " + imageGenerationGrainResponse);
 
@@ -87,6 +87,15 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
                 IsSuccessful = true,
             };
         }
+    }
+
+    public async Task<string> HandleImageGenerationNotification(ImageGenerationNotification imageGenerationNotification) {
+
+        _multiImageGenerationState.State.imageGenerationTracker[imageGenerationNotification.RequestId] = imageGenerationNotification;
+
+        await _multiImageGenerationState.WriteStateAsync();
+
+        return "Notification received";
     }
 
     public async Task<Dictionary<string, TraitEntry>> lookupTraitDefinitions(List<Trait> requestTraits)

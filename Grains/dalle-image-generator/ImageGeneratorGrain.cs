@@ -20,11 +20,15 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
         _imageGenerationState = imageGeneratorState;
     }
 
-
-    public async Task<ImageGenerationGrainResponse> GenerateImageFromPromptAsync(string imageRequestId, string prompt)
+    public async Task<ImageGenerationGrainResponse> GenerateImageFromPromptAsync(string prompt, string imageRequestId, string parentRequestId)
     {
         try
         {
+            _imageGenerationState.State.ParentRequestId = parentRequestId;
+            _imageGenerationState.State.RequestId = imageRequestId;
+            _imageGenerationState.State.Prompt = prompt;
+            await _imageGenerationState.WriteStateAsync();
+
             // Start the image data generation process
             Task<DalleResponse> imageDataTask = RunDalleAsync(prompt);
 
@@ -34,20 +38,34 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
                 {
                     // Handle the error
                     Exception ex = task.Exception;
+
                     // TODO Call a function on a grain
-                    // var errorHandlingGrain = GrainFactory.GetGrain<IErrorHandlingGrain>(Guid.NewGuid().ToString());
-                    // await errorHandlingGrain.HandleErrorAsync(ex);
+                    var ParentGrain = GrainFactory.GetGrain<IMultiImageGeneratorGrain>(_imageGenerationState.State.ParentRequestId);
+                    await ParentGrain.HandleImageGenerationNotification(new ImageGenerationNotification
+                    {
+                        RequestId = imageRequestId,
+                        Status = ImageGenerationStatus.FailedCompletion,
+                        Error = ex.Message
+                    });
+
                     _imageGenerationState.State.Status = ImageGenerationStatus.FailedCompletion;
+
                     await _imageGenerationState.WriteStateAsync();
                 }
                 else
                 {
                     // The task completed successfully
                     DalleResponse response = task.Result;
-                    // TODO Call a function on a grain
-                    // var successHandlingGrain = GrainFactory.GetGrain<ISuccessHandlingGrain>(Guid.NewGuid().ToString());
-                    // await successHandlingGrain.HandleSuccessAsync(response);
+
+                    // Call a function on ParentGrain
+                    var ParentGrain = GrainFactory.GetGrain<IMultiImageGeneratorGrain>(_imageGenerationState.State.ParentRequestId);
+                    await ParentGrain.HandleImageGenerationNotification(new ImageGenerationNotification
+                    {
+                        RequestId = imageRequestId,
+                        Status = ImageGenerationStatus.SuccessfulCompletion,
+                    });
                     _imageGenerationState.State.Status = ImageGenerationStatus.SuccessfulCompletion;
+                    
                     await _imageGenerationState.WriteStateAsync();
                 }
             });
@@ -55,8 +73,6 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
             // Store the task in a non-persistent dictionary
             _imageDataTask = imageDataTask;
 
-            _imageGenerationState.State.RequestId = imageRequestId;
-            _imageGenerationState.State.Prompt = prompt;
             _imageGenerationState.State.Status = ImageGenerationStatus.InProgress;
 
             // Write the state to the storage provider

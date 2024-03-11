@@ -6,6 +6,8 @@ public class ImageGenerationState
 {
     public string RequestId { get; set; }
 
+    public string ParentRequestId { get; set; }
+
     public ImageGenerationStatus Status { get; set; } = ImageGenerationStatus.InProgress;
 
     public string Prompt { get; set; }

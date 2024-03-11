@@ -17,4 +17,17 @@ public class MultiImageGenerationState
     public List<string>? Errors { get; set; }
 
    public List<string> ImageGenerationRequestIds = new List<string>();
+
+   public Dictionary<string, ImageGenerationNotification> imageGenerationTracker = new();
+}
+
+public class ImageGenerationNotification
+{
+    public string RequestId { get; set; }
+
+    public ImageGenerationStatus Status { get; set; }
+
+    public string? Error { get; set; }
+
+    public string? ImageUrl { get; set; }
 }
