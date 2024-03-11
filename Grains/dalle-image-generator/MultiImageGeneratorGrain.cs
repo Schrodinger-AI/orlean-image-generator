@@ -17,6 +17,7 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
     {
         _multiImageGenerationState.State.RequestId = multiImageRequestId;
         await _multiImageGenerationState.WriteStateAsync();
+        bool IsSuccessful = true;
 
         for (int i = 0; i < request.NumberOfImages; i++)
         {
@@ -25,65 +26,91 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
 
             var imageGeneratorGrain = GrainFactory.GetGrain<IImageGeneratorGrain>(imageRequestId);
 
-            var imageGenerationResponse = await imageGeneratorGrain.GenerateImageAsync(request, imageRequestId);
+            List<Trait> newTraits = request.NewTraits;
+            List<Trait> baseTraits = request.BaseImage.Traits;
 
-            Console.WriteLine("Image generation submitted for request: "+ imageRequestId + " with response: " + imageGenerationResponse);
+            //collect the newTraits from the request and combine it with trats from the base image
+            IEnumerable<Trait> traits = newTraits.Concat(baseTraits);
 
-            if (imageGenerationResponse is ImageGenerationResponseNotOk)
+            var imageGenerationGrainResponse = await imageGeneratorGrain.GenerateImageAsync(traits.ToList(), imageRequestId);
+
+            Console.WriteLine("Image generation submitted for request: " + imageRequestId + " with response: " + imageGenerationGrainResponse);
+
+            IsSuccessful = IsSuccessful && imageGenerationGrainResponse.IsSuccessful;
+
+            if (!imageGenerationGrainResponse.IsSuccessful)
             {
-                // Abort the process and return an error response
-                return imageGenerationResponse;
+                // Add the error to the state
+                if (_multiImageGenerationState.State.Errors == null)
+                {
+                    _multiImageGenerationState.State.Errors = new List<string>();
+                }
+
+                _multiImageGenerationState.State.Errors.Add(imageGenerationGrainResponse.Error);
             }
 
-            if (imageGenerationResponse is ImageGenerationResponseOk okResponse)
+            else
             {
                 // Extract the requestId from the response
-                var requestId = okResponse.RequestId;
+                var requestId = imageGenerationGrainResponse.RequestId;
 
                 // Add the requestId to the state
                 _multiImageGenerationState.State.ImageGenerationRequestIds.Add(requestId);
-
-                // Write the state to the storage provider
-                await _multiImageGenerationState.WriteStateAsync();
             }
         }
 
-        var response = new ImageGenerationResponseOk
-        {
-            RequestId = multiImageRequestId
-        };
+        _multiImageGenerationState.State.IsSuccessful = IsSuccessful;
+        await _multiImageGenerationState.WriteStateAsync();
 
-        return response;
+        if (!IsSuccessful)
+        {
+            return new ImageGenerationResponseNotOk
+            {
+                Error = "Image generation failed"
+            };
+        }
+        else
+        {
+            return new ImageGenerationResponseOk
+            {
+                RequestId = multiImageRequestId
+            };
+        }
     }
 
     public async Task<ImageQueryResponse> QueryMultipleImagesAsync()
     {
-        var imageGenerationRequestIds = _multiImageGenerationState.State.ImageGenerationRequestIds;
-
         var allImages = new List<ImageDescription>();
+        var isSuccessful = true;
+        var errorMessages = new List<string>();
 
-        foreach (var imageGenerationRequestId in imageGenerationRequestIds)
+        foreach (var imageGenerationRequestId in _multiImageGenerationState.State.ImageGenerationRequestIds)
         {
             var imageGeneratorGrain = GrainFactory.GetGrain<IImageGeneratorGrain>(imageGenerationRequestId);
 
             var response = await imageGeneratorGrain.QueryImageAsync();
 
-            if (response is ImageQueryResponseNotOk notOkResponse)
+            if (response is ImageQueryGrainResponse grainResponse)
             {
-                // Abort the process and return an error response
-                return notOkResponse;
+                if (grainResponse.IsSuccessful && grainResponse.Image != null)
+                {
+                    allImages.Add(grainResponse.Image);
+                }
             }
-
-            if (response is ImageQueryResponseOk okResponse)
+            else
             {
-                // Extract the images from the response
-                var images = okResponse.Images;
-
-                // Add the images to the allImages list
-                allImages.AddRange(images);
+                isSuccessful = false;
+                errorMessages.Add("Error querying image");
             }
         }
 
-        return new ImageQueryResponseOk { Images = allImages };
+        if (isSuccessful)
+        {
+            return new ImageQueryResponseOk { Images = allImages };
+        }
+        else
+        {
+            return new ImageQueryResponseNotOk { Error = string.Join("\n ", errorMessages) };
+        }
     }
 }

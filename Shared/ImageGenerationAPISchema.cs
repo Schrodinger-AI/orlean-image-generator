@@ -47,38 +47,55 @@ namespace Shared
         public int? NumberOfImages { get; set; }
     }
 
-    public abstract class ImageGenerationResponse {}
+    public abstract class ImageGenerationResponse { }
 
-        public class ImageGenerationResponseOk : ImageGenerationResponse
-        {
-            [JsonPropertyName("requestId")]
-            public string RequestId { get; set; }
-        }
-
-        public class ImageGenerationResponseNotOk : ImageGenerationResponse
-        {
-            [JsonPropertyName("error")]
-            public string Error { get; set; }
-        }
-
-        public class ImageQueryRequest
-        {
-            [JsonPropertyName("requestId")]
-            public string RequestId { get; set; }
-        }
-
-        public abstract class ImageQueryResponse {}
-
-        public class ImageQueryResponseOk : ImageQueryResponse
-        {
-            [JsonPropertyName("images")]
-            public List<ImageDescription> Images { get; set; }
-        }
-
-        public class ImageQueryResponseNotOk : ImageQueryResponse
-        {
-            [JsonPropertyName("error")]
-            public string Error { get; set; }
-        }
-
+    public class ImageGenerationResponseOk : ImageGenerationResponse
+    {
+        [JsonPropertyName("requestId")]
+        public string RequestId { get; set; }
     }
+
+    public class ImageGenerationResponseNotOk : ImageGenerationResponse
+    {
+        [JsonPropertyName("error")]
+        public string Error { get; set; }
+    }
+
+    public class ImageGenerationGrainResponse
+    {
+        public string RequestId { get; set; }
+
+        public bool IsSuccessful { get; set; }
+        public string? Error { get; set; }
+    }
+
+    public class ImageQueryRequest
+    {
+        [JsonPropertyName("requestId")]
+        public string RequestId { get; set; }
+    }
+
+
+    public class ImageQueryGrainResponse
+    {
+        public ImageDescription? Image { get; set; }
+
+        public bool IsSuccessful { get; set; }
+        public string? Error { get; set; }
+    }
+
+    public abstract class ImageQueryResponse { }
+
+    public class ImageQueryResponseOk : ImageQueryResponse
+    {
+        [JsonPropertyName("images")]
+        public List<ImageDescription> Images { get; set; }
+    }
+
+    public class ImageQueryResponseNotOk : ImageQueryResponse
+    {
+        [JsonPropertyName("error")]
+        public string Error { get; set; }
+    }
+
+}

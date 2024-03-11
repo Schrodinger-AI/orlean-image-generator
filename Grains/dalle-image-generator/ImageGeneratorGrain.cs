@@ -23,16 +23,10 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
         _imageGenerationState = imageGeneratorState;
     }
 
-    public async Task<ImageGenerationResponse> GenerateImageAsync(ImageGenerationRequest request, string imageRequestId)
+    public async Task<ImageGenerationGrainResponse> GenerateImageAsync(List<Trait> traits, string imageRequestId)
     {
         try
         {
-            List<Trait> newTraits = request.NewTraits;
-            List<Trait> baseTraits = request.BaseImage.Traits;
-
-            //collect the newTraits from the request and combine it with trats from the base image
-            IEnumerable<Trait> traits = newTraits.Concat(baseTraits);
-
             // Extract trait names from the request
             Dictionary<string, TraitEntry> traitDefinitions = await lookupTraitDefinitions(traits.ToList());
 
@@ -45,20 +39,26 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
             _imageDataTask = imageDataTask;
 
             // Store the traits in the image generation request map
-            _imageGenerationState.State.ImageGenerationRequest = request;
+            _imageGenerationState.State.Traits = traits;
 
             // Write the state to the storage provider
             await _imageGenerationState.WriteStateAsync();
 
-            var response = new ImageGenerationResponseOk
+            return new ImageGenerationGrainResponse
             {
-                RequestId = imageRequestId
+                RequestId = imageRequestId,
+                IsSuccessful = true,
+                Error = null
             };
-            return response;
         }
         catch (Exception e)
         {
-            return new ImageGenerationResponseNotOk { Error = e.Message };
+            return new ImageGenerationGrainResponse
+            {
+                RequestId = imageRequestId,
+                IsSuccessful = false,
+                Error = e.Message
+            };
         }
     }
 
@@ -93,12 +93,17 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
         }
     }
 
-    public async Task<ImageQueryResponse> QueryImageAsync()
+    public async Task<ImageQueryGrainResponse> QueryImageAsync()
     {
         // Check if the ImageQueryResponse exists in the state
-        if (_imageGenerationState.State.ImageQueryResponse != null)
+        if (_imageGenerationState.State.Image != null)
         {
-            return _imageGenerationState.State.ImageQueryResponse;
+            return new ImageQueryGrainResponse
+            {
+                Image = _imageGenerationState.State.Image,
+                IsSuccessful = true,
+                Error = null
+            };
         }
 
         if (_imageDataTask != null)
@@ -117,41 +122,50 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
                 Console.WriteLine("Size of base64 string: " + GetSizeOfBase64String(base64Image) + " bytes");
 
                 // Get the traits from the ImageGenerationRequest
-                var request = _imageGenerationState.State.ImageGenerationRequest;
-                var traits = request.NewTraits.Concat(request.BaseImage.Traits).ToList();
+                var traits = _imageGenerationState.State.Traits;
 
                 // Generate the ImageQueryResponseOk
-                var response = new ImageQueryResponseOk
+                var image = new ImageDescription
                 {
-                    Images = new List<ImageDescription>
-                {
-                    new ImageDescription
-                    {
-                        ExtraData = imageUrl,
-                        Image = base64Image,
-                        Traits = traits
-                    }
-                }
+                    ExtraData = imageUrl,
+                    Image = base64Image,
+                    Traits = traits
                 };
 
-                // Store the ImageQueryResponse in the state
-                _imageGenerationState.State.ImageQueryResponse = response;
+
+                // Store the image in the state
+                _imageGenerationState.State.Image = image;
 
                 // Persist the state to the database
                 await _imageGenerationState.WriteStateAsync();
 
-                return response;
+                return new ImageQueryGrainResponse
+                {
+                    Image = _imageGenerationState.State.Image,
+                    IsSuccessful = true,
+                    Error = null
+                };
             }
             catch (Exception e)
             {
                 // Handle the error and return an ImageQueryResponseNotOk
-                return new ImageQueryResponseNotOk { Error = e.Message };
+                return new ImageQueryGrainResponse
+                {
+                    Image = null,
+                    IsSuccessful = false,
+                    Error = e.Message
+                };
             }
         }
         else
         {
             // Handle the error
-            return new ImageQueryResponseNotOk { Error = "Image request not found" };
+            return new ImageQueryGrainResponse
+            {
+                Image = null,
+                IsSuccessful = false,
+                Error = "Image request not found"
+            };
         }
     }
 
