@@ -4,6 +4,7 @@ using Orleans;
 using Orleans.Runtime;
 using Orleans.Timers;
 using Shared;
+// ReSharper disable TooManyChainedReferences
 
 namespace Grains.usage_tracker;
 
@@ -175,24 +176,40 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IImageGenerationRequestSta
         // 4. For all pending tasks, find the account with the most remaining quota
         // 5. Schedule the task, update the account usage info
         
-        Dictionary<string, int> apiQuota = new();
+        // Dictionary<string, int> apiQuota = new();
         
         if(_masterTrackerState.State.ApiAccountInfoList == null)
             return;
         
-        foreach (var apiInfo in _masterTrackerState.State.ApiAccountInfoList)
-        {
-            apiQuota[apiInfo.ApiKey] = apiInfo.MaxQuota;
-        }
+        // foreach (var apiInfo in _masterTrackerState.State.ApiAccountInfoList)
+        // {
+        //     apiQuota[apiInfo.ApiKey] = apiInfo.MaxQuota;
+        // }
         
-        ComputeApiQuotaFromTimestamp(apiQuota, _masterTrackerState.State.CompletedImageGenerationRequests);
-        ComputeApiQuotaFromTimestamp(apiQuota, _masterTrackerState.State.FailedImageGenerationRequests);
-        ComputeApiQuotaFromTimestamp(apiQuota, _masterTrackerState.State.PendingImageGenerationRequests);
+        
+        var now = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
+        var cutoff = now - RATE_LIMIT_DURATION;
+        var allRequests = _masterTrackerState.State.CompletedImageGenerationRequests
+            .Concat(_masterTrackerState.State.FailedImageGenerationRequests)
+            .Concat(_masterTrackerState.State.PendingImageGenerationRequests)
+            .Concat(_masterTrackerState.State.StartedImageGenerationRequests)
+            .ToList();
+        var usedQuota = allRequests
+            .Where(i=> i.Value.StartedTimestamp > cutoff)
+            .GroupBy(
+            x=>x.Value.ApiKey,
+            x=>x
+            ).ToDictionary(x=>x.Key, x=>x.Count());
+        var remainingQuotaByApiKey = _masterTrackerState.State.ApiAccountInfoList
+                .ToDictionary(i=>i.ApiKey, i=> i.MaxQuota  - usedQuota.GetValueOrDefault(i.ApiKey, 0));
+        // ComputeApiQuotaFromTimestamp(apiQuota, _masterTrackerState.State.CompletedImageGenerationRequests);
+        // ComputeApiQuotaFromTimestamp(apiQuota, _masterTrackerState.State.FailedImageGenerationRequests);
+        // ComputeApiQuotaFromTimestamp(apiQuota, _masterTrackerState.State.PendingImageGenerationRequests);
         
         CleanUpExpiredCompletedRequests();
 
-        ProcessRequest(_masterTrackerState.State.FailedImageGenerationRequests, apiQuota);
-        ProcessRequest(_masterTrackerState.State.StartedImageGenerationRequests, apiQuota);
+        ProcessRequest(_masterTrackerState.State.FailedImageGenerationRequests, remainingQuotaByApiKey);
+        ProcessRequest(_masterTrackerState.State.StartedImageGenerationRequests, remainingQuotaByApiKey);
 
         await _masterTrackerState.WriteStateAsync();
     }
@@ -235,7 +252,6 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IImageGenerationRequestSta
         var maxAttemptsReached = requests
             .Where(pair => pair.Value.Attempts > MAX_ATTEMPTS)
             .Select(p=>p.Key)
-            // ReSharper disable once TooManyChainedReferences
             .ToHashSet();
         if (maxAttemptsReached.Count > 0)
         {
@@ -243,7 +259,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IImageGenerationRequestSta
         }
         
         var goodToGo = requests.Keys.ToHashSet();
-            goodToGo.ExceptWith(maxAttemptsReached);
+        goodToGo.ExceptWith(maxAttemptsReached);
         
         List<string> requestIdToRemove = new();
         foreach (var requestId in goodToGo)
