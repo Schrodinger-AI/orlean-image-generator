@@ -3,6 +3,11 @@ using Orleans.Runtime;
 
 namespace Grains.usage_tracker;
 
+/// <summary>
+/// It keeps track of how many jobs have been started per each account in the last minute (or jobs started more than
+/// one minute ago but haven't completed). It will compare this count against the account's quota and choose the least
+/// loaded account for the next job.
+/// </summary>
 public class MasterTrackerGrain : Grain, IMasterTrackerGrain, IImageGenerationRequestStatusReceiver
 {
     private readonly IPersistentState<MasterTrackerState> _masterTrackerState;
