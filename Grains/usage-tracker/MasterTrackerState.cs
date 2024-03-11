@@ -1,7 +1,13 @@
+using Grains.types;
+
 namespace Grains.usage_tracker;
 
 public class MasterTrackerState
 {
-    public Dictionary<string, int> StartedImageGenerationRequests { get; set; }
-    public Dictionary<string, int> FailedImageGenerationRequests { get; set; }
+    public Dictionary<string, RequestAccountUsageInfo> StartedImageGenerationRequests { get; set; }
+    public Dictionary<string, RequestAccountUsageInfo> FailedImageGenerationRequests { get; set; }
+    /// <summary>
+    /// Completed will be purged periodically by the scheduler
+    /// </summary>
+    public Dictionary<string, RequestAccountUsageInfo> CompletedImageGenerationRequests { get; set; }
 }

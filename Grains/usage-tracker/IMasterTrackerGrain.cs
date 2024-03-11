@@ -1,7 +1,9 @@
+using Grains.types;
+
 namespace Grains.usage_tracker;
 
 public interface IMasterTrackerGrain
 {
-    Task<IReadOnlyDictionary<string, int>> GetFailedImageGenerationRequestsAsync();
-    Task<IReadOnlyDictionary<string, int>> GetStartedImageGenerationRequestsAsync();
+    Task<IReadOnlyDictionary<string, RequestAccountUsageInfo>> GetFailedImageGenerationRequestsAsync();
+    Task<IReadOnlyDictionary<string, RequestAccountUsageInfo>> GetStartedImageGenerationRequestsAsync();
 }

@@ -1,3 +1,4 @@
+using Grains.types;
 using Orleans;
 using Orleans.Runtime;
 
@@ -19,27 +20,44 @@ public class MasterTrackerGrain : Grain, IMasterTrackerGrain, IImageGenerationRe
         _masterTrackerState = masterTrackerState;
     }
 
-    public Task ReportFailedImageGenerationRequestAsync(string requestId)
+    public async Task ReportFailedImageGenerationRequestAsync(RequestStatus requestStatus)
     {
-        _masterTrackerState.State.FailedImageGenerationRequests.Add(requestId, 1);
-        return Task.CompletedTask;
+        var info = PopFromStarted(requestStatus.RequestId);
+        var unixTimestamp = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
+        info.FailedTimestamp = unixTimestamp;
+        _masterTrackerState.State.FailedImageGenerationRequests.Add(requestStatus.RequestId, info);
+        await Task.CompletedTask;
     }
 
-    public Task ReportCompletedImageGenerationRequestAsync(string requestId)
+    public async Task ReportCompletedImageGenerationRequestAsync(RequestStatus requestStatus)
     {
-        _masterTrackerState.State.StartedImageGenerationRequests.Remove(requestId);
-        return Task.CompletedTask;
+        var info = PopFromStarted(requestStatus.RequestId);
+        var unixTimestamp = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
+        info.CompletedTimestamp = unixTimestamp;
+        _masterTrackerState.State.CompletedImageGenerationRequests.Add(requestStatus.RequestId, info);
+        await Task.CompletedTask;
     }
 
-    public Task<IReadOnlyDictionary<string, int>> GetFailedImageGenerationRequestsAsync()
+    public Task<IReadOnlyDictionary<string, RequestAccountUsageInfo>> GetFailedImageGenerationRequestsAsync()
     {
-        return Task.FromResult<IReadOnlyDictionary<string, int>>(
+        return Task.FromResult<IReadOnlyDictionary<string, RequestAccountUsageInfo>>(
             _masterTrackerState.State.FailedImageGenerationRequests);
     }
 
-    public Task<IReadOnlyDictionary<string, int>> GetStartedImageGenerationRequestsAsync()
+    public Task<IReadOnlyDictionary<string, RequestAccountUsageInfo>> GetStartedImageGenerationRequestsAsync()
     {
-        return Task.FromResult<IReadOnlyDictionary<string, int>>(_masterTrackerState.State
+        return Task.FromResult<IReadOnlyDictionary<string, RequestAccountUsageInfo>>(_masterTrackerState.State
             .StartedImageGenerationRequests);
     }
+
+    #region Private Methods
+
+    private RequestAccountUsageInfo PopFromStarted(string requestId)
+    {
+        var info = _masterTrackerState.State.StartedImageGenerationRequests[requestId];
+        _masterTrackerState.State.StartedImageGenerationRequests.Remove(requestId);
+        return info;
+    }
+
+    #endregion
 }
