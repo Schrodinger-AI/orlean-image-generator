@@ -7,7 +7,7 @@ public interface ISchrodingerGrain : IGrainWithGuidKey
 
 public interface IImageGeneratorGrain : ISchrodingerGrain, IGrainWithStringKey
 {
-    Task<ImageGenerationGrainResponse> GenerateImageAsync(List<Trait> traits, string imageRequestId);
+    Task<ImageGenerationGrainResponse> GenerateImageFromPromptAsync(List<Trait> traits, string prompt, string imageRequestId);
 
     Task<ImageQueryGrainResponse> QueryImageAsync();
 }

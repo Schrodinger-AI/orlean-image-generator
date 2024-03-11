@@ -11,20 +11,17 @@ namespace Grains;
 
 public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
 {
-    private readonly PromptBuilder _promptBuilder;
-
     private Task<DalleResponse> _imageDataTask;
 
     private readonly IPersistentState<ImageGenerationState> _imageGenerationState;
 
     public ImageGeneratorGrain([PersistentState("imageGenerationState", "MySqlSchrodingerImageStore")] IPersistentState<ImageGenerationState> imageGeneratorState, PromptBuilder promptBuilder)
     {
-        _promptBuilder = promptBuilder;
         _imageGenerationState = imageGeneratorState;
     }
 
 
-    public async Task<ImageGenerationGrainResponse> GenerateImageFromPromptAsync(List<Trait> traits, string prompt, string imageRequestId)
+    public async Task<ImageGenerationGrainResponse> GenerateImageFromPromptAsync(List<Trait> traits, string imageRequestId, string prompt)
     {
         try
         {
@@ -46,28 +43,6 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
                 IsSuccessful = true,
                 Error = null
             };
-        }
-        catch (Exception e)
-        {
-            return new ImageGenerationGrainResponse
-            {
-                RequestId = imageRequestId,
-                IsSuccessful = false,
-                Error = e.Message
-            };
-        }
-    }
-
-    public async Task<ImageGenerationGrainResponse> GenerateImageAsync(List<Trait> traits, string imageRequestId)
-    {
-        try
-        {
-            // Extract trait names from the request
-            Dictionary<string, TraitEntry> traitDefinitions = await lookupTraitDefinitions(traits.ToList());
-
-            string prompt = await generatePrompt(traits.ToList(), traitDefinitions);
-
-            return await GenerateImageFromPromptAsync(traits, prompt, imageRequestId);
         }
         catch (Exception e)
         {
@@ -205,27 +180,6 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
                 }
             }
         }
-    }
-
-    public async Task<Dictionary<string, TraitEntry>> lookupTraitDefinitions(List<Trait> requestTraits)
-    {
-        // Extract trait names from the request
-        var traitNames = requestTraits.Select(t => t.Name).ToList();
-
-        // Get a reference to the TraitConfigGrain
-        var traitConfigGrain = GrainFactory.GetGrain<ITraitConfigGrain>("traitConfigGrain");
-
-        // Retrieve the trait definitions from the TraitConfigGrain
-        var response = await traitConfigGrain.GetTraitsMap(traitNames);
-
-        return response;
-    }
-
-    public async Task<String> generatePrompt(List<Trait> requestTraits, Dictionary<string, TraitEntry> traitDefinitions)
-    {
-        var sentences = await _promptBuilder.GenerateSentences(requestTraits, traitDefinitions);
-        var prompt = await _promptBuilder.GenerateFinalPromptFromSentences(ImageGenerationConstants.DALLE_BASE_PROMPT, sentences);
-        return prompt;
     }
 
     public static int GetSizeOfBase64String(string base64String)
