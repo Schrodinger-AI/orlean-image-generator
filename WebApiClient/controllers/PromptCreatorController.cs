@@ -37,7 +37,8 @@ namespace WebApi.Controllers
             try
             {
                 var promptCreatorGrain = _client.GetGrain<IPromptCreatorGrain>("promptCreatorGrain");
-                return new PromptCreatorResponseOk {Result = await promptCreatorGrain.ReadPromptState()};
+                var result = await promptCreatorGrain.ReadPromptState();
+                return new PromptCreatorResponseOk {Result = result};
             }
             catch (Exception e)
             {
@@ -51,7 +52,8 @@ namespace WebApi.Controllers
             try
             {
                 var promptCreatorGrain = _client.GetGrain<IPromptCreatorGrain>("promptCreatorGrain");
-                return new PromptCreatorResponseOk {Result = await promptCreatorGrain.Generate(promptGenerationRequest)};
+                var result = await promptCreatorGrain.Generate(promptGenerationRequest);
+                return new PromptCreatorResponseOk {Result = result};
             }
             catch (Exception e)
             {
