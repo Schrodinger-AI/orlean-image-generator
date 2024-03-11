@@ -34,11 +34,17 @@ namespace Shared
     
     public class SetPromptStateRequest
     {
+        [JsonPropertyName("identifier")]
+        public string Identifier { get; set; }
+
         [JsonPropertyName("configText")]
-        public ConfigText ConfigText { get; set; }
+        public string ConfigText { get; set; }
 
         [JsonPropertyName("scriptContent")]
         public string ScriptContent { get; set; }
+        
+        [JsonPropertyName("validationTestCase")]
+        public string ValidationTestCase { get; set; }
     }
     
     public abstract class PromptCreatorResponse {}
