@@ -28,7 +28,7 @@ namespace WebApi.Controllers
                 if (allConfigIds.Contains(setPromptConfigRequest.Identifier))
                 {
                     return new PrompterResponseNotOk
-                        { Error = $"a configuration with identifier {setPromptConfigRequest.Identifier} already exists" };
+                        { Error = $"a configuration with identifier \"{setPromptConfigRequest.Identifier}\" already exists" };
                 }
 
                 var prompterGrain = _client.GetGrain<IPrompterGrain>(setPromptConfigRequest.Identifier);
