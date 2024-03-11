@@ -17,7 +17,7 @@ public class MultiImageGeneratorController : ControllerBase
     }
 
     [HttpPost("generate")]
-    public async Task<ImageGenerationResponse> generateImage(ImageGenerationRequest imageGenerationRequest)
+    public async Task<ImageGenerationResponse> GenerateImage(ImageGenerationRequest imageGenerationRequest)
     {
         //generate a new UUID with a prefix of "imageRequest"        
         string imageRequestId = "ImageRequest_" + Guid.NewGuid().ToString();
@@ -30,7 +30,7 @@ public class MultiImageGeneratorController : ControllerBase
     }
 
     [HttpPost("query")]
-    public async Task<ImageQueryResponse> queryImage(ImageQueryRequest imageQueryRequest)
+    public async Task<ImageQueryResponse> QueryImage(ImageQueryRequest imageQueryRequest)
     {
         var multiImageGeneratorGrain = _client.GetGrain<IMultiImageGeneratorGrain>(imageQueryRequest.RequestId);
 
