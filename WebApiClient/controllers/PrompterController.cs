@@ -25,10 +25,10 @@ namespace WebApi.Controllers
             {
                 var configuratorGrain = _client.GetGrain<IConfiguratorGrain>(_configuratorIdentifier);
                 var allConfigIds = await configuratorGrain.GetAllConfigIdsAsync();
-                if (allConfigIds.Contains(_configuratorIdentifier))
+                if (allConfigIds.Contains(setPromptConfigRequest.Identifier))
                 {
                     return new PrompterResponseNotOk
-                        { Error = $"a configuration with identifier {_configuratorIdentifier} already exists" };
+                        { Error = $"a configuration with identifier {setPromptConfigRequest.Identifier} already exists" };
                 }
 
                 var prompterGrain = _client.GetGrain<IPrompterGrain>(setPromptConfigRequest.Identifier);
