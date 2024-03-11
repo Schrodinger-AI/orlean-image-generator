@@ -6,6 +6,8 @@ using Orleans.Runtime;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Processing;
 using Shared;
+using Grains.usage_tracker;
+using Grains.types;
 
 namespace Grains;
 
@@ -57,6 +59,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
 
         //load the scheduler Grain and update with 
         var parentGeneratorGrain = GrainFactory.GetGrain<IMultiImageGeneratorGrain>(_imageGenerationState.State.ParentRequestId);
+        var schedulerGrain = GrainFactory.GetGrain<IImageGenerationRequestStatusReceiver>("SchedulerGrain");
 
         if (imageGenerationResponse.IsSuccessful)
         {
@@ -66,14 +69,30 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
             // notify about successful completion to parentGrain
             await parentGeneratorGrain.NotifyImageGenerationStatus(_imageGenerationState.State.RequestId, ImageGenerationStatus.SuccessfulCompletion, null);
 
-            // TODO - notify the scheduler grain about the successful completion
+
+            //notify the scheduler grain about the successful completion
+            var requestStatus = new RequestStatus
+            {
+                RequestId = _imageGenerationState.State.RequestId,
+                Status = RequestStatusEnum.Completed
+            };
+            
+            await schedulerGrain.ReportCompletedImageGenerationRequestAsync(requestStatus);
         }
         else
         {
             // notify about failed completion to parentGrain
             await parentGeneratorGrain.NotifyImageGenerationStatus(_imageGenerationState.State.RequestId, ImageGenerationStatus.FailedCompletion, imageGenerationResponse.Error);
 
-            // TODO - notify the scheduler grain about the failed completion
+            // notify the scheduler grain about the failed completion
+            var requestStatus = new RequestStatus
+            {
+                RequestId = _imageGenerationState.State.RequestId,
+                Status = RequestStatusEnum.Failed,
+                Message = imageGenerationResponse.Error
+            };
+            
+            await schedulerGrain.ReportFailedImageGenerationRequestAsync(requestStatus);
         }
 
         // set apiKey to null

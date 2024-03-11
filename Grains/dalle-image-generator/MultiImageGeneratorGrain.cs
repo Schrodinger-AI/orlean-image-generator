@@ -1,3 +1,4 @@
+using Grains.usage_tracker;
 using Orleans;
 using Orleans.Runtime;
 using Shared;
@@ -43,6 +44,11 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
 
             _multiImageGenerationState.State.Prompt = prompt;
             _multiImageGenerationState.State.Traits = traits;
+            var schedulerGrain = GrainFactory.GetGrain<ISchedulerGrain>("SchedulerGrain");
+
+            //get timestamp
+            var requestTimestamp = DateTime.UtcNow;
+            long unixTimestamp = ((DateTimeOffset)requestTimestamp).ToUnixTimeSeconds();
 
             for (int i = 0; i < NumberOfImages; i++)
             {
@@ -54,6 +60,8 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
                 await imageGeneratorGrain.SetImageGenerationRequestData(prompt, imageRequestId, multiImageRequestId);
 
                 _multiImageGenerationState.State.ImageGenerationRequestIds.Add(imageRequestId);
+
+                await schedulerGrain.AddImageGenerationRequest(multiImageRequestId, imageRequestId, unixTimestamp);
             }
 
             _multiImageGenerationState.State.IsSuccessful = IsSuccessful;
