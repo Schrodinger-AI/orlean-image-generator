@@ -230,18 +230,25 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IImageGenerationRequestSta
         }
     }
 
-    private void ProcessRequest(IDictionary<string, RequestAccountUsageInfo> requests, Dictionary<string, int> apiQuota)
+    private void ProcessRequest(IDictionary<string, RequestAccountUsageInfo> requests, IDictionary<string, int> apiQuota)
     {
-        List<string> requestIdToRemove = new();
-        foreach (var (requestId, info) in requests)
+        var maxAttemptsReached = requests
+            .Where(pair => pair.Value.Attempts > MAX_ATTEMPTS)
+            .Select(p=>p.Key)
+            // ReSharper disable once TooManyChainedReferences
+            .ToHashSet();
+        if (maxAttemptsReached.Count > 0)
         {
-            if (info.Attempts > MAX_ATTEMPTS)
-            {
-                requestIdToRemove.Add(requestId);
-                _logger.LogError("Request " + requestId + " has reached max attempts");
-                continue;
-            }
-            
+            _logger.LogError("Requests {} has reached max attempts", string.Join(",", maxAttemptsReached));
+        }
+        
+        var goodToGo = requests.Keys.ToHashSet();
+            goodToGo.ExceptWith(maxAttemptsReached);
+        
+        List<string> requestIdToRemove = new();
+        foreach (var requestId in goodToGo)
+        { 
+            var info = requests[requestId];
             info.Attempts++;
 
             info.ApiKey = GetApiKey(apiQuota);
@@ -269,7 +276,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IImageGenerationRequestSta
         }
     }
     
-    private void AlarmWhenLowOnQuota(Dictionary<string, int> apiQuota)
+    private void AlarmWhenLowOnQuota(IDictionary<string, int> apiQuota)
     {
         var remainingQuota = apiQuota.Sum(pair => pair.Value);
 
