@@ -2,18 +2,19 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Shared;
+using Attribute = Shared.Attribute;
 
 namespace Grains;
 
 public class PromptBuilder
 {
-    public async Task<List<string>> GenerateSentences(List<Trait> requestTraits, Dictionary<string, TraitEntry> traitDefinitions)
+    public async Task<List<string>> GenerateSentences(List<Attribute> requestTraits, Dictionary<string, TraitEntry> traitDefinitions)
     {
         var sentences = new List<string>();
 
         foreach (var trait in requestTraits)
         {
-            var traitName = trait.Name;
+            var traitName = trait.TraitType;
 
             if (traitDefinitions.TryGetValue(traitName, out var traitDef))
             {
@@ -21,7 +22,7 @@ public class PromptBuilder
                 // var errors = await Validate(traitDef);
                 // if (errors.Count > 0)
                 // {
-                //     throw new Exception($"Validation failed during Generate Sentences for trait: {JsonSerializer.Serialize(traitValue)}");
+                //     throw new Exception($"Validation failed during GeneratePromptAsync Sentences for trait: {JsonSerializer.Serialize(traitValue)}");
                 // }
 
                 if (traitDef.Values.Contains(trait.Value))
@@ -30,12 +31,12 @@ public class PromptBuilder
                 }
                 else
                 {
-                    throw new Exception($"Trait value `{trait.Value}` is not found under TraitName: `{traitName}` in trait definitions -> valid TraitValues are: {string.Join(", ", traitDef.Values)}");
+                    throw new Exception($"Attribute value `{trait.Value}` is not found under TraitName: `{traitName}` in trait definitions -> valid TraitValues are: {string.Join(", ", traitDef.Values)}");
                 }
             }
             else
             {
-                throw new Exception($"Trait {traitName} not found in trait definitions");
+                throw new Exception($"Attribute {traitName} not found in trait definitions");
             }
         }
 

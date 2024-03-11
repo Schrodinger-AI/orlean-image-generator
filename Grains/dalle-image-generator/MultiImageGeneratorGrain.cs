@@ -1,6 +1,7 @@
 using Orleans;
 using Orleans.Runtime;
 using Shared;
+using Attribute = Shared.Attribute;
 
 namespace Grains;
 
@@ -16,69 +17,48 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
         _promptBuilder = promptBuilder;
     }
 
-    public async Task<MultiImageGenerationGrainResponse> GenerateMultipleImagesAsync(List<Trait> traits, int NumberOfImages, string multiImageRequestId)
+    public async Task NotifyImageGenerationStatus(string imageRequestId, ImageGenerationStatus status, string? error)
     {
-        _multiImageGenerationState.State.RequestId = multiImageRequestId;
-        await _multiImageGenerationState.WriteStateAsync();
-        bool IsSuccessful = true;
-
-        // Extract trait names from the request
-        string prompt = await generatePrompt([.. traits]);
-
-        _multiImageGenerationState.State.Prompt = prompt;
-        _multiImageGenerationState.State.Traits = traits;
-
-        for (int i = 0; i < NumberOfImages; i++)
+        var imageGenerationNotification = new ImageGenerationTracker
         {
-            //generate a new UUID with a prefix of "imageRequest"        
-            string imageRequestId = "ImageRequest_" + Guid.NewGuid().ToString();
+            RequestId = imageRequestId,
+            Status = status,
+            Error = error
+        };
 
-            var imageGeneratorGrain = GrainFactory.GetGrain<IImageGeneratorGrain>(imageRequestId);
+        _multiImageGenerationState.State.imageGenerationTrackers[imageGenerationNotification.RequestId] = imageGenerationNotification;
 
-            var imageGenerationGrainResponse = await imageGeneratorGrain.GenerateImageFromPromptAsync(prompt, imageRequestId, multiImageRequestId);
+        await _multiImageGenerationState.WriteStateAsync();
+    }
 
-            Console.WriteLine("Image generation submitted for request: " + imageRequestId + " with response: " + imageGenerationGrainResponse);
+    public async Task<MultiImageGenerationGrainResponse> GenerateMultipleImagesAsync(List<Attribute> traits, int NumberOfImages, string multiImageRequestId)
+    {
+        try
+        {
+            _multiImageGenerationState.State.RequestId = multiImageRequestId;
+            bool IsSuccessful = true;
 
-            IsSuccessful = IsSuccessful && imageGenerationGrainResponse.IsSuccessful;
+            // Extract trait names from the request
+            string prompt = await generatePrompt([.. traits]);
 
-            if (!imageGenerationGrainResponse.IsSuccessful)
+            _multiImageGenerationState.State.Prompt = prompt;
+            _multiImageGenerationState.State.Traits = traits;
+
+            for (int i = 0; i < NumberOfImages; i++)
             {
-                // Add the error to the state
-                if (_multiImageGenerationState.State.Errors == null)
-                {
-                    _multiImageGenerationState.State.Errors = new List<string>();
-                }
+                //generate a new UUID with a prefix of "imageRequest"        
+                string imageRequestId = "ImageRequest_" + Guid.NewGuid().ToString();
 
-                _multiImageGenerationState.State.Errors.Add(imageGenerationGrainResponse.Error);
+                var imageGeneratorGrain = GrainFactory.GetGrain<IImageGeneratorGrain>(imageRequestId);
+
+                await imageGeneratorGrain.SetImageGenerationRequestData(prompt, imageRequestId, multiImageRequestId);
+
+                _multiImageGenerationState.State.ImageGenerationRequestIds.Add(imageRequestId);
             }
 
-            else
-            {
-                // Extract the requestId from the response
-                var requestId = imageGenerationGrainResponse.RequestId;
+            _multiImageGenerationState.State.IsSuccessful = IsSuccessful;
+            await _multiImageGenerationState.WriteStateAsync();
 
-                // Add the requestId to the state
-                _multiImageGenerationState.State.ImageGenerationRequestIds.Add(requestId);
-            }
-        }
-
-        _multiImageGenerationState.State.IsSuccessful = IsSuccessful;
-        await _multiImageGenerationState.WriteStateAsync();
-
-        //TODO refactor this to return a single response
-        if (!IsSuccessful)
-        {
-            return new MultiImageGenerationGrainResponse
-            {
-                RequestId = multiImageRequestId,
-                Traits = traits,
-                Prompt = prompt,
-                IsSuccessful = false,
-                Errors = _multiImageGenerationState.State.Errors
-            };
-        }
-        else
-        {
             return new MultiImageGenerationGrainResponse
             {
                 RequestId = multiImageRequestId,
@@ -87,21 +67,31 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
                 IsSuccessful = true,
             };
         }
+        catch (Exception ex)
+        {
+            if (_multiImageGenerationState.State.Errors == null)
+            {
+                _multiImageGenerationState.State.Errors = [];
+            }
+
+            _multiImageGenerationState.State.Errors.Add(ex.Message);
+            _multiImageGenerationState.State.IsSuccessful = false;
+            await _multiImageGenerationState.WriteStateAsync();
+            return new MultiImageGenerationGrainResponse
+            {
+                RequestId = multiImageRequestId,
+                Traits = traits,
+                Prompt = "",
+                IsSuccessful = false,
+                Errors = _multiImageGenerationState.State.Errors
+            };
+        }
     }
 
-    public async Task<string> HandleImageGenerationNotification(ImageGenerationNotification imageGenerationNotification) {
-
-        _multiImageGenerationState.State.imageGenerationTracker[imageGenerationNotification.RequestId] = imageGenerationNotification;
-
-        await _multiImageGenerationState.WriteStateAsync();
-
-        return "Notification received";
-    }
-
-    public async Task<Dictionary<string, TraitEntry>> lookupTraitDefinitions(List<Trait> requestTraits)
+    public async Task<Dictionary<string, TraitEntry>> lookupTraitDefinitions(List<Attribute> requestTraits)
     {
         // Extract trait names from the request
-        var traitNames = requestTraits.Select(t => t.Name).ToList();
+        var traitNames = requestTraits.Select(t => t.TraitType).ToList();
 
         // Get a reference to the TraitConfigGrain
         var traitConfigGrain = GrainFactory.GetGrain<ITraitConfigGrain>("traitConfigGrain");
@@ -112,7 +102,7 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
         return response;
     }
 
-    public async Task<string> generatePrompt(List<Trait> requestTraits)
+    public async Task<string> generatePrompt(List<Attribute> requestTraits)
     {
         Dictionary<string, TraitEntry> traitDefinitions = await lookupTraitDefinitions([.. requestTraits]);
         var sentences = await _promptBuilder.GenerateSentences(requestTraits, traitDefinitions);
@@ -136,7 +126,7 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
             {
                 if (grainResponse.Status == ImageGenerationStatus.SuccessfulCompletion && grainResponse.Image != null)
                 {
-                    grainResponse.Image.Traits = _multiImageGenerationState.State.Traits;
+                    grainResponse.Image.Attributes = _multiImageGenerationState.State.Traits;
                     imageGenerationStates.Add(grainResponse.Status);
                     allImages.Add(grainResponse.Image);
                 }
