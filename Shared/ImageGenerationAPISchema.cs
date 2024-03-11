@@ -2,10 +2,10 @@ using System.Text.Json.Serialization;
 
 namespace Shared
 {
-    public class Trait
+    public class Attribute
     {
         [JsonPropertyName("traitType")]
-        public string Name { get; set; }
+        public string TraitType { get; set; }
 
         [JsonPropertyName("value")]
         public string Value { get; set; }
@@ -17,7 +17,7 @@ namespace Shared
         public string? Image { get; set; } = null;
 
         [JsonPropertyName("attributes")]
-        public List<Trait> Traits { get; set; } = [];
+        public List<Attribute> Attributes { get; set; } = [];
 
         [JsonPropertyName("extraData")]
         public string? ExtraData { get; set; } = null;
@@ -29,7 +29,7 @@ namespace Shared
         public string Identifier { get; set; }
         
         [JsonPropertyName("newAttributes")]
-        public List<Trait> NewTraits { get; set; }
+        public List<Attribute> NewAttributes { get; set; }
 
         [JsonPropertyName("baseImage")]
         public ImageDescription BaseImage { get; set; }
@@ -76,7 +76,7 @@ namespace Shared
         public string? Seed { get; set; }
 
         [JsonPropertyName("newAttributes")]
-        public List<Trait> NewTraits { get; set; }
+        public List<Attribute> NewTraits { get; set; }
 
         [JsonPropertyName("baseImage")]
         public ImageDescription BaseImage { get; set; }

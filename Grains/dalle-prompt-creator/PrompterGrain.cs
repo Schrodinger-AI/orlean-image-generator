@@ -63,7 +63,7 @@ public class PrompterGrain : Grain, IPrompterGrain
             var scriptContent = _prompterState.State.ScriptContent;
             var configText = _prompterState.State.ConfigText;
 
-            var traits = promptGenerationRequest.BaseImage.Traits.Concat(promptGenerationRequest.NewTraits).ToList();
+            var traits = promptGenerationRequest.BaseImage.Attributes.Concat(promptGenerationRequest.NewAttributes).ToList();
 
             using var engine = new V8ScriptEngine();
             engine.Execute(scriptContent);

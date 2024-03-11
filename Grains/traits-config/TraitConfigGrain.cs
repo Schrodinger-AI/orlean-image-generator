@@ -23,7 +23,7 @@ public class TraitConfigGrain : Grain, ITraitConfigGrain
     {
         if (!_traitState.State.Traits.TryGetValue(traitName, out var traitEntry))
         {
-            throw new KeyNotFoundException($"Trait with name {traitName} not found.");
+            throw new KeyNotFoundException($"Attribute with name {traitName} not found.");
         }
 
         return Task.FromResult(traitEntry);
@@ -35,7 +35,7 @@ public class TraitConfigGrain : Grain, ITraitConfigGrain
         {
             if (_traitState.State.Traits.ContainsKey(traitEntry.Name))
             {
-                throw new ArgumentException($"Trait with name {traitEntry.Name} already exists.");
+                throw new ArgumentException($"Attribute with name {traitEntry.Name} already exists.");
             }
 
             _traitState.State.Traits[traitEntry.Name] = traitEntry;
@@ -88,7 +88,7 @@ public class TraitConfigGrain : Grain, ITraitConfigGrain
         {
             if (!_traitState.State.Traits.ContainsKey(traitName))
             {
-                throw new ArgumentException($"Trait with name {traitName} does not exist.");
+                throw new ArgumentException($"Attribute with name {traitName} does not exist.");
             }
 
             TraitEntry deletedTrait = _traitState.State.Traits[traitName];
@@ -114,7 +114,7 @@ public class TraitConfigGrain : Grain, ITraitConfigGrain
         {
             if (!_traitState.State.Traits.ContainsKey(traitName))
             {
-                throw new ArgumentException($"Trait with name {traitName} does not exist.");
+                throw new ArgumentException($"Attribute with name {traitName} does not exist.");
             }
 
             _traitState.State.Traits[traitName] = traitEntry;
@@ -163,7 +163,7 @@ public class TraitConfigGrain : Grain, ITraitConfigGrain
             }
             else
             {
-                throw new KeyNotFoundException($"Trait with name {traitName} not found.");
+                throw new KeyNotFoundException($"Attribute with name {traitName} not found.");
             }
         }
 

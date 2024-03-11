@@ -46,7 +46,7 @@ namespace Shared
 
         public string Prompt { get; set; }
 
-        public List<Trait> Traits { get; set; }
+        public List<Attribute> Traits { get; set; }
 
         public bool IsSuccessful { get; set; } = false;
 
