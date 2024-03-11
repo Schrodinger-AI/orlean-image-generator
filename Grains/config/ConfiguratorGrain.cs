@@ -30,7 +30,6 @@ public class ConfiguratorGrain : Grain, IConfiguratorGrain
     public async Task AddConfigIdAsync(string configId)
     {
         _configuratorGrainState.State.AllConfigIds.Add(configId);
-        await Task.FromResult(_configuratorGrainState.WriteStateAsync());
         await _configuratorGrainState.WriteStateAsync();
     }
 
