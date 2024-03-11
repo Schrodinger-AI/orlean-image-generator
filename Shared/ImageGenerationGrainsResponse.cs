@@ -4,6 +4,8 @@ namespace Shared
 
     public enum ImageGenerationStatus
     {
+        Dormant,
+
         InProgress,
         FailedCompletion,
 
@@ -24,7 +26,7 @@ namespace Shared
     {
         public List<ImageDescription>? Images { get; set; }
 
-        public  ImageGenerationStatus Status { get; set; } = ImageGenerationStatus.InProgress;
+        public  ImageGenerationStatus Status { get; set; } = ImageGenerationStatus.Dormant;
         
         public List<string>? Errors { get; set; }
     }
