@@ -9,6 +9,7 @@ namespace WebApi.Controllers
     [Route("prompt")]
     public class PrompterController : ControllerBase
     {
+        private static string _identifier = "main";
         private readonly IClusterClient _client;
 
         public PrompterController(IClusterClient client)
@@ -21,7 +22,7 @@ namespace WebApi.Controllers
         {
             try
             {
-                var prompterGrain = _client.GetGrain<IPrompterGrain>(setPromptConfigRequest.Identifier);
+                var prompterGrain = _client.GetGrain<IPrompterGrain>(_identifier);
                 var res = await prompterGrain.SetConfigAsync(new PrompterConfig
                 {
                     ConfigText = setPromptConfigRequest.ConfigText,
@@ -30,13 +31,13 @@ namespace WebApi.Controllers
                 });
                 if (res)
                 {
-                    return new PrompterResponseOk { Result = "success" };
+                    return new PrompterResponseOk {Result = "success"};
                 }
-                return new PrompterResponseNotOk { Error = "set prompt config fail error, invalid input" };
+                return new PrompterResponseNotOk {Error = "set prompt config fail error, invalid input"};
             }
             catch (Exception e)
             {
-                return new PrompterResponseNotOk { Error = "set prompt config error, msg: " + e.Message };
+                return new PrompterResponseNotOk {Error = "set prompt config error, msg: " + e.Message};
             }
         }
 
@@ -47,11 +48,11 @@ namespace WebApi.Controllers
             {
                 var prompterGrain = _client.GetGrain<IPrompterGrain>(getPromptConfigRequest.Identifier);
                 var result = await prompterGrain.GetConfigAsync();
-                return new PrompterResponseOk { Result = result };
+                return new PrompterResponseOk {Result = result};
             }
             catch (Exception e)
             {
-                return new PrompterResponseNotOk { Error = "get prompt config error, msg: " + e.Message };
+                return new PrompterResponseNotOk {Error = "get prompt config error, msg: " + e.Message};
             }
         }
 
@@ -60,18 +61,43 @@ namespace WebApi.Controllers
         {
             try
             {
-                var promptCreatorGrain = _client.GetGrain<IPrompterGrain>(promptGenerationRequest.Identifier);
+                var promptCreatorGrain = _client.GetGrain<IPrompterGrain>(_identifier);
                 var result = await promptCreatorGrain.GeneratePromptAsync(promptGenerationRequest);
                 if (!string.IsNullOrEmpty(result))
                 {
-                    return new PrompterResponseOk { Result = result };
+                    return new PrompterResponseOk {Result = result};
                 }
-                return new PrompterResponseNotOk { Error = "generate prompt fail, invalid input" };
+
+                return new PrompterResponseNotOk {Error = "generate prompt fail, invalid input"};
             }
             catch (Exception e)
             {
-                return new PrompterResponseNotOk { Error = "generate prompt error, msg: " + e.Message };
+                return new PrompterResponseNotOk {Error = "generate prompt error, msg: " + e.Message};
             }
         }
+
+        [HttpPost("switch-identifier")]
+        public async Task<PrompterResponse> SwitchIdentifier(SwitchIdentifierRequest switchIdentifierRequest)
+        {
+            _identifier = switchIdentifierRequest.Identifier;
+            return new PrompterResponseOk { Result = await Task.FromResult("success") };
+        }
+        
+        [HttpPost("get-current-config")]
+        public async Task<PrompterResponse> GetCurrenConfig()
+        {
+            try
+            {
+                var prompterGrain = _client.GetGrain<IPrompterGrain>(_identifier);
+                var result = await prompterGrain.GetConfigAsync();
+                return new PrompterResponseOk {Result = result};
+            }
+            catch (Exception e)
+            {
+                return new PrompterResponseNotOk {Error = "get current prompt config error, msg: " + e.Message};
+            }
+        }
+        
     }
+    
 }

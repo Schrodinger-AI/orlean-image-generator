@@ -56,6 +56,12 @@ namespace Shared
         public string Identifier { get; set; }
     }
     
+    public class SwitchIdentifierRequest
+    {
+        [JsonPropertyName("identifier")]
+        public string Identifier { get; set; }
+    }
+    
     public abstract class PrompterResponse {}
 
     public class PrompterResponseOk : PrompterResponse
