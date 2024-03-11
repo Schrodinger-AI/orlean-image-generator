@@ -9,4 +9,5 @@ public class RequestAccountUsageInfo
     public long CompletedTimestamp { get; set; }
     public int Attempts { get; set; }
     public string AccountId { get; set; }
+    public string ApiKey { get; set; }
 }
