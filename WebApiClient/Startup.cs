@@ -3,6 +3,7 @@ using Orleans.Hosting;
 using Orleans.Configuration;
 using Shared;
 using Grains;
+using Microsoft.OpenApi.Models;
 
 public class Startup
 {
@@ -29,12 +30,23 @@ public class Startup
             client.Connect().Wait();
             return client;
         });
+        services.AddSwaggerGen(c =>
+        {
+            c.SwaggerDoc("v1", new OpenApiInfo { Title = "My API", Version = "v1" });
+
+            // Set the comments path for the Swagger JSON and UI.
+            //var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+            //var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+            //c.IncludeXmlComments(xmlPath);
+        });
     }
 
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILogger<Startup> logger)
     {
         if (env.IsDevelopment())
         {
+            app.UseSwagger();
+            app.UseSwaggerUI();
             app.UseDeveloperExceptionPage();
         }
 
