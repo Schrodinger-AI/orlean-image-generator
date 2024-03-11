@@ -97,7 +97,7 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
             else
             {
                 isSuccessful = false;
-                errorMessages.Add("Error querying image");
+                errorMessages.Add(response.Error);
             }
         }
 
