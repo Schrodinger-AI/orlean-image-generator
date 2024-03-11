@@ -21,7 +21,7 @@ public class PromptBuilder
                 // var errors = await Validate(traitDef);
                 // if (errors.Count > 0)
                 // {
-                //     throw new Exception($"Validation failed during Generate Sentences for trait: {JsonSerializer.Serialize(traitValue)}");
+                //     throw new Exception($"Validation failed during GeneratePromptAsync Sentences for trait: {JsonSerializer.Serialize(traitValue)}");
                 // }
 
                 if (traitDef.Values.Contains(trait.Value))
