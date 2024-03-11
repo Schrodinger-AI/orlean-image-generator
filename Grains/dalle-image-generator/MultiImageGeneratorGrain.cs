@@ -1,6 +1,7 @@
 using Orleans;
 using Orleans.Runtime;
 using Shared;
+using Attribute = Shared.Attribute;
 
 namespace Grains;
 
@@ -30,7 +31,7 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
         await _multiImageGenerationState.WriteStateAsync();
     }
 
-    public async Task<MultiImageGenerationGrainResponse> GenerateMultipleImagesAsync(List<Trait> traits, int NumberOfImages, string multiImageRequestId)
+    public async Task<MultiImageGenerationGrainResponse> GenerateMultipleImagesAsync(List<Attribute> traits, int NumberOfImages, string multiImageRequestId)
     {
         try
         {
@@ -87,10 +88,10 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
         }
     }
 
-    public async Task<Dictionary<string, TraitEntry>> lookupTraitDefinitions(List<Trait> requestTraits)
+    public async Task<Dictionary<string, TraitEntry>> lookupTraitDefinitions(List<Attribute> requestTraits)
     {
         // Extract trait names from the request
-        var traitNames = requestTraits.Select(t => t.Name).ToList();
+        var traitNames = requestTraits.Select(t => t.TraitType).ToList();
 
         // Get a reference to the TraitConfigGrain
         var traitConfigGrain = GrainFactory.GetGrain<ITraitConfigGrain>("traitConfigGrain");
@@ -101,7 +102,7 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
         return response;
     }
 
-    public async Task<string> generatePrompt(List<Trait> requestTraits)
+    public async Task<string> generatePrompt(List<Attribute> requestTraits)
     {
         Dictionary<string, TraitEntry> traitDefinitions = await lookupTraitDefinitions([.. requestTraits]);
         var sentences = await _promptBuilder.GenerateSentences(requestTraits, traitDefinitions);
@@ -125,7 +126,7 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
             {
                 if (grainResponse.Status == ImageGenerationStatus.SuccessfulCompletion && grainResponse.Image != null)
                 {
-                    grainResponse.Image.Traits = _multiImageGenerationState.State.Traits;
+                    grainResponse.Image.Attributes = _multiImageGenerationState.State.Traits;
                     imageGenerationStates.Add(grainResponse.Status);
                     allImages.Add(grainResponse.Image);
                 }

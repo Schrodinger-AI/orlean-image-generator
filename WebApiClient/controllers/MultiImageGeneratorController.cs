@@ -2,6 +2,7 @@ using Grains;
 using Microsoft.AspNetCore.Mvc;
 using Orleans;
 using Shared;
+using Attribute = Shared.Attribute;
 
 namespace WebApi.Controllers;
 
@@ -19,11 +20,11 @@ public class MultiImageGeneratorController : ControllerBase
     [HttpPost("generate")]
     public async Task<ImageGenerationResponse> GenerateImage(ImageGenerationRequest imageGenerationRequest)
     {
-        List<Trait> newTraits = imageGenerationRequest.NewTraits;
-        List<Trait> baseTraits = imageGenerationRequest.BaseImage.Traits;
+        List<Attribute> newTraits = imageGenerationRequest.NewTraits;
+        List<Attribute> baseTraits = imageGenerationRequest.BaseImage.Attributes;
 
         //collect the newTraits from the request and combine it with trats from the base image
-        IEnumerable<Trait> traits = newTraits.Concat(baseTraits);
+        IEnumerable<Attribute> traits = newTraits.Concat(baseTraits);
 
         //generate a new UUID with a prefix of "imageRequest"        
         string imageRequestId = "ImageRequest_" + Guid.NewGuid().ToString();

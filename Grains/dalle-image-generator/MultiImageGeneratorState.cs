@@ -1,4 +1,5 @@
 using Shared;
+using Attribute = Shared.Attribute;
 
 namespace Grains;
 
@@ -7,7 +8,7 @@ public class MultiImageGenerationState
 
     public string RequestId { get; set; }
 
-    public List<Trait> Traits { get; set; }
+    public List<Attribute> Traits { get; set; }
 
     public string Prompt { get; set; }
 
