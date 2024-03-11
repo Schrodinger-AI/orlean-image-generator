@@ -30,7 +30,33 @@ namespace Shared
 
         [JsonPropertyName("baseImage")]
         public ImageDescription BaseImage { get; set; }
-        
+    }
+    
+    public class PromptConfigRequest
+    {
+        [JsonPropertyName("configText")]
+        public ConfigText ConfigText { get; set; }
+
+        [JsonPropertyName("scriptContent")]
+        public string ScriptContent { get; set; }
+    }
+    
+    public abstract class PromptConfigResponse {}
+
+    public class PromptConfigResponseOk : PromptConfigResponse
+    {
+        [JsonPropertyName("result")]
+        public object Result { get; set; }
+    }
+
+    public class PromptConfigResponseNotOk : PromptConfigResponse
+    {
+        [JsonPropertyName("error")]
+        public string Error { get; set; }
+    }
+    
+    public class PromptConfigQueryResponseOk : PromptConfigResponse
+    {
         [JsonPropertyName("configText")]
         public ConfigText ConfigText { get; set; }
 
