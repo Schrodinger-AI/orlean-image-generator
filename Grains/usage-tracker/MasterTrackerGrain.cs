@@ -52,6 +52,15 @@ public class MasterTrackerGrain : Grain, IMasterTrackerGrain, IImageGenerationRe
 
     #region Private Methods
 
+    private void DoScheduling()
+    {
+        // 1. Purge completed requests
+        // 2. Add failed requests to pending queue
+        // 3. Check remaining quota for all accounts
+        // 4. For all pending tasks, find the account with the most remaining quota
+        // 5. Schedule the task, update the account usage info
+    }
+
     private RequestAccountUsageInfo PopFromStarted(string requestId)
     {
         var info = _masterTrackerState.State.StartedImageGenerationRequests[requestId];
