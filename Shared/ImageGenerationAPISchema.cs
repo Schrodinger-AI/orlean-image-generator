@@ -30,6 +30,31 @@ namespace Shared
 
         [JsonPropertyName("baseImage")]
         public ImageDescription BaseImage { get; set; }
+        
+        [JsonPropertyName("configText")]
+        public ConfigText ConfigText { get; set; }
+
+        [JsonPropertyName("scriptContent")]
+        public string ScriptContent { get; set; }
+    }
+    
+    public abstract class PromptGenerationResponse {}
+
+    public class PromptGenerationResponseOk : PromptGenerationResponse
+    {
+        [JsonPropertyName("prompt")]
+        public string Prompt { get; set; }
+    }
+
+    public class PromptGenerationResponseNotOk : PromptGenerationResponse
+    {
+        [JsonPropertyName("error")]
+        public string Error { get; set; }
+    }
+
+    public class ConfigText
+    {
+        public string prefix { get; set; }
     }
 
     public class ImageGenerationRequest
