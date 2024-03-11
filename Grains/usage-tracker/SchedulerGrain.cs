@@ -271,17 +271,10 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IImageGenerationRequestSta
     
     private void AlarmWhenLowOnQuota(Dictionary<string, int> apiQuota)
     {
-        var remainingQuota = 0;
-        foreach (var pair in apiQuota)
-        {
-            remainingQuota += pair.Value;
-        }
+        var remainingQuota = apiQuota.Sum(pair => pair.Value);
 
-        var totalQuota = 0;
-        _masterTrackerState.State.ApiAccountInfoList.ForEach(apiInfo =>
-        {
-            totalQuota += apiInfo.MaxQuota;
-        });
+        var apiInfoList = _masterTrackerState.State.ApiAccountInfoList;
+        var totalQuota = apiInfoList.Sum(apiInfo => apiInfo.MaxQuota);
 
         if (remainingQuota / (float)totalQuota < QUOTA_THRESHOLD)
         {
