@@ -1,5 +1,3 @@
-using Microsoft.ClearScript.V8;
-using Newtonsoft.Json;
 using Orleans;
 using Orleans.Runtime;
 using Shared;
@@ -53,5 +51,4 @@ public class PromptGeneratorGrain : Grain, IPromptGeneratorGrain
         var prompt = await _promptBuilder.GenerateFinalPromptFromSentences(ImageGenerationConstants.DALLE_BASE_PROMPT, sentences);
         return prompt;
     }
-
 }
