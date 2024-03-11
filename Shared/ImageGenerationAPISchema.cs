@@ -44,7 +44,7 @@ namespace Shared
         public ImageDescription BaseImage { get; set; }
 
         [JsonPropertyName("numImages")]
-        public int? NumberOfImages { get; set; }
+        public int NumberOfImages { get; set; } = 1;
     }
 
     public abstract class ImageGenerationResponse { }
@@ -61,27 +61,10 @@ namespace Shared
         public string Error { get; set; }
     }
 
-    public class ImageGenerationGrainResponse
-    {
-        public string RequestId { get; set; }
-
-        public bool IsSuccessful { get; set; }
-        public string? Error { get; set; }
-    }
-
     public class ImageQueryRequest
     {
         [JsonPropertyName("requestId")]
         public string RequestId { get; set; }
-    }
-
-
-    public class ImageQueryGrainResponse
-    {
-        public ImageDescription? Image { get; set; }
-
-        public bool IsSuccessful { get; set; }
-        public string? Error { get; set; }
     }
 
     public abstract class ImageQueryResponse { }

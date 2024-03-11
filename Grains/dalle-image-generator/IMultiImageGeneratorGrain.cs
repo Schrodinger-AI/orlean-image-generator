@@ -4,7 +4,7 @@ namespace Grains;
 
 public interface IMultiImageGeneratorGrain : ISchrodingerGrain, IGrainWithStringKey
 {
-    Task<ImageGenerationResponse> GenerateMultipleImagesAsync(ImageGenerationRequest request, string multiImageRequestId);
+    Task<MultiImageGenerationGrainResponse> GenerateMultipleImagesAsync(List<Trait> traits, int NumberOfImages, string multiImageRequestId);
 
-    Task<ImageQueryResponse> QueryMultipleImagesAsync();
+    Task<MultiImageQueryGrainResponse> QueryMultipleImagesAsync();
 }

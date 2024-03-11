@@ -13,26 +13,20 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
         _multiImageGenerationState = multiImageGenerationState;
     }
 
-    public async Task<ImageGenerationResponse> GenerateMultipleImagesAsync(ImageGenerationRequest request, string multiImageRequestId)
+    public async Task<MultiImageGenerationGrainResponse> GenerateMultipleImagesAsync(List<Trait> traits, int NumberOfImages, string multiImageRequestId)
     {
         _multiImageGenerationState.State.RequestId = multiImageRequestId;
         await _multiImageGenerationState.WriteStateAsync();
         bool IsSuccessful = true;
 
-        for (int i = 0; i < request.NumberOfImages; i++)
+        for (int i = 0; i < NumberOfImages; i++)
         {
             //generate a new UUID with a prefix of "imageRequest"        
             string imageRequestId = "ImageRequest_" + Guid.NewGuid().ToString();
 
             var imageGeneratorGrain = GrainFactory.GetGrain<IImageGeneratorGrain>(imageRequestId);
 
-            List<Trait> newTraits = request.NewTraits;
-            List<Trait> baseTraits = request.BaseImage.Traits;
-
-            //collect the newTraits from the request and combine it with trats from the base image
-            IEnumerable<Trait> traits = newTraits.Concat(baseTraits);
-
-            var imageGenerationGrainResponse = await imageGeneratorGrain.GenerateImageAsync(traits.ToList(), imageRequestId);
+            var imageGenerationGrainResponse = await imageGeneratorGrain.GenerateImageAsync(traits, imageRequestId);
 
             Console.WriteLine("Image generation submitted for request: " + imageRequestId + " with response: " + imageGenerationGrainResponse);
 
@@ -64,21 +58,24 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
 
         if (!IsSuccessful)
         {
-            return new ImageGenerationResponseNotOk
+            return new MultiImageGenerationGrainResponse
             {
-                Error = "Image generation failed"
+                RequestId = multiImageRequestId,
+                IsSuccessful = false,
+                Errors = _multiImageGenerationState.State.Errors
             };
         }
         else
         {
-            return new ImageGenerationResponseOk
+            return new MultiImageGenerationGrainResponse
             {
-                RequestId = multiImageRequestId
+                RequestId = multiImageRequestId,
+                IsSuccessful = true,
             };
         }
     }
 
-    public async Task<ImageQueryResponse> QueryMultipleImagesAsync()
+    public async Task<MultiImageQueryGrainResponse> QueryMultipleImagesAsync()
     {
         var allImages = new List<ImageDescription>();
         var isSuccessful = true;
@@ -106,11 +103,19 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
 
         if (isSuccessful)
         {
-            return new ImageQueryResponseOk { Images = allImages };
+            return new MultiImageQueryGrainResponse
+            {
+                Images = allImages,
+                IsSuccessful = true
+            };
         }
         else
         {
-            return new ImageQueryResponseNotOk { Error = string.Join("\n ", errorMessages) };
+            return new MultiImageQueryGrainResponse
+            {
+                IsSuccessful = false,
+                Errors = errorMessages
+            };
         }
     }
 }
