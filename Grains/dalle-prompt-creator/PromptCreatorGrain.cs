@@ -39,22 +39,19 @@ public class PromptCreatorGrain : Grain, IPromptCreatorGrain
 
     public Task<string> Generate(PromptGenerationRequest promptGenerationRequest)
     {
-        if (string.IsNullOrEmpty(_promptConfigState.State.ScriptContent) || _promptConfigState.State.ConfigText == null)
+        var scriptContent = _promptConfigState.State.ScriptContent;
+        var configText = _promptConfigState.State.ConfigText;
+        
+        if (string.IsNullOrEmpty(scriptContent) || configText == null)
         {
             return Task.FromResult("");
         }
 
-        // Load and execute the JavaScript file
-        var scriptContent = _promptConfigState.State.ScriptContent;
-        var configText = _promptConfigState.State.ConfigText;
-
-        // Serialize C# objects to JSON
         var traits = promptGenerationRequest.BaseImage.Traits.Concat(promptGenerationRequest.NewTraits).ToList();
 
         using var engine = new V8ScriptEngine();
         engine.Execute(scriptContent);
 
-        // Pass the JSON string to JavaScript, parse it, and call 'myFunction'
         var config = JsonConvert.SerializeObject(configText).ToLower();
         var traitArgs = JsonConvert.SerializeObject(traits).ToLower();
 
