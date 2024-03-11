@@ -23,6 +23,14 @@ namespace WebApi.Controllers
         {
             try
             {
+                var configuratorGrain = _client.GetGrain<IConfiguratorGrain>(_configuratorIdentifier);
+                var allConfigIds = await configuratorGrain.GetAllConfigIdsAsync();
+                if (allConfigIds.Contains(_configuratorIdentifier))
+                {
+                    return new PrompterResponseNotOk
+                        { Error = $"a configuration with identifier {_configuratorIdentifier} already exists" };
+                }
+
                 var prompterGrain = _client.GetGrain<IPrompterGrain>(setPromptConfigRequest.Identifier);
                 var res = await prompterGrain.SetConfigAsync(new PrompterConfig
                 {
@@ -32,7 +40,6 @@ namespace WebApi.Controllers
                 });
                 if (res)
                 {
-                    var configuratorGrain = _client.GetGrain<IConfiguratorGrain>(_configuratorIdentifier);
                     await configuratorGrain.AddConfigIdAsync(setPromptConfigRequest.Identifier);
                     await configuratorGrain.SetCurrentConfigIdAsync(setPromptConfigRequest.Identifier);
                     return new PrompterResponseOk { Result = "success" };
