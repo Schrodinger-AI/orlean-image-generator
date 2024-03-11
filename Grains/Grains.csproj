@@ -18,6 +18,10 @@
     <PackageReference Include="SixLabors.ImageSharp" Version="1.0.4" />
     <PackageReference Include="System.Drawing.Common" Version="6.0.0" />
     <PackageReference Include="System.Net.Http.Json" Version="6.0.0" />
+    <PackageReference Include="Microsoft.ClearScript" Version="7.4.4" />
+    <PackageReference Include="Microsoft.ClearScript.linux-x64" Version="7.4.4" />
+    <PackageReference Include="Microsoft.ClearScript.osx-arm64" Version="7.4.4" />
+    <PackageReference Include="Microsoft.ClearScript.V8" Version="7.4.4" />
   </ItemGroup>
 
   <ItemGroup>
