@@ -32,7 +32,7 @@ namespace Shared
         public ImageDescription BaseImage { get; set; }
     }
     
-    public class PromptConfigRequest
+    public class SetPromptStateRequest
     {
         [JsonPropertyName("configText")]
         public ConfigText ConfigText { get; set; }
@@ -41,48 +41,20 @@ namespace Shared
         public string ScriptContent { get; set; }
     }
     
-    public abstract class PromptConfigResponse {}
+    public abstract class PromptCreatorResponse {}
 
-    public class PromptConfigResponseOk : PromptConfigResponse
+    public class PromptCreatorResponseOk : PromptCreatorResponse
     {
         [JsonPropertyName("result")]
         public object Result { get; set; }
     }
 
-    public class PromptConfigResponseNotOk : PromptConfigResponse
+    public class PromptCreatorResponseNotOk : PromptCreatorResponse
     {
         [JsonPropertyName("error")]
         public string Error { get; set; }
     }
     
-    public class PromptConfigQueryResponseOk : PromptConfigResponse
-    {
-        [JsonPropertyName("configText")]
-        public ConfigText ConfigText { get; set; }
-
-        [JsonPropertyName("scriptContent")]
-        public string ScriptContent { get; set; }
-    }
-    
-    public abstract class PromptGenerationResponse {}
-
-    public class PromptGenerationResponseOk : PromptGenerationResponse
-    {
-        [JsonPropertyName("prompt")]
-        public string Prompt { get; set; }
-    }
-
-    public class PromptGenerationResponseNotOk : PromptGenerationResponse
-    {
-        [JsonPropertyName("error")]
-        public string Error { get; set; }
-    }
-
-    public class ConfigText
-    {
-        public string prefix { get; set; }
-    }
-
     public class ImageGenerationRequest
     {
         [JsonPropertyName("seed")]

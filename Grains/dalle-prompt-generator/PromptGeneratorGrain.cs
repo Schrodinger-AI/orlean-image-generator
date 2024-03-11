@@ -1,5 +1,3 @@
-using Microsoft.ClearScript.V8;
-using Newtonsoft.Json;
 using Orleans;
 using Orleans.Runtime;
 using Shared;
@@ -53,45 +51,4 @@ public class PromptGeneratorGrain : Grain, IPromptGeneratorGrain
         var prompt = await _promptBuilder.GenerateFinalPromptFromSentences(ImageGenerationConstants.DALLE_BASE_PROMPT, sentences);
         return prompt;
     }
-
-    public async Task<PromptGenerationResponse> GeneratePrompt(PromptGenerationRequest promptGenerationRequest)
-    {
-        try
-        {
-            var promptConfigGrain = GrainFactory.GetGrain<IPromptConfigGrain>("promptConfigGrain");
-            var promptConfig = await promptConfigGrain.QueryPromptConfig();
-            
-            if (string.IsNullOrEmpty(_promptConfigState.State.ScriptContent) || _promptConfigState.State.ConfigText == null)
-            {
-                return new PromptGenerationResponseNotOk {Error = "prompt generation error, e: "};
-            }
-            // Load and execute the JavaScript file
-            var scriptContent = _promptConfigState.State.ScriptContent;
-            var configText = _promptConfigState.State.ConfigText;
-            
-            // Serialize C# objects to JSON
-            var traits = promptGenerationRequest.BaseImage.Traits.Concat(promptGenerationRequest.NewTraits).ToList();
-
-            using var engine = new V8ScriptEngine();
-            engine.Execute(scriptContent);
-
-            // Pass the JSON string to JavaScript, parse it, and call 'myFunction'
-            var config = JsonConvert.SerializeObject(configText).ToLower();
-            var traitArgs = JsonConvert.SerializeObject(traits).ToLower();
-
-            engine.Execute($"var config = JSON.parse('{config.Replace("'", "\\'")}')");
-            engine.Execute($"var traitArgs = JSON.parse('{traitArgs.Replace("'", "\\'")}');");
-            var result = engine.Script.createPrompt(engine.Script.config, engine.Script.traitArgs);
-
-            return new PromptGenerationResponseOk
-            {
-                Prompt = result.ToString()
-            };
-        }
-        catch (Exception e)
-        {
-            return new PromptGenerationResponseNotOk {Error = "prompt generation error, e: " + e.Message};
-        }
-    }
-    
 }
