@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Orleans;
 using Orleans.Runtime;
 using Orleans.Timers;
+using Shared;
 
 namespace Grains.usage_tracker;
 
@@ -30,7 +31,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IImageGenerationRequestSta
         [PersistentState("masterTrackerState", "MySqlSchrodingerImageStore")]
         IPersistentState<SchedulerState> masterTrackerState,
         ITimerRegistry timerRegistry,
-        IReminderRegistry reminderRegistry,
+        //IReminderRegistry reminderRegistry,
         ILogger<SchedulerGrain> logger)
     {
         // Register timer
@@ -47,7 +48,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IImageGenerationRequestSta
             dueTime: TimeSpan.Zero,
             period: TimeSpan.FromSeconds(1));
 
-        _reminderRegistry = reminderRegistry;
+        //_reminderRegistry = reminderRegistry;
         _logger = logger;
         
         _masterTrackerState = masterTrackerState;
@@ -89,17 +90,60 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IImageGenerationRequestSta
             .PendingImageGenerationRequests);
     }
 
-    public async Task AddImageGenerationRequest(string requestId, string accountInfo, long requestTimestamp)
+    public async Task AddImageGenerationRequest(string requestId, string childId, long requestTimestamp)
     {
+        //TODO: childId
         _masterTrackerState.State.StartedImageGenerationRequests.Add(requestId, new RequestAccountUsageInfo
         {
             RequestId = requestId,
             RequestTimestamp = requestTimestamp,
-            AccountId = accountInfo,
             Attempts = 0
         });
         
         await _masterTrackerState.WriteStateAsync();
+    }
+
+    public async Task<List<string>> AddApiKeys(List<ApiKeyEntry> apiKeyEntries)
+    {
+        List<string> addedApiKeys = new();
+        foreach (var apiKeyEntry in apiKeyEntries)
+        {
+            _masterTrackerState.State.ApiAccountInfoList.Add(new APIAccountInfo
+            {
+                ApiKey = apiKeyEntry.ApiKey,
+                Email = apiKeyEntry.Email,
+                Tier = apiKeyEntry.Tier,
+                MaxQuota = apiKeyEntry.MaxQuota
+            });
+            addedApiKeys.Add(apiKeyEntry.ApiKey);
+        }
+        await _masterTrackerState.WriteStateAsync();
+
+        return addedApiKeys;
+    }
+
+    //returns a list of apikeys that were removed
+    public async Task<List<string>> RemoveApiKeys(List<string> apiKey)
+    {
+        List<string> removedApiKeys = new();
+        _masterTrackerState.State.ApiAccountInfoList.RemoveAll(apiInfo =>
+        {
+            if (apiKey.Contains(apiInfo.ApiKey))
+            {
+                removedApiKeys.Add(apiInfo.ApiKey);
+                return true;
+            }
+            return false;
+        });
+        
+        await _masterTrackerState.WriteStateAsync();
+        
+        return removedApiKeys;
+    }
+
+    public Task<IReadOnlyList<APIAccountInfo>> GetAllApiKeys()
+    {
+        return Task.FromResult<IReadOnlyList<APIAccountInfo>>(_masterTrackerState.State.ApiAccountInfoList);
     }
 
     #region Private Methods
@@ -261,20 +305,20 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IImageGenerationRequestSta
     }
     
     //keep alive TODO
-    public async Task Ping()
+    /*public async Task Ping()
     {
         _reminder = await _reminderRegistry.RegisterOrUpdateReminder(
             reminderName: ReminderName,
             dueTime: TimeSpan.Zero,
             period: TimeSpan.FromHours(1));
-    }
+    }*/
 
     void IDisposable.Dispose()
     {
-        if (_reminder is not null)
+        /*if (_reminder is not null)
         {
             _reminderRegistry.UnregisterReminder(_reminder);
-        }
+        }*/
         
         _timer?.Dispose();
     }
