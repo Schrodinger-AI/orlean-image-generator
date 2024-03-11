@@ -23,15 +23,11 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
         _imageGenerationState = imageGeneratorState;
     }
 
-    public async Task<ImageGenerationGrainResponse> GenerateImageAsync(List<Trait> traits, string imageRequestId)
+
+    public async Task<ImageGenerationGrainResponse> GenerateImageFromPromptAsync(List<Trait> traits, string prompt, string imageRequestId)
     {
         try
         {
-            // Extract trait names from the request
-            Dictionary<string, TraitEntry> traitDefinitions = await lookupTraitDefinitions(traits.ToList());
-
-            string prompt = await generatePrompt(traits.ToList(), traitDefinitions);
-
             // Start the image data generation process
             Task<DalleResponse> imageDataTask = RunDalleAsync(prompt);
 
@@ -50,6 +46,28 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
                 IsSuccessful = true,
                 Error = null
             };
+        }
+        catch (Exception e)
+        {
+            return new ImageGenerationGrainResponse
+            {
+                RequestId = imageRequestId,
+                IsSuccessful = false,
+                Error = e.Message
+            };
+        }
+    }
+
+    public async Task<ImageGenerationGrainResponse> GenerateImageAsync(List<Trait> traits, string imageRequestId)
+    {
+        try
+        {
+            // Extract trait names from the request
+            Dictionary<string, TraitEntry> traitDefinitions = await lookupTraitDefinitions(traits.ToList());
+
+            string prompt = await generatePrompt(traits.ToList(), traitDefinitions);
+
+            return await GenerateImageFromPromptAsync(traits, prompt, imageRequestId);
         }
         catch (Exception e)
         {

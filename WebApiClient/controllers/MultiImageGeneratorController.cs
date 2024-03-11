@@ -53,12 +53,12 @@ public class MultiImageGeneratorController : ControllerBase
 
         if (imageQueryResponse.IsSuccessful)
         {
-            List<ImageDescription> images = imageQueryResponse.Images ?? new List<ImageDescription>();
+            List<ImageDescription> images = imageQueryResponse.Images ?? [];
             return new ImageQueryResponseOk { Images = images };
         }
         else
         {
-            List<string> errorMessages = imageQueryResponse.Errors ?? new List<string>();
+            List<string> errorMessages = imageQueryResponse.Errors ?? [];
             string errorMessage = string.Join(", ", errorMessages);
             return new ImageQueryResponseNotOk { Error = errorMessage };
         }
