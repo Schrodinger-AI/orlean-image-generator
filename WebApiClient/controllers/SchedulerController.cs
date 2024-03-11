@@ -48,10 +48,26 @@ public class SchedulerController : ControllerBase
     }
     
     [HttpGet]
-    public async Task<ActionResult<APIAccountInfo[]>> GetAllTraits()
+    public async Task<ActionResult<APIAccountInfo[]>> GetAllApiKeys()
     {
         var grain = _client.GetGrain<ISchedulerGrain>("SchedulerGrain");
         var apiAccountInfos = await grain.GetAllApiKeys();
-        return Ok(apiAccountInfos.ToArray());
+        
+        //hack for when we do not have user protection
+        var ret = new List<APIAccountInfo>();
+        foreach (var info in apiAccountInfos)
+        {
+            var newInfo = new APIAccountInfo
+            {
+                ApiKey = info.ApiKey.Substring(0, info.ApiKey.Length/2),
+                Email = info.Email,
+                Description = info.Description,
+                MaxQuota = info.MaxQuota,
+                Tier = info.Tier
+            };
+            ret.Add(newInfo);
+        }
+        
+        return Ok(ret.ToArray());
     }
 }
