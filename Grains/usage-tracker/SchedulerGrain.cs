@@ -38,7 +38,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IImageGenerationRequestSta
             asyncCallback: static async state =>
             {
                 var scheduler = (SchedulerGrain)state;
-                scheduler.DoScheduling();
+                await scheduler.DoScheduling();
 
                 await Task.CompletedTask;
             },
@@ -88,7 +88,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IImageGenerationRequestSta
             .PendingImageGenerationRequests);
     }
 
-    public Task AddImageGenerationRequest(string requestId, string accountInfo, long requestTimestamp)
+    public async Task AddImageGenerationRequest(string requestId, string accountInfo, long requestTimestamp)
     {
         _masterTrackerState.State.StartedImageGenerationRequests.Add(requestId, new RequestAccountUsageInfo
         {
@@ -98,14 +98,12 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IImageGenerationRequestSta
             Attempts = 0
         });
         
-        _masterTrackerState.WriteStateAsync();
-
-        return Task.CompletedTask;
+        await _masterTrackerState.WriteStateAsync();
     }
 
     #region Private Methods
 
-    private void DoScheduling()
+    private async Task DoScheduling()
     {
         // 1. Purge completed requests
         // 2. Add failed requests to pending queue
@@ -128,7 +126,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IImageGenerationRequestSta
         ProcessRequest(_masterTrackerState.State.FailedImageGenerationRequests, apiQuota);
         ProcessRequest(_masterTrackerState.State.StartedImageGenerationRequests, apiQuota);
 
-        _masterTrackerState.WriteStateAsync();
+        await _masterTrackerState.WriteStateAsync();
     }
 
     private void CleanUpExpiredCompletedRequests()
