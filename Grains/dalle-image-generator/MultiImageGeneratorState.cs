@@ -4,9 +4,15 @@ namespace Grains;
 
 public class MultiImageGenerationState
 {
-    public bool IsSuccessful { get; set; }
 
     public string RequestId { get; set; }
+
+    public List<Trait> Traits { get; set; }
+
+    public string Prompt { get; set; }
+
+    public bool IsSuccessful { get; set; }
+
 
     public List<string>? Errors { get; set; }
 

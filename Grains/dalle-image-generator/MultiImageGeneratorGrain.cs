@@ -25,6 +25,9 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
         // Extract trait names from the request
         string prompt = await generatePrompt([.. traits]);
 
+        _multiImageGenerationState.State.Prompt = prompt;
+        _multiImageGenerationState.State.Traits = traits;
+
         for (int i = 0; i < NumberOfImages; i++)
         {
             //generate a new UUID with a prefix of "imageRequest"        
@@ -32,7 +35,7 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
 
             var imageGeneratorGrain = GrainFactory.GetGrain<IImageGeneratorGrain>(imageRequestId);
 
-            var imageGenerationGrainResponse = await imageGeneratorGrain.GenerateImageFromPromptAsync(traits, imageRequestId, prompt);
+            var imageGenerationGrainResponse = await imageGeneratorGrain.GenerateImageFromPromptAsync(imageRequestId, prompt);
 
             Console.WriteLine("Image generation submitted for request: " + imageRequestId + " with response: " + imageGenerationGrainResponse);
 
@@ -62,11 +65,14 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
         _multiImageGenerationState.State.IsSuccessful = IsSuccessful;
         await _multiImageGenerationState.WriteStateAsync();
 
+        //TODO refactor this to return a single response
         if (!IsSuccessful)
         {
             return new MultiImageGenerationGrainResponse
             {
                 RequestId = multiImageRequestId,
+                Traits = traits,
+                Prompt = prompt,
                 IsSuccessful = false,
                 Errors = _multiImageGenerationState.State.Errors
             };
@@ -76,6 +82,8 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
             return new MultiImageGenerationGrainResponse
             {
                 RequestId = multiImageRequestId,
+                Traits = traits,
+                Prompt = prompt,
                 IsSuccessful = true,
             };
         }
@@ -106,7 +114,7 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
     public async Task<MultiImageQueryGrainResponse> QueryMultipleImagesAsync()
     {
         var allImages = new List<ImageDescription>();
-        var isSuccessful = true;
+        List<ImageGenerationStatus> imageGenerationStates = [];
         var errorMessages = new List<string>();
 
         foreach (var imageGenerationRequestId in _multiImageGenerationState.State.ImageGenerationRequestIds)
@@ -117,31 +125,68 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
 
             if (response is ImageQueryGrainResponse grainResponse)
             {
-                if (grainResponse.IsSuccessful && grainResponse.Image != null)
+                if (grainResponse.Status == ImageGenerationStatus.SuccessfulCompletion && grainResponse.Image != null)
                 {
+                    grainResponse.Image.Traits = _multiImageGenerationState.State.Traits;
+                    imageGenerationStates.Add(grainResponse.Status);
                     allImages.Add(grainResponse.Image);
                 }
+
+                else
+                {
+                    imageGenerationStates.Add(response.Status);
+                }
             }
-            else
-            {
-                isSuccessful = false;
-                errorMessages.Add(response.Error);
-            }
+
         }
 
-        if (isSuccessful)
+        ImageGenerationStatus finalStatus;
+
+        // loop thru the imageGenerationStates and determine the final status by below logc
+        // if any of the statuses is InProgress, mark the final status as InProgress
+        // if all statuses are SuccessfulCompletion, mark the final status as SuccessfulCompletion
+        // if all statuses are FailedCompletion, mark the final status as FailedCompletion
+        if (imageGenerationStates.Any(state => state == ImageGenerationStatus.InProgress))
+        {
+            // If any of the statuses is InProgress, mark the final status as InProgress
+            finalStatus = ImageGenerationStatus.InProgress;
+        }
+        else if (imageGenerationStates.All(state => state == ImageGenerationStatus.SuccessfulCompletion))
+        {
+            // If all statuses are SuccessfulCompletion, mark the final status as SuccessfulCompletion
+            finalStatus = ImageGenerationStatus.SuccessfulCompletion;
+        }
+        else if (imageGenerationStates.All(state => state == ImageGenerationStatus.FailedCompletion))
+        {
+            // If all statuses are FailedCompletion, mark the final status as FailedCompletion
+            finalStatus = ImageGenerationStatus.FailedCompletion;
+        }
+        else
+        {
+            // Handle the case where the statuses are a mix of SuccessfulCompletion and FailedCompletion
+            finalStatus = ImageGenerationStatus.InProgress;
+        }
+
+        if (finalStatus == ImageGenerationStatus.SuccessfulCompletion)
         {
             return new MultiImageQueryGrainResponse
             {
                 Images = allImages,
-                IsSuccessful = true
+                Status = ImageGenerationStatus.SuccessfulCompletion
+            };
+        }
+        else if (finalStatus == ImageGenerationStatus.InProgress)
+        {
+            return new MultiImageQueryGrainResponse
+            {
+                Status = ImageGenerationStatus.InProgress
             };
         }
         else
         {
             return new MultiImageQueryGrainResponse
             {
-                IsSuccessful = false,
+                Status = ImageGenerationStatus.FailedCompletion,
                 Errors = errorMessages
             };
         }
