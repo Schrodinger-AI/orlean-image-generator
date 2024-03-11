@@ -230,7 +230,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IImageGenerationRequestSta
         }
     }
 
-    private void ProcessRequest(Dictionary<string, RequestAccountUsageInfo> requests, Dictionary<string, int> apiQuota)
+    private void ProcessRequest(IDictionary<string, RequestAccountUsageInfo> requests, Dictionary<string, int> apiQuota)
     {
         List<string> requestIdToRemove = new();
         foreach (var (requestId, info) in requests)
@@ -289,9 +289,10 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IImageGenerationRequestSta
         }
     }
 
-    private static string GetApiKey(Dictionary<string, int> apiQuota)
+    private static string GetApiKey(IDictionary<string, int> apiQuota)
     {
-        var apiKey = FindKeyWithHighestValue(apiQuota);
+       var (apiKey, _)= apiQuota.MaxBy(pair => pair.Value);
+        // var apiKey = FindKeyWithHighestValue(apiQuota);
         if (string.IsNullOrEmpty(apiKey))
         {
             return "";
