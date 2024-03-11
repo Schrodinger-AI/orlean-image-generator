@@ -2,11 +2,21 @@
 namespace Shared
 {
 
+    public enum ImageGenerationStatus
+    {
+        InProgress,
+        FailedCompletion,
+
+        SuccessfulCompletion,
+
+        ReScheduled
+    }
+
     public class ImageQueryGrainResponse
     {
         public ImageDescription? Image { get; set; }
 
-        public bool IsSuccessful { get; set; }
+        public ImageGenerationStatus Status { get; set; }
         public string? Error { get; set; }
     }
 
@@ -14,7 +24,8 @@ namespace Shared
     {
         public List<ImageDescription>? Images { get; set; }
 
-        public bool IsSuccessful { get; set; }
+        public  ImageGenerationStatus Status { get; set; } = ImageGenerationStatus.InProgress;
+        
         public List<string>? Errors { get; set; }
     }
 
@@ -36,6 +47,7 @@ namespace Shared
         public List<Trait> Traits { get; set; }
 
         public bool IsSuccessful { get; set; } = false;
+
         public List<string>? Errors { get; set; }
     }
 
