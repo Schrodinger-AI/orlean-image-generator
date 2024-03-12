@@ -231,23 +231,6 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         }
     }
 
-    private void ComputeApiQuotaFromTimestamp(Dictionary<string, int> apiQuota, Dictionary<string, RequestAccountUsageInfo> requests)
-    {
-        var now = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
-        
-        foreach (var info in _masterTrackerState.State.FailedImageGenerationRequests)
-        {
-            var difference = now - info.Value.StartedTimestamp;
-            //if difference is more than 60 seconds, we can remove it
-            if (difference > RATE_LIMIT_DURATION)
-            {
-                continue;
-            }
-            
-            apiQuota[info.Value.ApiKey]--;
-        }
-    }
-
     private async Task ProcessRequest(IDictionary<string, RequestAccountUsageInfo> requests, IDictionary<string, int> apiQuota)
     {
         var maxAttemptsReached = requests
@@ -326,25 +309,6 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         
         apiQuota[apiKey] -= 1;
         return apiKey;
-    }
-
-    private static string FindKeyWithHighestValue(Dictionary<string, int> dictionary)
-    {
-        if (dictionary == null || dictionary.Count == 0)
-            throw new ArgumentException("Dictionary is empty or null");
-
-        var keyWithHighestValue = "";
-        var highestValue = int.MinValue;
-
-        foreach (var kvp in dictionary)
-        {
-            if (kvp.Value <= highestValue) continue;
-            
-            highestValue = kvp.Value;
-            keyWithHighestValue = kvp.Key;
-        }
-
-        return keyWithHighestValue;
     }
 
     private RequestAccountUsageInfo PopFromPending(string requestId)
