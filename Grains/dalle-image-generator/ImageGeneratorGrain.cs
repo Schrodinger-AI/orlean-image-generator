@@ -13,10 +13,12 @@ using SixLabors.ImageSharp.Formats.Jpeg;
 
 namespace Grains;
 
-public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
+public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
 {
     private string apiKey;
     private IDisposable _timer;
+
+    private IDisposable _reconcileCheckerTimer;
 
     private readonly IPersistentState<ImageGenerationState> _imageGenerationState;
 
@@ -35,6 +37,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
     {
         _logger.LogInformation("ImageGeneratorGrain - OnActivateAsync");
         _timer = RegisterTimer(TriggerImageGenerationAsync, null, TimeSpan.Zero, TimeSpan.FromSeconds(1));
+        _reconcileCheckerTimer = RegisterTimer(CheckAndReportForInvalidStates, null, TimeSpan.Zero, TimeSpan.FromSeconds(300));
         return base.OnActivateAsync();
     }
 
@@ -51,6 +54,41 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
         _logger.LogInformation("ImageGeneratorGrain - Settting ApiKey: {} for imageGeneratorId: {}", key,
             _imageGenerationState.State.RequestId);
         apiKey = key;
+    }
+
+    private async Task CheckAndReportForInvalidStates(object state)
+    {
+        if (string.IsNullOrEmpty(apiKey) && _imageGenerationState.State.Status == ImageGenerationStatus.InProgress)
+        {
+            _logger.LogInformation("ImageGeneratorGrain - generatorId: {} : ApiKey is null", _imageGenerationState.State.RequestId);
+
+            // Handle the case where the API key does not exist or image-generation in-progress
+            _imageGenerationState.State.Status = ImageGenerationStatus.FailedCompletion;
+            _imageGenerationState.State.Error = "ImageGeneration is in invalidState - resetting to FailedCompletion";
+            await _imageGenerationState.WriteStateAsync();
+
+            var parentGeneratorGrain = GrainFactory.GetGrain<IMultiImageGeneratorGrain>(_imageGenerationState.State.ParentRequestId);
+            var schedulerGrain = GrainFactory.GetGrain<IImageGenerationRequestStatusReceiver>("SchedulerGrain");
+
+            // notify about failed completion to parentGrain
+            await parentGeneratorGrain.NotifyImageGenerationStatus(_imageGenerationState.State.RequestId, ImageGenerationStatus.FailedCompletion, _imageGenerationState.State.Error);
+            // notify the scheduler grain about the failed completion
+            var requestStatus = new RequestStatus
+            {
+                RequestId = _imageGenerationState.State.RequestId,
+                Status = RequestStatusEnum.Failed,
+                Message = _imageGenerationState.State.Error
+            };
+            await schedulerGrain.ReportFailedImageGenerationRequestAsync(requestStatus);
+            return;
+        }
+
+        else if (_imageGenerationState.State.Status == ImageGenerationStatus.SuccessfulCompletion)
+        {
+            _logger.LogInformation("ImageGeneratorGrain - About to dispose _reconcileCheckerTimer for generatorId: {} as image generation is Successful", _imageGenerationState.State.RequestId);
+            _reconcileCheckerTimer.Dispose();
+            return;
+        }
     }
 
     private async Task TriggerImageGenerationAsync(object state)
@@ -175,7 +213,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
             // Generate the ImageQueryResponseOk
             var image = new ImageDescription
             {
-                ExtraData = imageUrl,
+                ExtraData = prompt,
                 Image = base64Image,
             };
 
@@ -205,6 +243,22 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
             _imageGenerationState.State.Status = ImageGenerationStatus.FailedCompletion;
             _imageGenerationState.State.Error = e.Message;
             await _imageGenerationState.WriteStateAsync();
+
+
+            //load the scheduler Grain and update with 
+            var parentGeneratorGrain = GrainFactory.GetGrain<IMultiImageGeneratorGrain>(_imageGenerationState.State.ParentRequestId);
+            await parentGeneratorGrain.NotifyImageGenerationStatus(_imageGenerationState.State.RequestId, ImageGenerationStatus.FailedCompletion, e.Message);
+
+            // notify the scheduler grain about the failed completion
+            var requestStatus = new RequestStatus
+            {
+                RequestId = _imageGenerationState.State.RequestId,
+                Status = RequestStatusEnum.Failed,
+                Message = e.Message
+            };
+
+            var schedulerGrain = GrainFactory.GetGrain<IImageGenerationRequestStatusReceiver>("SchedulerGrain");
+            await schedulerGrain.ReportFailedImageGenerationRequestAsync(requestStatus);
 
             return new ImageGenerationGrainResponse
             {
@@ -330,8 +384,9 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
     }
 
 
-    public static int GetSizeOfBase64String(string base64String)
+    public void Dispose()
     {
-        return (int)Math.Ceiling(base64String.Length * 4 / 3.0);
+        _timer?.Dispose();
+        _reconcileCheckerTimer?.Dispose();
     }
 }

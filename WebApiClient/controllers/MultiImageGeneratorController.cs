@@ -56,23 +56,19 @@ public class MultiImageGeneratorController : ControllerBase
     }
 
     [HttpPost("query")]
-    public async Task<ImageQueryResponse> QueryImage(ImageQueryRequest imageQueryRequest)
+    public async Task<ObjectResult> QueryImage(ImageQueryRequest imageQueryRequest)
     {
         var multiImageGeneratorGrain = _client.GetGrain<IMultiImageGeneratorGrain>(imageQueryRequest.RequestId);
 
         var imageQueryResponse = await multiImageGeneratorGrain.QueryMultipleImagesAsync();
 
-        if (imageQueryResponse.Status == ImageGenerationStatus.SuccessfulCompletion ||
-            imageQueryResponse.Status == ImageGenerationStatus.InProgress)
+        if (imageQueryResponse.Status == ImageGenerationStatus.SuccessfulCompletion)
         {
-            List<ImageDescription> images = imageQueryResponse.Images ?? [];
-            return new ImageQueryResponseOk { Images = images };
+            List<ImageDescription> images = imageQueryResponse.Images ?? new List<ImageDescription>();
+            return StatusCode(200, new ImageQueryResponseOk { Images = images });
         }
-        else
-        {
-            List<string> errorMessages = imageQueryResponse.Errors ?? [];
-            string errorMessage = string.Join(", ", errorMessages);
-            return new ImageQueryResponseNotOk { Error = errorMessage };
+        else {
+            return StatusCode(202, new ImageQueryResponseNotOk { Error = "result is not ready" });
         }
     }
 }

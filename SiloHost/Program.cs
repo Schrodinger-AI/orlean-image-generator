@@ -43,7 +43,7 @@ namespace SiloHost
                     logging.AddConsole();
                     logging.SetMinimumLevel(LogLevel.Debug); // Set log level to Debug for more detailed logging
                 })
-                .UseDashboard(options => { })
+                // .UseDashboard(options => { })
                 .Build();
 
             await host.StartAsync();
