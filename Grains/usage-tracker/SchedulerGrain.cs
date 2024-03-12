@@ -63,6 +63,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         var info = PopFromPending(requestStatus.RequestId);
         var unixTimestamp = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
         info.FailedTimestamp = unixTimestamp;
+        info.StartedTimestamp = requestStatus.RequestTimestamp;
         _masterTrackerState.State.FailedImageGenerationRequests.Add(requestStatus.RequestId, info);
         await _masterTrackerState.WriteStateAsync();
     }
@@ -72,6 +73,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         var info = PopFromPending(requestStatus.RequestId);
         var unixTimestamp = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
         info.CompletedTimestamp = unixTimestamp;
+        info.StartedTimestamp = requestStatus.RequestTimestamp;
         _masterTrackerState.State.CompletedImageGenerationRequests.Add(requestStatus.RequestId, info);
         await _masterTrackerState.WriteStateAsync();
     }
@@ -259,6 +261,13 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         { 
             var info = requests[requestId];
             info.Attempts++;
+            
+            var imageGenerationGrain = GrainFactory.GetGrain<IImageGeneratorGrain>(info.ChildId);
+            if (imageGenerationGrain == null)
+            {
+                _logger.LogError("Cannot find ImageGeneratorGrain with ID: " + info.ChildId);
+                continue;
+            }
 
             info.ApiKey = GetApiKey(apiQuota);
             
@@ -272,9 +281,8 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
             AlarmWhenLowOnQuota(apiQuota);
             
             info.StartedTimestamp = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
-            // TODO: get child gen grain to process failed request again with the new api key
-            var imageGenerationGrain = GrainFactory.GetGrain<IImageGeneratorGrain>(info.ChildId);
-            //imageGenerationGrain.)
+            // Get child gen grain to process failed request again with the new api key
+            imageGenerationGrain.SetApiKey(info.ApiKey);
             
             // remove from list to add to pending
             _masterTrackerState.State.PendingImageGenerationRequests.Add(requestId, info);
