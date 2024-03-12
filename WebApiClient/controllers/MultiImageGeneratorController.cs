@@ -17,6 +17,15 @@ public class MultiImageGeneratorController : ControllerBase
         _client = client;
     }
 
+
+    [HttpPost("inspect")]
+    public async Task<ImageGenerationState> Inspect(InspectGeneratorRequest request)
+    {
+        var grain = _client.GetGrain<IImageGeneratorGrain>(request.RequestId);
+        var state = await grain.GetStateAsync();
+        return state;
+    }
+
     [HttpPost("generate")]
     public async Task<ImageGenerationResponse> GenerateImage(ImageGenerationRequest imageGenerationRequest)
     {
@@ -31,7 +40,8 @@ public class MultiImageGeneratorController : ControllerBase
 
         var multiImageGeneratorGrain = _client.GetGrain<IMultiImageGeneratorGrain>(imageRequestId);
 
-        var response = await multiImageGeneratorGrain.GenerateMultipleImagesAsync(traits.ToList(), imageGenerationRequest.NumberOfImages, imageRequestId);
+        var response = await multiImageGeneratorGrain.GenerateMultipleImagesAsync(traits.ToList(),
+            imageGenerationRequest.NumberOfImages, imageRequestId);
 
         if (response.IsSuccessful)
         {
@@ -52,7 +62,8 @@ public class MultiImageGeneratorController : ControllerBase
 
         var imageQueryResponse = await multiImageGeneratorGrain.QueryMultipleImagesAsync();
 
-        if (imageQueryResponse.Status == ImageGenerationStatus.SuccessfulCompletion || imageQueryResponse.Status == ImageGenerationStatus.InProgress)
+        if (imageQueryResponse.Status == ImageGenerationStatus.SuccessfulCompletion ||
+            imageQueryResponse.Status == ImageGenerationStatus.InProgress)
         {
             List<ImageDescription> images = imageQueryResponse.Images ?? [];
             return new ImageQueryResponseOk { Images = images };
