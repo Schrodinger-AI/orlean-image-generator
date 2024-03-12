@@ -96,12 +96,12 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
 
     public async Task AddImageGenerationRequest(string requestId, string childId, long requestTimestamp)
     {
-        //TODO: childId
         _masterTrackerState.State.StartedImageGenerationRequests.Add(requestId, new RequestAccountUsageInfo
         {
             RequestId = requestId,
             RequestTimestamp = requestTimestamp,
-            Attempts = 0
+            Attempts = 0,
+            ChildId = childId
         });
         
         await _masterTrackerState.WriteStateAsync();
@@ -273,7 +273,9 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
             
             info.StartedTimestamp = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
             // TODO: get child gen grain to process failed request again with the new api key
-
+            var imageGenerationGrain = GrainFactory.GetGrain<IImageGeneratorGrain>(info.ChildId);
+            //imageGenerationGrain.)
+            
             // remove from list to add to pending
             _masterTrackerState.State.PendingImageGenerationRequests.Add(requestId, info);
             //_logger.LogWarning("Request " + requestId + " is pending");
