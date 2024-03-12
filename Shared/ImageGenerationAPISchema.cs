@@ -23,14 +23,6 @@ namespace Shared
         public string? ExtraData { get; set; } = null;
     }
 
-    public class ExtraData {
-        [JsonPropertyName("prompt")]
-        public string Prompt { get; set; }
-        
-        [JsonPropertyName("imageUrl")]
-        public string ImageUrl { get; set; }
-    }
-
     public class PromptGenerationRequest
     {
         [JsonPropertyName("identifier")]
