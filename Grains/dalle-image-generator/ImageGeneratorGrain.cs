@@ -29,7 +29,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
 
     public override Task OnActivateAsync()
     {
-        _logger.LogError("ImageGeneratorGrain - OnActivateAsync");
+        _logger.LogInformation("ImageGeneratorGrain - OnActivateAsync");
         _timer = RegisterTimer(TriggerImageGenerationAsync, null, TimeSpan.Zero, TimeSpan.FromSeconds(1));
         return base.OnActivateAsync();
     }
@@ -53,10 +53,17 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
         _logger.LogInformation("ImageGeneratorGrain - TriggerImageGenerationAsync with ApiKey: {}", apiKey);
 
         // Check if the API key exists in memory
-        if (string.IsNullOrEmpty(apiKey) || _imageGenerationState.State.Status == ImageGenerationStatus.InProgress)
+        if (string.IsNullOrEmpty(apiKey))
         {
-            _logger.LogInformation("ImageGeneratorGrain - generatorId: {} : ApiKey is null or image generation in progress", _imageGenerationState.State.RequestId);
+            _logger.LogInformation("ImageGeneratorGrain - generatorId: {} : ApiKey is null", _imageGenerationState.State.RequestId);
             // Handle the case where the API key does not exist or image-generation in-progress
+            return;
+        }
+
+        if(_imageGenerationState.State.Status == ImageGenerationStatus.InProgress)
+        {
+            _logger.LogInformation("ImageGeneratorGrain - generatorId: {} , image generation is in progress", _imageGenerationState.State.RequestId);
+            // Handle the case where the image generation is already in progress
             return;
         }
 
@@ -203,12 +210,9 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
             var response = await client.PostAsync("https://api.openai.com/v1/images/generations", content);
 
             var jsonResponse = await response.Content.ReadAsStringAsync();
-
-            Console.WriteLine($"response.data from dalle: {jsonResponse}");
-
             DalleResponse dalleResponse = JsonConvert.DeserializeObject<DalleResponse>(jsonResponse);
 
-            Console.WriteLine("dalleResponse: " + dalleResponse);
+            _logger.LogInformation("ImageGeneratorGrain - generatorId: {} , Dalle API response: {}", _imageGenerationState.State.RequestId, dalleResponse);
 
             return dalleResponse;
         }

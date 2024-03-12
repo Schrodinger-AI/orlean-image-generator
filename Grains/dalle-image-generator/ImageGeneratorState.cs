@@ -8,7 +8,7 @@ public class ImageGenerationState
 
     public string ParentRequestId { get; set; }
 
-    public ImageGenerationStatus Status { get; set; } = ImageGenerationStatus.InProgress;
+    public ImageGenerationStatus Status { get; set; } = ImageGenerationStatus.Dormant;
 
     public string Prompt { get; set; }
     public string? ImageUrl { get; set; }
