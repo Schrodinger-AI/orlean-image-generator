@@ -54,6 +54,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
         _logger.LogInformation("ImageGeneratorGrain - Settting ApiKey: {} for imageGeneratorId: {}", key,
             _imageGenerationState.State.RequestId);
         _apiKey = key;
+        await Task.CompletedTask;
     }
 
     private async Task CheckAndReportForInvalidStates(object state)
