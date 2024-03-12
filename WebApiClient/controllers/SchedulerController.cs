@@ -1,3 +1,4 @@
+using System.Collections;
 using Grains.types;
 using Grains.usage_tracker;
 using Microsoft.AspNetCore.Mvc;
@@ -78,7 +79,22 @@ public class SchedulerController : ControllerBase
         {
             var grain = _client.GetGrain<ISchedulerGrain>("SchedulerGrain");
             var states = await grain.GetImageGenerationStates();
-            return new ImageGenerationStatesResponseOk<RequestAccountUsageInfo>(states);
+            var startedImageGenerationRequests = new List<RequestAccountUsageInfo>(states.StartedImageGenerationRequests.Values);
+            startedImageGenerationRequests.ForEach(item => item.ApiKey = "");
+            var pendingImageGenerationRequests = new List<RequestAccountUsageInfo>(states.PendingImageGenerationRequests.Values);
+            pendingImageGenerationRequests.ForEach(item => item.ApiKey = "");
+            var completedImageGenerationRequests = new List<RequestAccountUsageInfo>(states.CompletedImageGenerationRequests.Values);
+            completedImageGenerationRequests.ForEach(item => item.ApiKey = "");
+            var failedImageGenerationRequests = new List<RequestAccountUsageInfo>(states.FailedImageGenerationRequests.Values);
+            failedImageGenerationRequests.ForEach(item => item.ApiKey = "");
+            var imageGenerationRequests = new Dictionary<string, List<RequestAccountUsageInfo>>()
+            {
+                {"startedRequests", startedImageGenerationRequests},
+                {"pendingRequests", pendingImageGenerationRequests},
+                {"completedRequests", completedImageGenerationRequests},
+                {"failedRequests", failedImageGenerationRequests}
+            };
+            return new ImageGenerationStatesResponseOk<Dictionary<string, List<RequestAccountUsageInfo>>>(imageGenerationRequests);
         }
         catch (Exception ex)
         {

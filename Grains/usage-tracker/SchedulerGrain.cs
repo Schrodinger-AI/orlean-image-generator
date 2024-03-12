@@ -161,13 +161,9 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         return Task.FromResult<IReadOnlyList<APIAccountInfo>>(_masterTrackerState.State.ApiAccountInfoList);
     }
 
-    public Task<List<RequestAccountUsageInfo>> GetImageGenerationStates()
+    public Task<SchedulerState> GetImageGenerationStates()
     {
-        var imageGenerationStates = _masterTrackerState.State.CompletedImageGenerationRequests.Values
-            .Concat(_masterTrackerState.State.FailedImageGenerationRequests.Values)
-            .Concat(_masterTrackerState.State.PendingImageGenerationRequests.Values)
-            .Concat(_masterTrackerState.State.StartedImageGenerationRequests.Values).ToList();
-        return Task.FromResult(imageGenerationStates);
+        return Task.FromResult(_masterTrackerState.State);
     }
 
     #region Private Methods
@@ -374,6 +370,24 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         }*/
         
         _timer?.Dispose();
+    }
+
+    private Dictionary<string, List<RequestAccountUsageInfo>> WrapImageGenerationStartStates(string state, List<RequestAccountUsageInfo> imageGenerationRequests)
+    {
+        var imageGenerationStartStates = new Dictionary<string, List<RequestAccountUsageInfo>>
+        {
+            { state, imageGenerationRequests.Select(item => new RequestAccountUsageInfo
+            {
+                RequestId = item.RequestId,
+                RequestTimestamp = item.RequestTimestamp,
+                StartedTimestamp = item.StartedTimestamp,
+                FailedTimestamp = item.FailedTimestamp,
+                CompletedTimestamp = item.CompletedTimestamp,
+                Attempts = item.Attempts,
+                ChildId = item.ChildId
+            }).ToList() }
+        };
+        return imageGenerationStartStates;
     }
 
     #endregion
