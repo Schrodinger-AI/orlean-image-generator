@@ -12,7 +12,7 @@ namespace Grains.usage_tracker;
 /// one minute ago but haven't completed). It will compare this count against the account's quota and choose the least
 /// loaded account for the next job.
 /// </summary>
-public class SchedulerGrain : Grain, ISchedulerGrain, IImageGenerationRequestStatusReceiver, IDisposable
+public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
 {
     private const string ReminderName = "SchedulingReminder";
     private const long RATE_LIMIT_DURATION = 60;
