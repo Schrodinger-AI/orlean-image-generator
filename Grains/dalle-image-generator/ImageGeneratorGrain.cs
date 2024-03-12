@@ -199,7 +199,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
             await _imageGenerationState.WriteStateAsync();
 
             // Start the image data generation process
-            DalleResponse dalleResponse = await RunDalleAsync(prompt);
+            var dalleResponse = await RunDalleAsync(prompt);
 
             _logger.LogInformation("ImageGeneratorGrain - generatorId: {} , dalleResponse: {}", imageRequestId,
                 dalleResponse);
