@@ -76,6 +76,9 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
             return;
         }
 
+        _imageGenerationState.State.Status = ImageGenerationStatus.InProgress;
+        await _imageGenerationState.WriteStateAsync();
+
         // Call GenerateImageFromPromptAsync with its arguments taken from the state and the API key taken from memory
         ImageGenerationGrainResponse imageGenerationResponse = await GenerateImageFromPromptAsync(_imageGenerationState.State.Prompt, _imageGenerationState.State.RequestId, _imageGenerationState.State.ParentRequestId);
 
