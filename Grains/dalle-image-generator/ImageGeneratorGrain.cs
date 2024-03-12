@@ -385,11 +385,6 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
         }
     }
 
-    public static int GetSizeOfBase64String(string base64String)
-    {
-        return (int)Math.Ceiling(base64String.Length * 4 / 3.0);
-    }
-
     public void Dispose()
     {
         _timer?.Dispose();
