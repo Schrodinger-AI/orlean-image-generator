@@ -8,6 +8,7 @@ using SixLabors.ImageSharp.Processing;
 using Shared;
 using Grains.usage_tracker;
 using Grains.types;
+using Microsoft.Extensions.Logging;
 
 namespace Grains;
 
@@ -18,14 +19,19 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
 
     private readonly IPersistentState<ImageGenerationState> _imageGenerationState;
 
-    public ImageGeneratorGrain([PersistentState("imageGenerationState", "MySqlSchrodingerImageStore")] IPersistentState<ImageGenerationState> imageGeneratorState, PromptBuilder promptBuilder)
+    private readonly ILogger<SchedulerGrain> _logger;
+
+    public ImageGeneratorGrain([PersistentState("imageGenerationState", "MySqlSchrodingerImageStore")] IPersistentState<ImageGenerationState> imageGeneratorState, PromptBuilder promptBuilder, ILogger<SchedulerGrain> logger)
     {
         _imageGenerationState = imageGeneratorState;
+        _logger = logger;
+
     }
 
     public override Task OnActivateAsync()
     {
-        _timer = RegisterTimer(TriggerImageGenerationAsync, null, TimeSpan.Zero, TimeSpan.FromMinutes(1));
+        _logger.LogError("ImageGeneratorGrain - OnActivateAsync");
+        _timer = RegisterTimer(TriggerImageGenerationAsync, null, TimeSpan.Zero, TimeSpan.FromSeconds(1));
         return base.OnActivateAsync();
     }
 
@@ -39,21 +45,26 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
 
     public async Task SetApiKey(string key)
     {
+        _logger.LogInformation("ImageGeneratorGrain - Settting ApiKey: {} for imageGeneratorId: {}", key, _imageGenerationState.State.RequestId);
         apiKey = key;
     }
 
     private async Task TriggerImageGenerationAsync(object state)
     {
+        _logger.LogInformation("ImageGeneratorGrain - TriggerImageGenerationAsync with ApiKey: {}", apiKey);
+
         // Check if the API key exists in memory
-        if (string.IsNullOrEmpty(apiKey))
+        if (string.IsNullOrEmpty(apiKey) || _imageGenerationState.State.Status == ImageGenerationStatus.InProgress)
         {
-            // Handle the case where the API key does not exist
+            _logger.LogInformation("ImageGeneratorGrain - generatorId: {} : ApiKey is null or image generation in progress", _imageGenerationState.State.RequestId);
+            // Handle the case where the API key does not exist or image-generation in-progress
             return;
         }
 
         // Check if the image generation is not already completed
         if (_imageGenerationState.State.Status == ImageGenerationStatus.SuccessfulCompletion)
         {
+            _logger.LogInformation("ImageGeneratorGrain - generatorId: {} , image generation is successful", _imageGenerationState.State.RequestId);
             // Handle the case where the image generation is already completed
             _timer.Dispose();
             return;
@@ -61,6 +72,8 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
 
         // Call GenerateImageFromPromptAsync with its arguments taken from the state and the API key taken from memory
         ImageGenerationGrainResponse imageGenerationResponse = await GenerateImageFromPromptAsync(_imageGenerationState.State.Prompt, _imageGenerationState.State.RequestId, _imageGenerationState.State.ParentRequestId);
+
+        _logger.LogInformation("ImageGeneratorGrain - generatorId: {} , imageGenerationResponse: {}", _imageGenerationState.State.RequestId, imageGenerationResponse);
 
         //load the scheduler Grain and update with 
         var parentGeneratorGrain = GrainFactory.GetGrain<IMultiImageGeneratorGrain>(_imageGenerationState.State.ParentRequestId);
@@ -70,6 +83,8 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
         {
             // Handle the case where the image generation is successful
             _timer.Dispose();
+
+            _logger.LogInformation("ImageGeneratorGrain - generatorId: {} , image generation is successful", _imageGenerationState.State.RequestId);
 
             // notify about successful completion to parentGrain
             await parentGeneratorGrain.NotifyImageGenerationStatus(_imageGenerationState.State.RequestId, ImageGenerationStatus.SuccessfulCompletion, null);
@@ -86,6 +101,8 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
         }
         else
         {
+            _logger.LogInformation("ImageGeneratorGrain - generatorId: {} , image generation failed with Error: {}", _imageGenerationState.State.RequestId, imageGenerationResponse.Error);
+
             // notify about failed completion to parentGrain
             await parentGeneratorGrain.NotifyImageGenerationStatus(_imageGenerationState.State.RequestId, ImageGenerationStatus.FailedCompletion, imageGenerationResponse.Error);
 
@@ -106,6 +123,8 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
 
     public async Task<ImageGenerationGrainResponse> GenerateImageFromPromptAsync(string prompt, string imageRequestId, string parentRequestId)
     {
+        _logger.LogInformation("ImageGeneratorGrain - generatorId: {} , GenerateImageFromPromptAsync invoked with prompt: {} \n", imageRequestId, prompt);
+
         try
         {
             _imageGenerationState.State.ParentRequestId = parentRequestId;
@@ -116,13 +135,13 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
             // Start the image data generation process
             DalleResponse dalleResponse = await RunDalleAsync(prompt);
 
+            _logger.LogInformation("ImageGeneratorGrain - generatorId: {} , dalleResponse: {}", imageRequestId, dalleResponse);
+
             // Extract the URL from the result
             string imageUrl = dalleResponse.Data[0].Url;
 
             // Convert the image URL to base64
             string base64Image = await ConvertImageUrlToBase64(imageUrl);
-
-            Console.WriteLine("Size of base64 string: " + GetSizeOfBase64String(base64Image) + " bytes");
 
             // Generate the ImageQueryResponseOk
             var image = new ImageDescription
@@ -151,7 +170,9 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
         }
         catch (Exception e)
         {
+            _logger.LogError("ImageGeneratorGrain - generatorId: {} , GenerateImageFromPromptAsync failed with Error: {}", imageRequestId, e.Message);
             _imageGenerationState.State.Status = ImageGenerationStatus.FailedCompletion;
+            _imageGenerationState.State.Error = e.Message;
             await _imageGenerationState.WriteStateAsync();
 
             return new ImageGenerationGrainResponse
@@ -165,7 +186,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
 
     public async Task<DalleResponse> RunDalleAsync(string prompt)
     {
-        Console.WriteLine("about to call Dalle API to generate image for prompt: " + prompt);
+        _logger.LogInformation("ImageGeneratorGrain - generatorId: {} , about to call Dalle API to generate image for prompt: {}", _imageGenerationState.State.RequestId, prompt);
 
         using (var client = new HttpClient())
         {
