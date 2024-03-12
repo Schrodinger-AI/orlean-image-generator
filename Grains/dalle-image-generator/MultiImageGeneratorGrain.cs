@@ -150,7 +150,7 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
         {
             return new MultiImageQueryGrainResponse()
             {
-                Initialized = false
+                Uninitialized = true
             };
         }
 

@@ -22,7 +22,7 @@ namespace Shared
 
     public class MultiImageQueryGrainResponse
     {
-        public bool Initialized { get; set; }
+        public bool Uninitialized { get; set; }
         public List<ImageDescription>? Images { get; set; }
 
         public ImageGenerationStatus Status { get; set; } = ImageGenerationStatus.Dormant;
