@@ -17,7 +17,6 @@ namespace SiloHost
                 .ConfigureServices((hostContext, services) =>
                 {
                     services.Configure<TraitConfigOptions>(hostContext.Configuration.GetSection("TraitConfig"));
-                    services.AddSingleton<PromptBuilder>();
                 })
                 .Configure<ClusterOptions>(options =>
                 {
