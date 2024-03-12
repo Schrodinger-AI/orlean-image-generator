@@ -37,6 +37,11 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
         await _imageGenerationState.WriteStateAsync();
     }
 
+    public async Task SetApiKey(string key)
+    {
+        apiKey = key;
+    }
+
     private async Task TriggerImageGenerationAsync(object state)
     {
         // Check if the API key exists in memory
