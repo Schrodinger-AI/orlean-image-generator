@@ -203,8 +203,8 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         
         CleanUpExpiredCompletedRequests();
 
-        ProcessRequest(_masterTrackerState.State.FailedImageGenerationRequests, remainingQuotaByApiKey);
-        ProcessRequest(_masterTrackerState.State.StartedImageGenerationRequests, remainingQuotaByApiKey);
+        await ProcessRequest(_masterTrackerState.State.FailedImageGenerationRequests, remainingQuotaByApiKey);
+        await ProcessRequest(_masterTrackerState.State.StartedImageGenerationRequests, remainingQuotaByApiKey);
 
         await _masterTrackerState.WriteStateAsync();
     }
@@ -242,7 +242,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         }
     }
 
-    private void ProcessRequest(IDictionary<string, RequestAccountUsageInfo> requests, IDictionary<string, int> apiQuota)
+    private async Task ProcessRequest(IDictionary<string, RequestAccountUsageInfo> requests, IDictionary<string, int> apiQuota)
     {
         var maxAttemptsReached = requests
             .Where(pair => pair.Value.Attempts > MAX_ATTEMPTS)
@@ -282,7 +282,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
             
             info.StartedTimestamp = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
             // Get child gen grain to process failed request again with the new api key
-            imageGenerationGrain.SetApiKey(info.ApiKey);
+            await imageGenerationGrain.SetApiKey(info.ApiKey);
             
             // remove from list to add to pending
             _masterTrackerState.State.PendingImageGenerationRequests.Add(requestId, info);
