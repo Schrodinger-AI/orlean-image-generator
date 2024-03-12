@@ -1,4 +1,5 @@
 using Grains.usage_tracker;
+using Microsoft.Extensions.Logging;
 using Orleans;
 using Orleans.Runtime;
 using Shared;
@@ -11,18 +12,23 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
 {
     private readonly PromptBuilder _promptBuilder;
 
+    private readonly ILogger<SchedulerGrain> _logger;
+
     private readonly IPersistentState<MultiImageGenerationState> _multiImageGenerationState;
 
     public MultiImageGeneratorGrain(
         [PersistentState("multiImageGenerationState", "MySqlSchrodingerImageStore")]
-        IPersistentState<MultiImageGenerationState> multiImageGenerationState, PromptBuilder promptBuilder)
+        IPersistentState<MultiImageGenerationState> multiImageGenerationState, PromptBuilder promptBuilder, ILogger<SchedulerGrain> logger)
     {
         _multiImageGenerationState = multiImageGenerationState;
         _promptBuilder = promptBuilder;
+        _logger = logger;
     }
 
     public async Task NotifyImageGenerationStatus(string imageRequestId, ImageGenerationStatus status, string? error)
     {
+        _logger.LogInformation("NotifyImageGenerationStatus called with requestId: {}, status: {}, error: {}", imageRequestId, status, error);
+
         var imageGenerationNotification = new ImageGenerationTracker
         {
             RequestId = imageRequestId,
@@ -50,6 +56,8 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
     public async Task<MultiImageGenerationGrainResponse> GenerateMultipleImagesAsync(List<Attribute> traits,
         int NumberOfImages, string multiImageRequestId)
     {
+        _logger.LogInformation("GenerateMultipleImagesAsync called with traits: {}, NumberOfImages: {}, multiImageRequestId: {}", traits, NumberOfImages, multiImageRequestId);
+
         try
         {
             _multiImageGenerationState.State.RequestId = multiImageRequestId;
@@ -57,6 +65,8 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
 
             // Extract trait names from the request
             string prompt = await GeneratePromptAsync(traits);
+
+            _logger.LogInformation("For MultiImageRequest: {} Prompt generated: {}", multiImageRequestId, prompt);
 
             _multiImageGenerationState.State.Prompt = prompt;
             _multiImageGenerationState.State.Traits = traits;
@@ -77,6 +87,8 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
 
                 _multiImageGenerationState.State.ImageGenerationRequestIds.Add(imageRequestId);
 
+                _logger.LogInformation("For MultiImageRequest: {} ImageRequest: {} added to the list of imageGenerationRequestIds", multiImageRequestId, imageRequestId);
+
                 await schedulerGrain.AddImageGenerationRequest(multiImageRequestId, imageRequestId, unixTimestamp);
             }
 
@@ -93,6 +105,7 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Error occurred in GenerateMultipleImagesAsync for MultiImageRequest: {}", multiImageRequestId);
             if (_multiImageGenerationState.State.Errors == null)
             {
                 _multiImageGenerationState.State.Errors = [];
@@ -114,6 +127,7 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
 
     public async Task<Dictionary<string, TraitEntry>> lookupTraitDefinitions(List<Attribute> requestTraits)
     {
+        _logger.LogInformation("lookupTraitDefinitions called with requestTraits: {}", requestTraits);
         // Extract trait names from the request
         var traitNames = requestTraits.Select(t => t.TraitType).ToList();
 
@@ -133,6 +147,7 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
         var prompt =
             await _promptBuilder.GenerateFinalPromptFromSentences(ImageGenerationConstants.DALLE_BASE_PROMPT,
                 sentences);
+        _logger.LogInformation("Generated prompt: {} for MultiImageGenerationRequest: {}", prompt, _multiImageGenerationState.State.RequestId);
         return prompt;
     }
 
