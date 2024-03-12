@@ -210,16 +210,10 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
             // Convert the image URL to base64
             string base64Image = await ConvertImageUrlToBase64(imageUrl);
 
-            var data = new ExtraData{
-                ImageUrl = imageUrl,
-                Prompt = prompt
-            };
-            string jsonData = JsonConvert.SerializeObject(data);
-
             // Generate the ImageQueryResponseOk
             var image = new ImageDescription
             {
-                ExtraData = jsonData,
+                ExtraData = prompt,
                 Image = base64Image,
             };
 
