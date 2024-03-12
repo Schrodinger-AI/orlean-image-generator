@@ -12,4 +12,5 @@ public interface ISchedulerGrain : ISchrodingerGrain, Orleans.IGrainWithStringKe
     Task<List<string>> AddApiKeys(List<ApiKeyEntry> apiKeyEntries);
     Task<List<string>> RemoveApiKeys(List<string> apiKey);
     Task<IReadOnlyList<APIAccountInfo>> GetAllApiKeys();
+    Task<List<RequestAccountUsageInfo>> GetImageGenerationStates();
 }
