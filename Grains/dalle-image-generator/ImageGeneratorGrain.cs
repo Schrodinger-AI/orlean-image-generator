@@ -25,7 +25,6 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
     {
         _imageGenerationState = imageGeneratorState;
         _logger = logger;
-
     }
 
     public override Task OnActivateAsync()
