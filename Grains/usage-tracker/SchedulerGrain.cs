@@ -60,6 +60,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
 
     public async Task ReportFailedImageGenerationRequestAsync(RequestStatus requestStatus)
     {
+        _logger.LogError("Image generation failed with message: " + requestStatus.Message);
         var info = PopFromPending(requestStatus.RequestId);
         var unixTimestamp = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
         info.FailedTimestamp = unixTimestamp;
@@ -98,7 +99,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
 
     public async Task AddImageGenerationRequest(string requestId, string childId, long requestTimestamp)
     {
-        _masterTrackerState.State.StartedImageGenerationRequests.Add(requestId, new RequestAccountUsageInfo
+        _masterTrackerState.State.StartedImageGenerationRequests.Add(childId, new RequestAccountUsageInfo
         {
             RequestId = requestId,
             RequestTimestamp = requestTimestamp,
