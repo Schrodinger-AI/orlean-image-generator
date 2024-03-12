@@ -125,4 +125,11 @@ namespace Shared
         public string Error { get; set; }
     }
 
+    public class InspectGeneratorRequest
+    {
+        [JsonPropertyName("requestId")]
+        public string RequestId { get; set; }
+    }
+
+    
 }
