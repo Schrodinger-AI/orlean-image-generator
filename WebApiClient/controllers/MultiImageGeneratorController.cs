@@ -61,7 +61,7 @@ public class MultiImageGeneratorController : ControllerBase
         var multiImageGeneratorGrain = _client.GetGrain<IMultiImageGeneratorGrain>(imageQueryRequest.RequestId);
 
         var imageQueryResponse = await multiImageGeneratorGrain.QueryMultipleImagesAsync();
-        if (!imageQueryResponse.Initialized)
+        if (imageQueryResponse.Uninitialized)
             return StatusCode(404, new ImageQueryResponseNotOk { Error = "Request not found" });
 
         if (imageQueryResponse.Status != ImageGenerationStatus.SuccessfulCompletion)
