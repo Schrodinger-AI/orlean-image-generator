@@ -26,7 +26,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
 
     public ImageGeneratorGrain(
         [PersistentState("imageGenerationState", "MySqlSchrodingerImageStore")]
-        IPersistentState<ImageGenerationState> imageGeneratorState, PromptBuilder promptBuilder,
+        IPersistentState<ImageGenerationState> imageGeneratorState,
         ILogger<SchedulerGrain> logger)
     {
         _imageGenerationState = imageGeneratorState;
