@@ -62,10 +62,10 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
         try
         {
             _multiImageGenerationState.State.RequestId = multiImageRequestId;
-            bool IsSuccessful = true;
+            var IsSuccessful = true;
 
             // Extract trait names from the request
-            string prompt = await GeneratePromptAsync(traits);
+            var prompt = await GeneratePromptAsync(traits);
 
             _logger.LogInformation("For MultiImageRequest: {} Prompt generated: {}", multiImageRequestId, prompt);
 
@@ -75,12 +75,12 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
 
             //get timestamp
             var requestTimestamp = DateTime.UtcNow;
-            long unixTimestamp = ((DateTimeOffset)requestTimestamp).ToUnixTimeSeconds();
+            var unixTimestamp = ((DateTimeOffset)requestTimestamp).ToUnixTimeSeconds();
 
-            for (int i = 0; i < NumberOfImages; i++)
+            for (var i = 0; i < NumberOfImages; i++)
             {
                 //generate a new UUID with a prefix of "imageRequest"        
-                string imageRequestId = "ImageRequest_" + Guid.NewGuid().ToString();
+                var imageRequestId = "ImageRequest_" + Guid.NewGuid().ToString();
 
                 var imageGeneratorGrain = GrainFactory.GetGrain<IImageGeneratorGrain>(imageRequestId);
 
@@ -146,6 +146,14 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
 
     public async Task<MultiImageQueryGrainResponse> QueryMultipleImagesAsync()
     {
+        if (string.IsNullOrEmpty(_multiImageGenerationState.State.Prompt))
+        {
+            return new MultiImageQueryGrainResponse()
+            {
+                Initialized = false
+            };
+        }
+
         var allImages = new List<ImageDescription>();
         var imageGenerationStates = new List<ImageGenerationStatus>();
         var errorMessages = new List<string>();
