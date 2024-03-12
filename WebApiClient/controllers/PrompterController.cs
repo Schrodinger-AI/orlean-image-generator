@@ -10,7 +10,6 @@ namespace WebApi.Controllers
     [Route("prompt")]
     public class PrompterController : ControllerBase
     {
-        private string _configuratorIdentifier = "configurator";
         private readonly IClusterClient _client;
 
         public PrompterController(IClusterClient client)
@@ -23,7 +22,7 @@ namespace WebApi.Controllers
         {
             try
             {
-                var configuratorGrain = _client.GetGrain<IConfiguratorGrain>(_configuratorIdentifier);
+                var configuratorGrain = _client.GetGrain<IConfiguratorGrain>(Constants.ConfiguratorIdentifier);
                 var allConfigIds = await configuratorGrain.GetAllConfigIdsAsync();
                 if (allConfigIds.Contains(setPromptConfigRequest.Identifier))
                 {
@@ -73,7 +72,7 @@ namespace WebApi.Controllers
         {
             try
             {
-                var configuratorGrain = _client.GetGrain<IConfiguratorGrain>(_configuratorIdentifier);
+                var configuratorGrain = _client.GetGrain<IConfiguratorGrain>(Constants.ConfiguratorIdentifier);
                 var currentConfigId = await configuratorGrain.GetCurrentConfigIdAsync();
                 var promptCreatorGrain = _client.GetGrain<IPrompterGrain>(currentConfigId);
                 var result = await promptCreatorGrain.GeneratePromptAsync(promptGenerationRequest);
@@ -93,7 +92,7 @@ namespace WebApi.Controllers
         [HttpPost("switch-identifier")]
         public async Task<PrompterResponse> SwitchIdentifier(SwitchIdentifierRequest switchIdentifierRequest)
         {
-            var configuratorGrain = _client.GetGrain<IConfiguratorGrain>(_configuratorIdentifier);
+            var configuratorGrain = _client.GetGrain<IConfiguratorGrain>(Constants.ConfiguratorIdentifier);
             var allConfigIds = await configuratorGrain.GetAllConfigIdsAsync();
             if (!allConfigIds.Contains(switchIdentifierRequest.Identifier))
             {
@@ -109,7 +108,7 @@ namespace WebApi.Controllers
         {
             try
             {
-                var configuratorGrain = _client.GetGrain<IConfiguratorGrain>(_configuratorIdentifier);
+                var configuratorGrain = _client.GetGrain<IConfiguratorGrain>(Constants.ConfiguratorIdentifier);
                 var currentConfigId = await configuratorGrain.GetCurrentConfigIdAsync();
                 var prompterGrain = _client.GetGrain<IPrompterGrain>(currentConfigId);
                 var result = await prompterGrain.GetConfigAsync();
@@ -127,7 +126,7 @@ namespace WebApi.Controllers
             try
             {
                 List<PrompterConfig> result = new List<PrompterConfig>();
-                var configuratorGrain = _client.GetGrain<IConfiguratorGrain>(_configuratorIdentifier);
+                var configuratorGrain = _client.GetGrain<IConfiguratorGrain>(Constants.ConfiguratorIdentifier);
                 var allConfigIds = await configuratorGrain.GetAllConfigIdsAsync();
                 foreach (var prompterGrain in allConfigIds.Select(
                              configId => _client.GetGrain<IPrompterGrain>(configId)))

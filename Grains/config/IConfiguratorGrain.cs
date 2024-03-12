@@ -2,7 +2,7 @@ using System.Collections.Immutable;
 using Orleans;
 using Shared;
 
-namespace UnitTests.Grains;
+namespace Grains;
 
 public interface IConfiguratorGrain : ISchrodingerGrain, IGrainWithStringKey
 {

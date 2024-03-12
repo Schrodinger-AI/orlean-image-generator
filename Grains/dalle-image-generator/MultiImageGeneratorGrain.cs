@@ -8,14 +8,20 @@ namespace Grains;
 
 public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
 {
+    private readonly IClusterClient _client;
     private readonly PromptBuilder _promptBuilder;
-
+    
     private readonly IPersistentState<MultiImageGenerationState> _multiImageGenerationState;
 
-    public MultiImageGeneratorGrain([PersistentState("multiImageGenerationState", "MySqlSchrodingerImageStore")] IPersistentState<MultiImageGenerationState> multiImageGenerationState, PromptBuilder promptBuilder)
+    public MultiImageGeneratorGrain(
+        [PersistentState("multiImageGenerationState", "MySqlSchrodingerImageStore")]
+        IPersistentState<MultiImageGenerationState> multiImageGenerationState, 
+        PromptBuilder promptBuilder,
+        IClusterClient client)
     {
         _multiImageGenerationState = multiImageGenerationState;
         _promptBuilder = promptBuilder;
+        _client = client;
     }
 
     public async Task NotifyImageGenerationStatus(string imageRequestId, ImageGenerationStatus status, string? error)
@@ -40,8 +46,15 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
             bool IsSuccessful = true;
 
             // Extract trait names from the request
-            string prompt = await generatePrompt([.. traits]);
-
+            // string prompt = await generatePrompt([.. traits]);
+            var configuratorGrain = _client.GetGrain<IConfiguratorGrain>(Constants.ConfiguratorIdentifier);
+            var currentConfigId = await configuratorGrain.GetCurrentConfigIdAsync();
+            var promptCreatorGrain = _client.GetGrain<IPrompterGrain>(currentConfigId);
+            var prompt = await promptCreatorGrain.GeneratePromptAsync(new PromptGenerationRequest
+            {
+                NewAttributes = traits
+            });
+            
             _multiImageGenerationState.State.Prompt = prompt;
             _multiImageGenerationState.State.Traits = traits;
             var schedulerGrain = GrainFactory.GetGrain<ISchedulerGrain>("SchedulerGrain");

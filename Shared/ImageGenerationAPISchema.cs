@@ -25,9 +25,6 @@ namespace Shared
 
     public class PromptGenerationRequest
     {
-        [JsonPropertyName("identifier")]
-        public string Identifier { get; set; }
-        
         [JsonPropertyName("newAttributes")]
         public List<Attribute> NewAttributes { get; set; }
 
