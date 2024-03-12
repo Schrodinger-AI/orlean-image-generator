@@ -188,6 +188,33 @@ public class ScheduleGrainTest
         
         cluster.StopAllSilos();
     }
+    
+    [Test]
+    public async Task Scheduler_ExceedMaxRequest_ReprocessAfterOneMinute_Test()
+    {
+        const string REQUEST_ID_1 = "myRequest1";
+        const string REQUEST_ID_2 = "myRequest2";
+        const string REQUEST_ID_3 = "myRequest3";
+        
+        var builder = new TestClusterBuilder();
+        var cluster = builder.AddSiloBuilderConfigurator<SiloConfigurator>().Build();
+        cluster.Deploy();
+
+        var scheduler = cluster.GrainFactory.GetGrain<ISchedulerGrain>("SchedulerGrain");
+        
+        var now = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
+        await scheduler.AddImageGenerationRequest(REQUEST_ID_1, "childId1", now);
+        await scheduler.AddImageGenerationRequest(REQUEST_ID_2, "childId2", now);
+        await scheduler.AddImageGenerationRequest(REQUEST_ID_3, "childId3", now);
+
+        await Tick();
+        
+        Assert.That(scheduler.GetPendingImageGenerationRequestsAsync().Result, Has.Count.EqualTo(2));
+        Assert.That(scheduler.GetStartedImageGenerationRequestsAsync().Result, Has.Count.EqualTo(1));
+        
+        cluster.StopAllSilos();
+    }
+    
 
     private static async Task Tick()
     {

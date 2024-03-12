@@ -276,6 +276,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
 
             // remove from list to add to pending
             _masterTrackerState.State.PendingImageGenerationRequests.Add(requestId, info);
+            //_logger.LogWarning("Request " + requestId + " is pending");
             requestIdToRemove.Add(requestId);
         }
 
@@ -300,9 +301,9 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
 
     private static string GetApiKey(IDictionary<string, int> apiQuota)
     {
-       var (apiKey, _)= apiQuota.MaxBy(pair => pair.Value);
+       var (apiKey, quota)= apiQuota.MaxBy(pair => pair.Value);
         // var apiKey = FindKeyWithHighestValue(apiQuota);
-        if (string.IsNullOrEmpty(apiKey))
+        if (string.IsNullOrEmpty(apiKey) || quota <= 0)
         {
             return "";
         }
