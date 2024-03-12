@@ -9,6 +9,7 @@ using Orleans;
 using Orleans.Hosting;
 using Orleans.Runtime;
 using Orleans.Timers;
+using Shared;
 
 namespace GrainsTest;
 using Orleans.TestingHost;
@@ -120,6 +121,10 @@ public class ScheduleGrainTest
         cluster.Deploy();
 
         var scheduler = cluster.GrainFactory.GetGrain<ISchedulerGrain>("SchedulerGrain");
+        var imageGenerationGrain = Mock.Of<IImageGeneratorGrain>();
+        var factory = Mock.Of<IGrainFactory>(_ => _.GetGrain<IImageGeneratorGrain>(Guid.Empty, null) == imageGenerationGrain);
+        var grain = new Mock<SchedulerGrain>(scheduler);
+        grain.Setup(_ => _.GrainFactory).Returns(factory);
         
         var now = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
         await scheduler.AddImageGenerationRequest("parent", "myRequestId", now);

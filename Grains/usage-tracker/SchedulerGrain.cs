@@ -57,6 +57,11 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         
         return base.OnActivateAsync();
     }
+    
+    /// <summary>
+    /// Opens up the grain factory for mocking.
+    /// </summary>
+    public virtual new IGrainFactory GrainFactory => base.GrainFactory;
 
     public async Task ReportFailedImageGenerationRequestAsync(RequestStatus requestStatus)
     {
