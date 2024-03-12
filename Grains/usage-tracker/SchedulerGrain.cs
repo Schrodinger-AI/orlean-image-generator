@@ -27,6 +27,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
     
     private IGrainReminder? _reminder;
     private IDisposable? _timer;
+    private IDisposable? _flushTimer;
 
     public SchedulerGrain(
         [PersistentState("masterTrackerState", "MySqlSchrodingerImageStore")]
@@ -40,9 +41,26 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         _masterTrackerState = masterTrackerState;
     }
     
+    public async Task FlushAsync()
+    {
+        // activation safe code
+        try
+        {
+            await _masterTrackerState.WriteStateAsync();
+        }
+        catch (Exception e)
+        {
+            _logger.LogError("[SchedulerGrain] " + e.Message);
+        }
+    }
+    
     public override Task OnActivateAsync()
     {
         _timer = RegisterTimer(asyncCallback: TickAsync,null,
+            dueTime: TimeSpan.Zero,
+            period: TimeSpan.FromSeconds(1));
+        
+        _flushTimer = RegisterTimer(asyncCallback: _ => FlushTimerAsync(), null,
             dueTime: TimeSpan.Zero,
             period: TimeSpan.FromSeconds(1));
         
@@ -58,41 +76,38 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         return base.OnActivateAsync();
     }
 
-    public async Task ReportFailedImageGenerationRequestAsync(RequestStatus requestStatus)
+    public Task ReportFailedImageGenerationRequestAsync(RequestStatus requestStatus)
     {
         _logger.LogError("[SchedulerGrain] Image generation failed with message: " + requestStatus.Message);
         var info = PopFromPending(requestStatus.RequestId);
+        if (info == null)
+        {
+            return Task.CompletedTask;
+        }
         var unixTimestamp = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
         info.FailedTimestamp = unixTimestamp;
         info.StartedTimestamp = requestStatus.RequestTimestamp;
         _masterTrackerState.State.FailedImageGenerationRequests.Add(requestStatus.RequestId, info);
-        try
-        {
-            await _masterTrackerState.WriteStateAsync();
-        }
-        catch (Exception e)
-        {
-            _logger.LogError("[SchedulerGrain] " + e.Message);
-        }
+        
+        return Task.CompletedTask;
     }
 
-    public async Task ReportCompletedImageGenerationRequestAsync(RequestStatus requestStatus)
+    public Task ReportCompletedImageGenerationRequestAsync(RequestStatus requestStatus)
     {
         _logger.LogInformation("[SchedulerGrain] Report Completed Image Generation Request with ID: " + requestStatus.RequestId);
         
         var info = PopFromPending(requestStatus.RequestId);
+        if (info == null)
+        {
+            return Task.CompletedTask;
+        }
+        
         var unixTimestamp = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
         info.CompletedTimestamp = unixTimestamp;
         info.StartedTimestamp = requestStatus.RequestTimestamp;
         _masterTrackerState.State.CompletedImageGenerationRequests.Add(requestStatus.RequestId, info);
-        try
-        {
-            await _masterTrackerState.WriteStateAsync();
-        }
-        catch (Exception e)
-        {
-            _logger.LogError("[SchedulerGrain] " + e.Message);
-        }
+        
+        return Task.CompletedTask;
     }
 
     public Task<IReadOnlyDictionary<string, RequestAccountUsageInfo>> GetFailedImageGenerationRequestsAsync()
@@ -186,6 +201,11 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
 
     #region Private Methods
 
+    private async Task FlushTimerAsync()
+    {
+        await this.AsReference<ISchedulerGrain>().FlushAsync();
+    }
+    
     private async Task TickAsync(object _)
     {
         // 1. Purge completed requests
@@ -198,14 +218,6 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
 
         if (_masterTrackerState.State.ApiAccountInfoList == null)
         {
-            try
-            {
-                await _masterTrackerState.WriteStateAsync();
-            }
-            catch (Exception e)
-            {
-                _logger.LogError("[SchedulerGrain] " + e.Message);
-            }
             return;
         }
 
@@ -239,14 +251,6 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         await ProcessRequest(_masterTrackerState.State.FailedImageGenerationRequests, remainingQuotaByApiKey);
         await ProcessRequest(_masterTrackerState.State.StartedImageGenerationRequests, remainingQuotaByApiKey);
 
-        try
-        {
-            await _masterTrackerState.WriteStateAsync();
-        }
-        catch (Exception e)
-        {
-            _logger.LogError("[SchedulerGrain] " + e.Message);
-        }
     }
 
     private void CleanUpExpiredCompletedRequests()
@@ -351,6 +355,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         if (!_masterTrackerState.State.PendingImageGenerationRequests.ContainsKey(requestId))
         {
             _logger.LogError("[SchedulerGrain] Request " + requestId + " not found in pending list");
+            return null;
         }
         var info = _masterTrackerState.State.PendingImageGenerationRequests[requestId];
         _masterTrackerState.State.PendingImageGenerationRequests.Remove(requestId);
@@ -374,6 +379,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         }*/
         
         _timer?.Dispose();
+        _flushTimer?.Dispose();
     }
 
     #endregion
