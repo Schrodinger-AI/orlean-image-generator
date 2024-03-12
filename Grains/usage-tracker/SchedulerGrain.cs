@@ -60,23 +60,39 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
 
     public async Task ReportFailedImageGenerationRequestAsync(RequestStatus requestStatus)
     {
-        _logger.LogError("Image generation failed with message: " + requestStatus.Message);
+        _logger.LogError("[SchedulerGrain] Image generation failed with message: " + requestStatus.Message);
         var info = PopFromPending(requestStatus.RequestId);
         var unixTimestamp = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
         info.FailedTimestamp = unixTimestamp;
         info.StartedTimestamp = requestStatus.RequestTimestamp;
         _masterTrackerState.State.FailedImageGenerationRequests.Add(requestStatus.RequestId, info);
-        await _masterTrackerState.WriteStateAsync();
+        try
+        {
+            await _masterTrackerState.WriteStateAsync();
+        }
+        catch (Exception e)
+        {
+            _logger.LogError("[SchedulerGrain] " + e.Message);
+        }
     }
 
     public async Task ReportCompletedImageGenerationRequestAsync(RequestStatus requestStatus)
     {
+        _logger.LogInformation("[SchedulerGrain] Report Completed Image Generation Request with ID: " + requestStatus.RequestId);
+        
         var info = PopFromPending(requestStatus.RequestId);
         var unixTimestamp = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
         info.CompletedTimestamp = unixTimestamp;
         info.StartedTimestamp = requestStatus.RequestTimestamp;
         _masterTrackerState.State.CompletedImageGenerationRequests.Add(requestStatus.RequestId, info);
-        await _masterTrackerState.WriteStateAsync();
+        try
+        {
+            await _masterTrackerState.WriteStateAsync();
+        }
+        catch (Exception e)
+        {
+            _logger.LogError("[SchedulerGrain] " + e.Message);
+        }
     }
 
     public Task<IReadOnlyDictionary<string, RequestAccountUsageInfo>> GetFailedImageGenerationRequestsAsync()
@@ -97,8 +113,9 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
             .PendingImageGenerationRequests);
     }
 
-    public async Task AddImageGenerationRequest(string requestId, string childId, long requestTimestamp)
+    public Task AddImageGenerationRequest(string requestId, string childId, long requestTimestamp)
     {
+        _logger.LogInformation("[SchedulerGrain] Adding image generation request with ID: " + requestId + " for child ID: " + childId);
         _masterTrackerState.State.StartedImageGenerationRequests.Add(childId, new RequestAccountUsageInfo
         {
             RequestId = requestId,
@@ -106,8 +123,8 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
             Attempts = 0,
             ChildId = childId
         });
-        
-        await _masterTrackerState.WriteStateAsync();
+
+        return Task.CompletedTask;
     }
 
     public async Task<List<string>> AddApiKeys(List<ApiKeyEntry> apiKeyEntries)
@@ -178,10 +195,20 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         // 5. Schedule the task, update the account usage info
         
         // Dictionary<string, int> apiQuota = new();
-        
-        if(_masterTrackerState.State.ApiAccountInfoList == null)
+
+        if (_masterTrackerState.State.ApiAccountInfoList == null)
+        {
+            try
+            {
+                await _masterTrackerState.WriteStateAsync();
+            }
+            catch (Exception e)
+            {
+                _logger.LogError("[SchedulerGrain] " + e.Message);
+            }
             return;
-        
+        }
+
         // foreach (var apiInfo in _masterTrackerState.State.ApiAccountInfoList)
         // {
         //     apiQuota[apiInfo.ApiKey] = apiInfo.MaxQuota;
@@ -212,7 +239,14 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         await ProcessRequest(_masterTrackerState.State.FailedImageGenerationRequests, remainingQuotaByApiKey);
         await ProcessRequest(_masterTrackerState.State.StartedImageGenerationRequests, remainingQuotaByApiKey);
 
-        await _masterTrackerState.WriteStateAsync();
+        try
+        {
+            await _masterTrackerState.WriteStateAsync();
+        }
+        catch (Exception e)
+        {
+            _logger.LogError("[SchedulerGrain] " + e.Message);
+        }
     }
 
     private void CleanUpExpiredCompletedRequests()
@@ -274,8 +308,9 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
             await imageGenerationGrain.SetApiKey(info.ApiKey);
             
             // remove from list to add to pending
+            _logger.LogWarning("[SchedulerGrain] Request " + requestId + " is pending");
             _masterTrackerState.State.PendingImageGenerationRequests.Add(requestId, info);
-            //_logger.LogWarning("Request " + requestId + " is pending");
+            _logger.LogWarning("[SchedulerGrain] Requested " + requestId);
             requestIdToRemove.Add(requestId);
         }
 
@@ -294,7 +329,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
 
         if (remainingQuota / (float)totalQuota < QUOTA_THRESHOLD)
         {
-            _logger.LogWarning("API Keys low on quota, remaining quota: " + remainingQuota);
+            _logger.LogWarning("[SchedulerGrain] API Keys low on quota, remaining quota: " + remainingQuota);
         }
     }
 
@@ -313,6 +348,10 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
 
     private RequestAccountUsageInfo PopFromPending(string requestId)
     {
+        if (!_masterTrackerState.State.PendingImageGenerationRequests.ContainsKey(requestId))
+        {
+            _logger.LogError("[SchedulerGrain] Request " + requestId + " not found in pending list");
+        }
         var info = _masterTrackerState.State.PendingImageGenerationRequests[requestId];
         _masterTrackerState.State.PendingImageGenerationRequests.Remove(requestId);
         return info;
