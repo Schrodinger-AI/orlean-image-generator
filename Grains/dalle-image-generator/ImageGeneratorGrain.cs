@@ -318,7 +318,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
                     {
                         image.Mutate(x => x.Resize(512, 512));
                         image.SaveAsJpeg(output, new JpegEncoder { Quality = 30 });
-                        return "data:image/webp;base64," + Convert.ToBase64String(output.ToArray());
+                        return "data:image/jpeg;base64," + Convert.ToBase64String(output.ToArray());
                     }
                 }
             }
