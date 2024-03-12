@@ -42,14 +42,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IImageGenerationRequestSta
     
     public override Task OnActivateAsync()
     {
-        _timer = RegisterTimer(asyncCallback: static async state =>
-            {
-                var scheduler = (SchedulerGrain)state;
-                await scheduler.DoScheduling();
-
-                await Task.CompletedTask;
-            },
-            state: this,
+        _timer = RegisterTimer(asyncCallback: TickAsync,null,
             dueTime: TimeSpan.Zero,
             period: TimeSpan.FromSeconds(1));
         
@@ -168,7 +161,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IImageGenerationRequestSta
 
     #region Private Methods
 
-    private async Task DoScheduling()
+    private async Task TickAsync(object _)
     {
         // 1. Purge completed requests
         // 2. Add failed requests to pending queue
