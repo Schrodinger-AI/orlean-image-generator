@@ -161,13 +161,9 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         return Task.FromResult<IReadOnlyList<APIAccountInfo>>(_masterTrackerState.State.ApiAccountInfoList);
     }
 
-    public Task<List<RequestAccountUsageInfo>> GetImageGenerationStates()
+    public Task<SchedulerState> GetImageGenerationStates()
     {
-        var imageGenerationStates = _masterTrackerState.State.CompletedImageGenerationRequests.Values
-            .Concat(_masterTrackerState.State.FailedImageGenerationRequests.Values)
-            .Concat(_masterTrackerState.State.PendingImageGenerationRequests.Values)
-            .Concat(_masterTrackerState.State.StartedImageGenerationRequests.Values).ToList();
-        return Task.FromResult(imageGenerationStates);
+        return Task.FromResult(_masterTrackerState.State);
     }
 
     #region Private Methods
