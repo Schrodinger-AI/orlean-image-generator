@@ -64,11 +64,10 @@ public class MultiImageGeneratorController : ControllerBase
 
         if (imageQueryResponse.Status == ImageGenerationStatus.SuccessfulCompletion)
         {
-            List<ImageDescription> images = imageQueryResponse.Images ?? new List<ImageDescription>();
+            var images = imageQueryResponse.Images ?? new List<ImageDescription>();
             return StatusCode(200, new ImageQueryResponseOk { Images = images });
         }
-        else {
-            return StatusCode(202, new ImageQueryResponseNotOk { Error = "result is not ready" });
-        }
+
+        return StatusCode(202, new ImageQueryResponseNotOk { Error = "The result is not ready." });
     }
 }
