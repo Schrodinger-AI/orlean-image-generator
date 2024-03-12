@@ -32,7 +32,7 @@ public class ScheduleGrainTest
 
         // set a new value
         var now = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
-        await grain.AddImageGenerationRequest("myRequestId", "myAccountInfo", now);
+        await grain.AddImageGenerationRequest("parent", "myRequestId", now);
 
         // assert the state was saved
         Mock.Get(state).Verify(_ => _.WriteStateAsync());
@@ -49,7 +49,7 @@ public class ScheduleGrainTest
         var scheduler = cluster.GrainFactory.GetGrain<ISchedulerGrain>("SchedulerGrain");
         
         var now = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
-        await scheduler.AddImageGenerationRequest("myRequestId", "myAccountInfo", now);
+        await scheduler.AddImageGenerationRequest("parent", "myRequestId", now);
         
         await Tick();
 
@@ -68,7 +68,7 @@ public class ScheduleGrainTest
         var scheduler = cluster.GrainFactory.GetGrain<ISchedulerGrain>("SchedulerGrain");
         
         var now = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
-        await scheduler.AddImageGenerationRequest("myRequestId", "myAccountInfo", now);
+        await scheduler.AddImageGenerationRequest("parent", "myRequestId", now);
         
         await Tick();
 
@@ -94,7 +94,7 @@ public class ScheduleGrainTest
         var scheduler = cluster.GrainFactory.GetGrain<ISchedulerGrain>("SchedulerGrain");
         
         var now = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
-        await scheduler.AddImageGenerationRequest("myRequestId", "myAccountInfo", now);
+        await scheduler.AddImageGenerationRequest("parent", "myRequestId", now);
         
         await Tick();
 
@@ -122,7 +122,7 @@ public class ScheduleGrainTest
         var scheduler = cluster.GrainFactory.GetGrain<ISchedulerGrain>("SchedulerGrain");
         
         var now = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
-        await scheduler.AddImageGenerationRequest("myRequestId", "myAccountInfo", now);
+        await scheduler.AddImageGenerationRequest("parent", "myRequestId", now);
         
         await Tick();
 
@@ -153,8 +153,8 @@ public class ScheduleGrainTest
         var scheduler = cluster.GrainFactory.GetGrain<ISchedulerGrain>("SchedulerGrain");
         
         var now = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
-        await scheduler.AddImageGenerationRequest(REQUEST_ID_1, "childId1", now);
-        await scheduler.AddImageGenerationRequest(REQUEST_ID_2, "childId2", now);
+        await scheduler.AddImageGenerationRequest("parent1", REQUEST_ID_1, now);
+        await scheduler.AddImageGenerationRequest("parent2", REQUEST_ID_2, now);
         
         await Tick();
         
@@ -177,9 +177,9 @@ public class ScheduleGrainTest
         var scheduler = cluster.GrainFactory.GetGrain<ISchedulerGrain>("SchedulerGrain");
         
         var now = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
-        await scheduler.AddImageGenerationRequest(REQUEST_ID_1, "childId1", now);
-        await scheduler.AddImageGenerationRequest(REQUEST_ID_2, "childId2", now);
-        await scheduler.AddImageGenerationRequest(REQUEST_ID_3, "childId3", now);
+        await scheduler.AddImageGenerationRequest("parent1", REQUEST_ID_1, now);
+        await scheduler.AddImageGenerationRequest("parent2", REQUEST_ID_2, now);
+        await scheduler.AddImageGenerationRequest("parent3", REQUEST_ID_3, now);
 
         await Tick();
         
@@ -203,9 +203,9 @@ public class ScheduleGrainTest
         var scheduler = cluster.GrainFactory.GetGrain<ISchedulerGrain>("SchedulerGrain");
         
         var now = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
-        await scheduler.AddImageGenerationRequest(REQUEST_ID_1, "childId1", now);
-        await scheduler.AddImageGenerationRequest(REQUEST_ID_2, "childId2", now);
-        await scheduler.AddImageGenerationRequest(REQUEST_ID_3, "childId3", now);
+        await scheduler.AddImageGenerationRequest("parent1", REQUEST_ID_1, now);
+        await scheduler.AddImageGenerationRequest("parent2", REQUEST_ID_2, now);
+        await scheduler.AddImageGenerationRequest("parent3", REQUEST_ID_3, now);
 
         await Tick();
         
