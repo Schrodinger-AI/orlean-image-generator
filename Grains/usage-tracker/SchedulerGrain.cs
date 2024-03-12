@@ -4,6 +4,7 @@ using Orleans;
 using Orleans.Runtime;
 using Orleans.Timers;
 using Shared;
+// ReSharper disable TooManyChainedReferences
 
 namespace Grains.usage_tracker;
 
@@ -41,14 +42,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IImageGenerationRequestSta
     
     public override Task OnActivateAsync()
     {
-        _timer = RegisterTimer(asyncCallback: static async state =>
-            {
-                var scheduler = (SchedulerGrain)state;
-                await scheduler.DoScheduling();
-
-                await Task.CompletedTask;
-            },
-            state: this,
+        _timer = RegisterTimer(asyncCallback: TickAsync,null,
             dueTime: TimeSpan.Zero,
             period: TimeSpan.FromSeconds(1));
         
@@ -167,7 +161,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IImageGenerationRequestSta
 
     #region Private Methods
 
-    private async Task DoScheduling()
+    private async Task TickAsync(object _)
     {
         // 1. Purge completed requests
         // 2. Add failed requests to pending queue
@@ -175,24 +169,40 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IImageGenerationRequestSta
         // 4. For all pending tasks, find the account with the most remaining quota
         // 5. Schedule the task, update the account usage info
         
-        Dictionary<string, int> apiQuota = new();
+        // Dictionary<string, int> apiQuota = new();
         
         if(_masterTrackerState.State.ApiAccountInfoList == null)
             return;
         
-        foreach (var apiInfo in _masterTrackerState.State.ApiAccountInfoList)
-        {
-            apiQuota[apiInfo.ApiKey] = apiInfo.MaxQuota;
-        }
+        // foreach (var apiInfo in _masterTrackerState.State.ApiAccountInfoList)
+        // {
+        //     apiQuota[apiInfo.ApiKey] = apiInfo.MaxQuota;
+        // }
         
-        ComputeApiQuotaFromTimestamp(apiQuota, _masterTrackerState.State.CompletedImageGenerationRequests);
-        ComputeApiQuotaFromTimestamp(apiQuota, _masterTrackerState.State.FailedImageGenerationRequests);
-        ComputeApiQuotaFromTimestamp(apiQuota, _masterTrackerState.State.PendingImageGenerationRequests);
+        
+        var now = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
+        var cutoff = now - RATE_LIMIT_DURATION;
+        var allRequests = _masterTrackerState.State.CompletedImageGenerationRequests
+            .Concat(_masterTrackerState.State.FailedImageGenerationRequests)
+            .Concat(_masterTrackerState.State.PendingImageGenerationRequests)
+            .Concat(_masterTrackerState.State.StartedImageGenerationRequests)
+            .ToList();
+        var usedQuota = allRequests
+            .Where(i=> i.Value.StartedTimestamp > cutoff)
+            .GroupBy(
+            x=>x.Value.ApiKey,
+            x=>x
+            ).ToDictionary(x=>x.Key, x=>x.Count());
+        var remainingQuotaByApiKey = _masterTrackerState.State.ApiAccountInfoList
+                .ToDictionary(i=>i.ApiKey, i=> i.MaxQuota  - usedQuota.GetValueOrDefault(i.ApiKey, 0));
+        // ComputeApiQuotaFromTimestamp(apiQuota, _masterTrackerState.State.CompletedImageGenerationRequests);
+        // ComputeApiQuotaFromTimestamp(apiQuota, _masterTrackerState.State.FailedImageGenerationRequests);
+        // ComputeApiQuotaFromTimestamp(apiQuota, _masterTrackerState.State.PendingImageGenerationRequests);
         
         CleanUpExpiredCompletedRequests();
 
-        ProcessRequest(_masterTrackerState.State.FailedImageGenerationRequests, apiQuota);
-        ProcessRequest(_masterTrackerState.State.StartedImageGenerationRequests, apiQuota);
+        ProcessRequest(_masterTrackerState.State.FailedImageGenerationRequests, remainingQuotaByApiKey);
+        ProcessRequest(_masterTrackerState.State.StartedImageGenerationRequests, remainingQuotaByApiKey);
 
         await _masterTrackerState.WriteStateAsync();
     }
@@ -230,18 +240,24 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IImageGenerationRequestSta
         }
     }
 
-    private void ProcessRequest(Dictionary<string, RequestAccountUsageInfo> requests, Dictionary<string, int> apiQuota)
+    private void ProcessRequest(IDictionary<string, RequestAccountUsageInfo> requests, IDictionary<string, int> apiQuota)
     {
-        List<string> requestIdToRemove = new();
-        foreach (var (requestId, info) in requests)
+        var maxAttemptsReached = requests
+            .Where(pair => pair.Value.Attempts > MAX_ATTEMPTS)
+            .Select(p=>p.Key)
+            .ToHashSet();
+        if (maxAttemptsReached.Count > 0)
         {
-            if (info.Attempts > MAX_ATTEMPTS)
-            {
-                requestIdToRemove.Add(requestId);
-                _logger.LogError("Request " + requestId + " has reached max attempts");
-                continue;
-            }
-            
+            _logger.LogError("Requests {} has reached max attempts", string.Join(",", maxAttemptsReached));
+        }
+        
+        var goodToGo = requests.Keys.ToHashSet();
+        goodToGo.ExceptWith(maxAttemptsReached);
+        
+        List<string> requestIdToRemove = new();
+        foreach (var requestId in goodToGo)
+        { 
+            var info = requests[requestId];
             info.Attempts++;
 
             info.ApiKey = GetApiKey(apiQuota);
@@ -269,19 +285,12 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IImageGenerationRequestSta
         }
     }
     
-    private void AlarmWhenLowOnQuota(Dictionary<string, int> apiQuota)
+    private void AlarmWhenLowOnQuota(IDictionary<string, int> apiQuota)
     {
-        var remainingQuota = 0;
-        foreach (var pair in apiQuota)
-        {
-            remainingQuota += pair.Value;
-        }
+        var remainingQuota = apiQuota.Sum(pair => pair.Value);
 
-        var totalQuota = 0;
-        _masterTrackerState.State.ApiAccountInfoList.ForEach(apiInfo =>
-        {
-            totalQuota += apiInfo.MaxQuota;
-        });
+        var apiInfoList = _masterTrackerState.State.ApiAccountInfoList;
+        var totalQuota = apiInfoList.Sum(apiInfo => apiInfo.MaxQuota);
 
         if (remainingQuota / (float)totalQuota < QUOTA_THRESHOLD)
         {
@@ -289,9 +298,10 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IImageGenerationRequestSta
         }
     }
 
-    private static string GetApiKey(Dictionary<string, int> apiQuota)
+    private static string GetApiKey(IDictionary<string, int> apiQuota)
     {
-        var apiKey = FindKeyWithHighestValue(apiQuota);
+       var (apiKey, _)= apiQuota.MaxBy(pair => pair.Value);
+        // var apiKey = FindKeyWithHighestValue(apiQuota);
         if (string.IsNullOrEmpty(apiKey))
         {
             return "";
