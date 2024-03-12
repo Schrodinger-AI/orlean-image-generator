@@ -317,13 +317,18 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain
                     using (var image = SixLabors.ImageSharp.Image.Load(ms))
                     {
                         image.Mutate(x => x.Resize(512, 512));
-                        image.SaveAsJpeg(output, new JpegEncoder { Quality = 30 });
-                        return "data:image/jpeg;base64," + Convert.ToBase64String(output.ToArray());
+
+                        // Convert the image to WebP format
+                        image.Save(output, new SixLabors.ImageSharp.Formats.Webp.WebpEncoder());
+
+                        // Convert the output stream to Base64 string
+                        return "data:image/webp;base64," + Convert.ToBase64String(output.ToArray());
                     }
                 }
             }
         }
     }
+
 
     public static int GetSizeOfBase64String(string base64String)
     {
