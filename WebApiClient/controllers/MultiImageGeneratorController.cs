@@ -27,7 +27,7 @@ public class MultiImageGeneratorController : ControllerBase
         IEnumerable<Attribute> traits = newTraits.Concat(baseTraits);
 
         //generate a new UUID with a prefix of "imageRequest"        
-        string imageRequestId = "ImageRequest_" + Guid.NewGuid().ToString();
+        string imageRequestId = "MultiImageRequest_" + Guid.NewGuid().ToString();
 
         var multiImageGeneratorGrain = _client.GetGrain<IMultiImageGeneratorGrain>(imageRequestId);
 
