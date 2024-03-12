@@ -65,7 +65,7 @@ public class MultiImageGeneratorController : ControllerBase
         if (imageQueryResponse.Status == ImageGenerationStatus.SuccessfulCompletion ||
             imageQueryResponse.Status == ImageGenerationStatus.InProgress)
         {
-            List<ImageDescription> images = imageQueryResponse.Images ?? new List<ImageDescription>();
+            List<ImageDescription> images = imageQueryResponse.Images ?? [];
             //return new ImageQueryResponseOk { Images = images };
             return StatusCode(200, new ImageQueryResponseOk { Images = images });
         }
