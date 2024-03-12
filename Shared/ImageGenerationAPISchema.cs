@@ -32,7 +32,7 @@ namespace Shared
         public List<Attribute> NewAttributes { get; set; }
 
         [JsonPropertyName("baseImage")]
-        public ImageDescription BaseImage { get; set; }
+        public ImageDescription? BaseImage { get; set; }
     }
     
     public class SetPromptConfigRequest

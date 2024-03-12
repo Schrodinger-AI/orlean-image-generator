@@ -2,6 +2,7 @@ using Grains.usage_tracker;
 using Orleans;
 using Orleans.Runtime;
 using Shared;
+using UnitTests.Grains;
 using Attribute = Shared.Attribute;
 
 namespace Grains;
@@ -12,7 +13,9 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
 
     private readonly IPersistentState<MultiImageGenerationState> _multiImageGenerationState;
 
-    public MultiImageGeneratorGrain([PersistentState("multiImageGenerationState", "MySqlSchrodingerImageStore")] IPersistentState<MultiImageGenerationState> multiImageGenerationState, PromptBuilder promptBuilder)
+    public MultiImageGeneratorGrain(
+        [PersistentState("multiImageGenerationState", "MySqlSchrodingerImageStore")]
+        IPersistentState<MultiImageGenerationState> multiImageGenerationState, PromptBuilder promptBuilder)
     {
         _multiImageGenerationState = multiImageGenerationState;
         _promptBuilder = promptBuilder;
@@ -27,12 +30,25 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
             Error = error
         };
 
-        _multiImageGenerationState.State.imageGenerationTrackers[imageGenerationNotification.RequestId] = imageGenerationNotification;
+        _multiImageGenerationState.State.imageGenerationTrackers[imageGenerationNotification.RequestId] =
+            imageGenerationNotification;
 
         await _multiImageGenerationState.WriteStateAsync();
     }
 
-    public async Task<MultiImageGenerationGrainResponse> GenerateMultipleImagesAsync(List<Attribute> traits, int NumberOfImages, string multiImageRequestId)
+    private async Task<string> GeneratePromptAsync(List<Attribute> attributes)
+    {
+        var grain = GrainFactory.GetGrain<IConfiguratorGrain>(Constants.ConfiguratorIdentifier);
+        var curConfigId = await grain.GetCurrentConfigIdAsync();
+        var prompterGrain = GrainFactory.GetGrain<IPrompterGrain>(curConfigId);
+        return await prompterGrain.GeneratePromptAsync(new PromptGenerationRequest
+        {
+            NewAttributes = attributes
+        });
+    }
+
+    public async Task<MultiImageGenerationGrainResponse> GenerateMultipleImagesAsync(List<Attribute> traits,
+        int NumberOfImages, string multiImageRequestId)
     {
         try
         {
@@ -40,7 +56,7 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
             bool IsSuccessful = true;
 
             // Extract trait names from the request
-            string prompt = await generatePrompt([.. traits]);
+            string prompt = await GeneratePromptAsync(traits);
 
             _multiImageGenerationState.State.Prompt = prompt;
             _multiImageGenerationState.State.Traits = traits;
@@ -114,7 +130,9 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
     {
         Dictionary<string, TraitEntry> traitDefinitions = await lookupTraitDefinitions([.. requestTraits]);
         var sentences = await _promptBuilder.GenerateSentences(requestTraits, traitDefinitions);
-        var prompt = await _promptBuilder.GenerateFinalPromptFromSentences(ImageGenerationConstants.DALLE_BASE_PROMPT, sentences);
+        var prompt =
+            await _promptBuilder.GenerateFinalPromptFromSentences(ImageGenerationConstants.DALLE_BASE_PROMPT,
+                sentences);
         return prompt;
     }
 
@@ -144,7 +162,6 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
                     imageGenerationStates.Add(response.Status);
                 }
             }
-
         }
 
         ImageGenerationStatus finalStatus;
