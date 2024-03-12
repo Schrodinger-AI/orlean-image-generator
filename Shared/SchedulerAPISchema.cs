@@ -32,10 +32,10 @@ public class RemoveApiKeyResponseFailed(string error) : RemoveApiKeyAPIResponse
 
 public abstract class ImageGenerationStatesResponse { }
 
-public class ImageGenerationStatesResponseOk(Object imageGenerationStates) : ImageGenerationStatesResponse
+public class ImageGenerationStatesResponseOk<T>(List<T> imageGenerationStates) : ImageGenerationStatesResponse
 {
     [JsonPropertyName("imageGenerationStates")]
-    public Object ImageGenerationStates { get; set; } = imageGenerationStates;
+    public List<T> ImageGenerationStates { get; set; } = imageGenerationStates;
 }
 
 public class ImageGenerationStatesResponseFailed(string error) : ImageGenerationStatesResponse

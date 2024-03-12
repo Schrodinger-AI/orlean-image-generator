@@ -78,7 +78,7 @@ public class SchedulerController : ControllerBase
         {
             var grain = _client.GetGrain<ISchedulerGrain>("SchedulerGrain");
             var states = await grain.GetImageGenerationStates();
-            return new ImageGenerationStatesResponseOk(states);
+            return new ImageGenerationStatesResponseOk<RequestAccountUsageInfo>(states);
         }
         catch (Exception ex)
         {
