@@ -343,9 +343,10 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
         using var output = new MemoryStream();
         using var image = SixLabors.ImageSharp.Image.Load(ms);
         image.Mutate(x => x.Resize(512, 512));
-        image.SaveAsJpeg(output, new JpegEncoder { Quality = 30 });
-        return "data:image/jpeg;base64," + Convert.ToBase64String(output.ToArray());
+        image.Save(output, new SixLabors.ImageSharp.Formats.Webp.WebpEncoder { Quality = 30 });
+        return "data:image/webp;base64," + Convert.ToBase64String(output.ToArray());
     }
+
 
     public void Dispose()
     {
