@@ -29,3 +29,17 @@ public class RemoveApiKeyResponseFailed(string error) : RemoveApiKeyAPIResponse
     [JsonPropertyName("error")]
     public string Error { get; set; } = error;
 }
+
+public abstract class ImageGenerationStatesResponse { }
+
+public class ImageGenerationStatesResponseOk(Object imageGenerationStates) : ImageGenerationStatesResponse
+{
+    [JsonPropertyName("imageGenerationStates")]
+    public Object ImageGenerationStates { get; set; } = imageGenerationStates;
+}
+
+public class ImageGenerationStatesResponseFailed(string error) : ImageGenerationStatesResponse
+{
+    [JsonPropertyName("error")]
+    public string Error { get; set; } = error;
+}

@@ -70,4 +70,19 @@ public class SchedulerController : ControllerBase
         
         return Ok(ret.ToArray());
     }
+    
+    [HttpGet("states")]
+    public async Task<ImageGenerationStatesResponse> GetImageGenerationStates()
+    {
+        try
+        {
+            var grain = _client.GetGrain<ISchedulerGrain>("SchedulerGrain");
+            var states = await grain.GetImageGenerationStates();
+            return new ImageGenerationStatesResponseOk(states);
+        }
+        catch (Exception ex)
+        {
+            return new ImageGenerationStatesResponseFailed(ex.Message);
+        }
+    }
 }
