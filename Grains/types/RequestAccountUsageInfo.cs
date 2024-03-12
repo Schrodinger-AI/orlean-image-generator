@@ -8,6 +8,6 @@ public class RequestAccountUsageInfo
     public long FailedTimestamp { get; set; }
     public long CompletedTimestamp { get; set; }
     public int Attempts { get; set; }
-    public string AccountId { get; set; }
     public string ApiKey { get; set; }
+    public string ChildId { get; set; }
 }

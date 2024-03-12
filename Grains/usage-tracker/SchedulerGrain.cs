@@ -13,7 +13,7 @@ namespace Grains.usage_tracker;
 /// one minute ago but haven't completed). It will compare this count against the account's quota and choose the least
 /// loaded account for the next job.
 /// </summary>
-public class SchedulerGrain : Grain, ISchedulerGrain, IImageGenerationRequestStatusReceiver, IDisposable
+public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
 {
     private const string ReminderName = "SchedulingReminder";
     private const long RATE_LIMIT_DURATION = 60;
@@ -63,6 +63,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IImageGenerationRequestSta
         var info = PopFromPending(requestStatus.RequestId);
         var unixTimestamp = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
         info.FailedTimestamp = unixTimestamp;
+        info.StartedTimestamp = requestStatus.RequestTimestamp;
         _masterTrackerState.State.FailedImageGenerationRequests.Add(requestStatus.RequestId, info);
         await _masterTrackerState.WriteStateAsync();
     }
@@ -72,6 +73,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IImageGenerationRequestSta
         var info = PopFromPending(requestStatus.RequestId);
         var unixTimestamp = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
         info.CompletedTimestamp = unixTimestamp;
+        info.StartedTimestamp = requestStatus.RequestTimestamp;
         _masterTrackerState.State.CompletedImageGenerationRequests.Add(requestStatus.RequestId, info);
         await _masterTrackerState.WriteStateAsync();
     }
@@ -96,12 +98,12 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IImageGenerationRequestSta
 
     public async Task AddImageGenerationRequest(string requestId, string childId, long requestTimestamp)
     {
-        //TODO: childId
         _masterTrackerState.State.StartedImageGenerationRequests.Add(requestId, new RequestAccountUsageInfo
         {
             RequestId = requestId,
             RequestTimestamp = requestTimestamp,
-            Attempts = 0
+            Attempts = 0,
+            ChildId = childId
         });
         
         await _masterTrackerState.WriteStateAsync();
@@ -259,6 +261,13 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IImageGenerationRequestSta
         { 
             var info = requests[requestId];
             info.Attempts++;
+            
+            var imageGenerationGrain = GrainFactory.GetGrain<IImageGeneratorGrain>(info.ChildId);
+            if (imageGenerationGrain == null)
+            {
+                _logger.LogError("Cannot find ImageGeneratorGrain with ID: " + info.ChildId);
+                continue;
+            }
 
             info.ApiKey = GetApiKey(apiQuota);
             
@@ -272,10 +281,12 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IImageGenerationRequestSta
             AlarmWhenLowOnQuota(apiQuota);
             
             info.StartedTimestamp = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
-            // TODO: get child gen grain to process failed request again with the new api key
-
+            // Get child gen grain to process failed request again with the new api key
+            imageGenerationGrain.SetApiKey(info.ApiKey);
+            
             // remove from list to add to pending
             _masterTrackerState.State.PendingImageGenerationRequests.Add(requestId, info);
+            //_logger.LogWarning("Request " + requestId + " is pending");
             requestIdToRemove.Add(requestId);
         }
 
@@ -300,9 +311,9 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IImageGenerationRequestSta
 
     private static string GetApiKey(IDictionary<string, int> apiQuota)
     {
-       var (apiKey, _)= apiQuota.MaxBy(pair => pair.Value);
+       var (apiKey, quota)= apiQuota.MaxBy(pair => pair.Value);
         // var apiKey = FindKeyWithHighestValue(apiQuota);
-        if (string.IsNullOrEmpty(apiKey))
+        if (string.IsNullOrEmpty(apiKey) || quota <= 0)
         {
             return "";
         }
