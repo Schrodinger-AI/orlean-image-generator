@@ -15,29 +15,23 @@ namespace Grains.usage_tracker;
 /// </summary>
 public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
 {
-    private const string ReminderName = "SchedulingReminder";
     private const long RATE_LIMIT_DURATION = 60;
     private const long CLEANUP_INTERVAL = 180;
     private const int MAX_ATTEMPTS = 99999;
     private const float QUOTA_THRESHOLD = 0.15f;
 
-    private readonly IReminderRegistry _reminderRegistry;
     private readonly IPersistentState<SchedulerState> _masterTrackerState;
     private readonly ILogger<SchedulerGrain> _logger;
     
-    private IGrainReminder? _reminder;
     private IDisposable? _timer;
     private IDisposable? _flushTimer;
 
     public SchedulerGrain(
         [PersistentState("masterTrackerState", "MySqlSchrodingerImageStore")]
         IPersistentState<SchedulerState> masterTrackerState,
-        //IReminderRegistry reminderRegistry,
         ILogger<SchedulerGrain> logger)
     {
-        //_reminderRegistry = reminderRegistry;
         _logger = logger;
-        
         _masterTrackerState = masterTrackerState;
     }
     
@@ -56,7 +50,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
     
     public override Task OnActivateAsync()
     {
-        _timer = RegisterTimer(asyncCallback: TickAsync,null,
+        _timer = RegisterTimer(asyncCallback: _ => this.AsReference<ISchedulerGrain>().TickAsync(),null,
             dueTime: TimeSpan.Zero,
             period: TimeSpan.FromSeconds(1));
         
@@ -198,34 +192,19 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
     {
         return Task.FromResult(_masterTrackerState.State);
     }
-
-    #region Private Methods
-
-    private async Task FlushTimerAsync()
-    {
-        await this.AsReference<ISchedulerGrain>().FlushAsync();
-    }
     
-    private async Task TickAsync(object _)
+    public async Task TickAsync()
     {
         // 1. Purge completed requests
         // 2. Add failed requests to pending queue
         // 3. Check remaining quota for all accounts
         // 4. For all pending tasks, find the account with the most remaining quota
         // 5. Schedule the task, update the account usage info
-        
-        // Dictionary<string, int> apiQuota = new();
 
         if (_masterTrackerState.State.ApiAccountInfoList == null)
         {
             return;
         }
-
-        // foreach (var apiInfo in _masterTrackerState.State.ApiAccountInfoList)
-        // {
-        //     apiQuota[apiInfo.ApiKey] = apiInfo.MaxQuota;
-        // }
-        
         
         var now = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
         var cutoff = now - RATE_LIMIT_DURATION;
@@ -242,15 +221,58 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
             ).ToDictionary(x=>x.Key, x=>x.Count());
         var remainingQuotaByApiKey = _masterTrackerState.State.ApiAccountInfoList
                 .ToDictionary(i=>i.ApiKey, i=> i.MaxQuota  - usedQuota.GetValueOrDefault(i.ApiKey, 0));
-        // ComputeApiQuotaFromTimestamp(apiQuota, _masterTrackerState.State.CompletedImageGenerationRequests);
-        // ComputeApiQuotaFromTimestamp(apiQuota, _masterTrackerState.State.FailedImageGenerationRequests);
-        // ComputeApiQuotaFromTimestamp(apiQuota, _masterTrackerState.State.PendingImageGenerationRequests);
         
         CleanUpExpiredCompletedRequests();
 
-        await ProcessRequest(_masterTrackerState.State.FailedImageGenerationRequests, remainingQuotaByApiKey);
-        await ProcessRequest(_masterTrackerState.State.StartedImageGenerationRequests, remainingQuotaByApiKey);
+        var retryableFailedRequests = _masterTrackerState.State.FailedImageGenerationRequests
+            .Select(i => new KeyValuePair<long, RequestAccountUsageInfo>(i.Value.FailedTimestamp + (long)Math.Min(Math.Pow(2, i.Value.Attempts), 8.0), i.Value))
+            .Where(i => i.Key < now)
+            .ToList();
+        var startedRequests = _masterTrackerState.State.StartedImageGenerationRequests
+            .Select(i => new KeyValuePair<long, RequestAccountUsageInfo>(i.Value.RequestTimestamp, i.Value))
+            .ToList();
+        
+        var sortedRequests = retryableFailedRequests
+            .Concat(startedRequests)
+            .OrderBy(i => i.Key)
+            .Select(i => i.Value)
+            .ToList();
 
+        var prunedSortedRequests = PruneRequestsWithMaxAttempts(sortedRequests);
+        var processedRequests = await ProcessRequest(prunedSortedRequests, remainingQuotaByApiKey);
+        
+        var removedFailedRequests = RemoveProcessedRequests(_masterTrackerState.State.FailedImageGenerationRequests, processedRequests).ToHashSet();
+        var removedStartedRequest = RemoveProcessedRequests(_masterTrackerState.State.StartedImageGenerationRequests, processedRequests).ToHashSet();
+
+        //monitor for requests that are not removed
+        var unremovedRequests = processedRequests.ToHashSet();
+        unremovedRequests.ExceptWith(removedFailedRequests);
+        unremovedRequests.ExceptWith(removedStartedRequest);
+        
+        if (unremovedRequests.Count > 0)
+        {
+            _logger.LogError("[SchedulerGrain] Requests {} not found in failed or started requests", string.Join(",", unremovedRequests));
+        }
+    }
+
+    #region Private Methods
+
+    private async Task FlushTimerAsync()
+    {
+        await this.AsReference<ISchedulerGrain>().FlushAsync();
+    }
+    
+    private static List<string> RemoveProcessedRequests(Dictionary<string, RequestAccountUsageInfo> requests, List<string> processedRequests)
+    {
+        var requestsRemoved = new List<string>();
+        
+        foreach (var requestId in processedRequests.Where(requests.ContainsKey))
+        {
+            requests.Remove(requestId);
+            requestsRemoved.Add(requestId);
+        }
+
+        return requestsRemoved;
     }
 
     private void CleanUpExpiredCompletedRequests()
@@ -268,31 +290,18 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
             }
         }
     }
-
-    private async Task ProcessRequest(IDictionary<string, RequestAccountUsageInfo> requests, IDictionary<string, int> apiQuota)
+    
+    private async Task<List<string>> ProcessRequest(IEnumerable<RequestAccountUsageInfo> sortedRequests, IDictionary<string, int> apiQuota)
     {
-        var maxAttemptsReached = requests
-            .Where(pair => pair.Value.Attempts > MAX_ATTEMPTS)
-            .Select(p=>p.Key)
-            .ToHashSet();
-        if (maxAttemptsReached.Count > 0)
-        {
-            _logger.LogError("Requests {} has reached max attempts", string.Join(",", maxAttemptsReached));
-        }
-        
-        var goodToGo = requests.Keys.ToHashSet();
-        goodToGo.ExceptWith(maxAttemptsReached);
-        
         List<string> requestIdToRemove = new();
-        foreach (var requestId in goodToGo)
-        { 
-            var info = requests[requestId];
-            info.Attempts++;
+        foreach (var info in sortedRequests)
+        {
+            var requestId = info.ChildId;
             
             var imageGenerationGrain = GrainFactory.GetGrain<IImageGeneratorGrain>(info.ChildId);
             if (imageGenerationGrain == null)
             {
-                _logger.LogError("Cannot find ImageGeneratorGrain with ID: " + info.ChildId);
+                _logger.LogError("[SchedulerGrain] Cannot find ImageGeneratorGrain with ID: " + info.ChildId);
                 continue;
             }
 
@@ -301,9 +310,11 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
             // if there are no available api keys, we will try again in the next scheduling
             if (string.IsNullOrEmpty(info.ApiKey))
             {
-                _logger.LogError("No available API keys, will try again in the next scheduling");
+                _logger.LogError("[SchedulerGrain] No available API keys, will try again in the next scheduling");
                 break;
             }
+            
+            info.Attempts++;
             
             AlarmWhenLowOnQuota(apiQuota);
             
@@ -318,10 +329,23 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
             requestIdToRemove.Add(requestId);
         }
 
-        foreach (var requestId in requestIdToRemove)
+        return requestIdToRemove;
+    }
+
+    private List<RequestAccountUsageInfo> PruneRequestsWithMaxAttempts(IReadOnlyList<RequestAccountUsageInfo> requests)
+    {
+        var maxAttemptsReached = requests
+            .Where(info => info.Attempts >= MAX_ATTEMPTS)
+            .Select(p=>p.RequestId)
+            .ToHashSet();
+        if (maxAttemptsReached.Count > 0)
         {
-            requests.Remove(requestId);
+            _logger.LogError("Requests {} has reached max attempts", string.Join(",", maxAttemptsReached));
         }
+
+        var validRequests = requests.ToList();
+        validRequests.RemoveAll(info => maxAttemptsReached.Contains(info.RequestId));
+        return validRequests;
     }
     
     private void AlarmWhenLowOnQuota(IDictionary<string, int> apiQuota)
@@ -361,23 +385,9 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         _masterTrackerState.State.PendingImageGenerationRequests.Remove(requestId);
         return info;
     }
-    
-    //keep alive TODO
-    /*public async Task Ping()
-    {
-        _reminder = await _reminderRegistry.RegisterOrUpdateReminder(
-            reminderName: ReminderName,
-            dueTime: TimeSpan.Zero,
-            period: TimeSpan.FromHours(1));
-    }*/
 
     void IDisposable.Dispose()
     {
-        /*if (_reminder is not null)
-        {
-            _reminderRegistry.UnregisterReminder(_reminder);
-        }*/
-        
         _timer?.Dispose();
         _flushTimer?.Dispose();
     }
