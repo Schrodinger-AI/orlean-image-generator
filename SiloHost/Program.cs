@@ -7,6 +7,7 @@ using Serilog;
 using Serilog.Formatting.Json;
 using Shared;
 using System.Net;
+using Microsoft.Extensions.Configuration;
 
 namespace SiloHost
 {
@@ -19,6 +20,14 @@ namespace SiloHost
                 .WriteTo.File(new JsonFormatter(), "logs/SiloHostLog-.log", rollingInterval: RollingInterval.Hour)
                 .CreateLogger();
 
+            var builder = new ConfigurationBuilder()
+            .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+            var configuration = builder.Build();
+
+            var siloPort = configuration.GetValue<int>("SiloPort");
+            var gatewayPort = configuration.GetValue<int>("GatewayPort");
+
             var host = new SiloHostBuilder()
                 .UseAdoNetClustering(options =>
                 {
@@ -26,7 +35,7 @@ namespace SiloHost
                     options.ConnectionString = Environment.GetEnvironmentVariable("CONNECTION_STRING");
                     Console.WriteLine("Connection string: " + options.ConnectionString);
                 })
-                .ConfigureEndpoints(siloPort: 11111, gatewayPort: 30000)
+                .ConfigureEndpoints(siloPort: siloPort, gatewayPort: gatewayPort)
                 .ConfigureServices((hostContext, services) =>
                 {
                     services.Configure<TraitConfigOptions>(hostContext.Configuration.GetSection("TraitConfig"));
