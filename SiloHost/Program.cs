@@ -19,7 +19,12 @@ namespace SiloHost
                 .CreateLogger();
 
             var host = new SiloHostBuilder()
-                .UseLocalhostClustering()
+                .UseAdoNetClustering(options =>
+                {
+                    options.Invariant = "MySql.Data.MySqlClient";
+                    options.ConnectionString = Environment.GetEnvironmentVariable("CONNECTION_STRING");
+                    Console.WriteLine("Connection string: " + options.ConnectionString);
+                })
                 .ConfigureServices((hostContext, services) =>
                 {
                     services.Configure<TraitConfigOptions>(hostContext.Configuration.GetSection("TraitConfig"));

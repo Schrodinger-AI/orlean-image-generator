@@ -1,10 +1,7 @@
 using Orleans;
 using Orleans.Hosting;
 using Orleans.Configuration;
-using Shared;
 using Grains;
-using Serilog;
-using Serilog.Formatting.Json;
 using Microsoft.OpenApi.Models;
 
 public class Startup
@@ -15,7 +12,12 @@ public class Startup
         services.AddSingleton<IClusterClient>(serviceProvider =>
         {
             var client = new ClientBuilder()
-                .UseLocalhostClustering()
+                .UseAdoNetClustering(options =>
+                {
+                    options.Invariant = "MySql.Data.MySqlClient";
+                    options.ConnectionString = Environment.GetEnvironmentVariable("CONNECTION_STRING");
+                    Console.WriteLine("Connection string: " + options.ConnectionString);
+                })
                 .Configure<ClusterOptions>(options =>
                 {
                     options.ClusterId = "dev";
