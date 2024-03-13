@@ -22,4 +22,8 @@
       <ProjectReference Include="..\Grains\Grains.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="font\" />
+  </ItemGroup>
+
 </Project>
