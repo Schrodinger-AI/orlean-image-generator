@@ -1,3 +1,4 @@
+using Grains.Contracts;
 using Grains.types;
 
 namespace Grains.usage_tracker;

@@ -1,8 +1,7 @@
-using Grains;
+using Grains.Contracts;
+using WebApi.Models;
 using Microsoft.AspNetCore.Mvc;
 using Orleans;
-using Shared;
-using UnitTests.Grains;
 
 namespace WebApi.Controllers
 {
@@ -69,7 +68,7 @@ namespace WebApi.Controllers
         }
 
         [HttpPost("generate")]
-        public async Task<PrompterResponse> Generate(PromptGenerationRequest promptGenerationRequest)
+        public async Task<PrompterResponse> Generate(Models.PromptGenerationRequest promptGenerationRequest)
         {
             try
             {

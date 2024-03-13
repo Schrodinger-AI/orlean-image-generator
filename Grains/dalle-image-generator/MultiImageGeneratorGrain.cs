@@ -2,9 +2,7 @@ using Grains.usage_tracker;
 using Microsoft.Extensions.Logging;
 using Orleans;
 using Orleans.Runtime;
-using Shared;
-using UnitTests.Grains;
-using Attribute = Shared.Attribute;
+using Grains.Contracts;
 
 namespace Grains;
 
@@ -129,7 +127,7 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
         }
     }
 
-    public async Task<Dictionary<string, TraitEntry>> lookupTraitDefinitions(List<Attribute> requestTraits)
+    public async Task<Dictionary<string, TraitEntry>> lookupTraitDefinitions(List<Grains.Contracts.Attribute> requestTraits)
     {
         _logger.LogInformation("lookupTraitDefinitions called with requestTraits: {}", requestTraits);
         // Extract trait names from the request

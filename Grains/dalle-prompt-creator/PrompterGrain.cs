@@ -4,7 +4,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using Orleans;
 using Orleans.Runtime;
-using Shared;
+using Grains.Contracts;
 
 namespace Grains;
 

@@ -1,4 +1,4 @@
-namespace Grains.types;
+namespace Grains.Contracts;
 
 public class APIAccountInfo
 {

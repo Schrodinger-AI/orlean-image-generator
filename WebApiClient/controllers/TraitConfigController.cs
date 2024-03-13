@@ -1,7 +1,6 @@
 using Grains;
 using Microsoft.AspNetCore.Mvc;
 using Orleans;
-using Shared;
 
 namespace WebApi.Controllers
 {

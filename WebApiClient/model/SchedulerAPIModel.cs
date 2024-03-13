@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Shared;
+namespace WebApi.Models;
 
 public abstract class AddApiKeyAPIResponse { }
 

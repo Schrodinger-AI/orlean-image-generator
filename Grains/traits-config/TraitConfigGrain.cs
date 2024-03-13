@@ -1,7 +1,7 @@
 
 using Orleans;
 using Orleans.Runtime;
-using Shared;
+using Grains.Contracts;
 
 namespace Grains;
 

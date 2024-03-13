@@ -1,5 +1,5 @@
 using Grains.types;
-using Shared;
+using Grains.Contracts;
 
 namespace Grains.usage_tracker;
 

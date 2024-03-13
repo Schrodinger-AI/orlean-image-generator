@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 using Orleans;
 using Orleans.Runtime;
 using Orleans.Timers;
-using Shared;
+using Grains.Contracts;
 // ReSharper disable TooManyChainedReferences
 
 namespace Grains.usage_tracker;

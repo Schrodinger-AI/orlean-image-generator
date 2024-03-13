@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using Orleans.Runtime;
 using System.Linq;
 
-namespace UnitTests.Grains
+namespace Grains
 {
     public class ObserverManager<TObserver> : ObserverManager<IAddressable, TObserver>
     {

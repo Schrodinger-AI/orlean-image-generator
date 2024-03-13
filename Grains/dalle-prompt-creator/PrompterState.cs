@@ -1,4 +1,4 @@
-using Shared;
+using Grains.Contracts;
 
 namespace Grains;
 

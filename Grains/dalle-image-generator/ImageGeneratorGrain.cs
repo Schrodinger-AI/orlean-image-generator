@@ -4,7 +4,7 @@ using Newtonsoft.Json;
 using Orleans;
 using Orleans.Runtime;
 using SixLabors.ImageSharp.Processing;
-using Shared;
+using Grains.Contracts;
 using Grains.usage_tracker;
 using Grains.types;
 using Microsoft.Extensions.Logging;

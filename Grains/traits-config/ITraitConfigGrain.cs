@@ -1,5 +1,5 @@
 using Orleans;
-using Shared;
+using Grains.Contracts;
 namespace Grains;
 
     public interface ITraitConfigGrain : ISchrodingerGrain, IGrainWithStringKey

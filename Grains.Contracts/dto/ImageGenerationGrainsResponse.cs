@@ -1,4 +1,4 @@
-namespace Shared
+namespace Grains.Contracts
 {
     public enum ImageGenerationStatus
     {

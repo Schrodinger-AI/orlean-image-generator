@@ -1,10 +1,8 @@
 using System.Collections.Immutable;
-using Grains;
-using Microsoft.Extensions.Logging;
 using Orleans;
 using Orleans.Runtime;
 
-namespace UnitTests.Grains;
+namespace Grains;
 
 public class ConfiguratorGrain : Grain, IConfiguratorGrain
 {

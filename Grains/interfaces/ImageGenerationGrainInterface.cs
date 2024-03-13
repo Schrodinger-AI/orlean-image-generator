@@ -1,7 +1,6 @@
-using Grains;
 using Orleans;
-
-namespace Shared;
+using Grains.Contracts;
+namespace Grains;
 
 public interface ISchrodingerGrain : IGrainWithGuidKey
 { }
