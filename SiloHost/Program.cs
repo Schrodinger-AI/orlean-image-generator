@@ -6,7 +6,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using Serilog.Formatting.Json;
 using Shared;
-using System.Net;
 using Microsoft.Extensions.Configuration;
 
 namespace SiloHost
