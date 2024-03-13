@@ -10,14 +10,14 @@ namespace Grains;
 
 public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
 {
-    private readonly ILogger<SchedulerGrain> _logger;
+    private readonly ILogger<MultiImageGeneratorGrain> _logger;
 
     private readonly IPersistentState<MultiImageGenerationState> _multiImageGenerationState;
 
     public MultiImageGeneratorGrain(
         [PersistentState("multiImageGenerationState", "MySqlSchrodingerImageStore")]
         IPersistentState<MultiImageGenerationState> multiImageGenerationState,
-        ILogger<SchedulerGrain> logger)
+        ILogger<MultiImageGeneratorGrain> logger)
     {
         _multiImageGenerationState = multiImageGenerationState;
         _logger = logger;

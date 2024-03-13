@@ -18,12 +18,12 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
 
     private readonly IPersistentState<ImageGenerationState> _imageGenerationState;
 
-    private readonly ILogger<SchedulerGrain> _logger;
+    private readonly ILogger<ImageGeneratorGrain> _logger;
 
     public ImageGeneratorGrain(
         [PersistentState("imageGenerationState", "MySqlSchrodingerImageStore")]
         IPersistentState<ImageGenerationState> imageGeneratorState,
-        ILogger<SchedulerGrain> logger)
+        ILogger<ImageGeneratorGrain> logger)
     {
         _imageGenerationState = imageGeneratorState;
         _logger = logger;

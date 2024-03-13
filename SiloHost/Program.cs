@@ -1,9 +1,10 @@
 ﻿using Grains;
-using Microsoft.Extensions.Logging;
 using Orleans;
 using Orleans.Configuration;
 using Orleans.Hosting;
 using Microsoft.Extensions.DependencyInjection;
+using Serilog;
+using Serilog.Formatting.Json;
 using Shared;
 
 namespace SiloHost
@@ -12,6 +13,11 @@ namespace SiloHost
     {
         static async Task Main(string[] args)
         {
+            Log.Logger = new LoggerConfiguration()
+                .WriteTo.Console(new JsonFormatter())
+                .WriteTo.File(new JsonFormatter(), "logs/SiloHostLog-.log", rollingInterval: RollingInterval.Hour)
+                .CreateLogger();
+
             var host = new SiloHostBuilder()
                 .UseLocalhostClustering()
                 .ConfigureServices((hostContext, services) =>
@@ -29,7 +35,7 @@ namespace SiloHost
                     options.ConnectionString = Environment.GetEnvironmentVariable("CONNECTION_STRING");
                     Console.WriteLine("Connection string: " + options.ConnectionString);
                 })
-                .AddAdoNetGrainStorage(Constants.MySqlSchrodingerImageStore, options =>
+                .AddAdoNetGrainStorage(Grains.Constants.MySqlSchrodingerImageStore, options =>
                 {
                     options.Invariant = "MySql.Data.MySqlClient";
                     options.ConnectionString = Environment.GetEnvironmentVariable("CONNECTION_STRING");
@@ -37,12 +43,8 @@ namespace SiloHost
                     Console.WriteLine("Connection string: " + options.ConnectionString);
                 })
                 .ConfigureApplicationParts(parts => parts.AddApplicationPart(typeof(ImageGeneratorGrain).Assembly).WithReferences())
-                .ConfigureLogging(logging =>
-                {
-                    logging.AddConsole();
-                    logging.SetMinimumLevel(LogLevel.Debug); // Set log level to Debug for more detailed logging
-                })
-                // .UseDashboard(options => { })
+                .ConfigureLogging(logging => logging.AddSerilog())
+                //.UseDashboard(options => { })
                 .Build();
 
             await host.StartAsync();
