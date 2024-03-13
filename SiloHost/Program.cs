@@ -55,6 +55,7 @@ namespace SiloHost
                 .ConfigureServices((hostContext, services) =>
                 {
                     services.Configure<TraitConfigOptions>(hostContext.Configuration.GetSection("TraitConfig"));
+                    services.Configure<ImageSettings>(hostContext.Configuration.GetSection("ImageSettings"));
                 })
                 .Configure<ClusterOptions>(options =>
                 {
