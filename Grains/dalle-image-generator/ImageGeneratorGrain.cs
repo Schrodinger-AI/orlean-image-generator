@@ -18,15 +18,20 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
 
     private readonly IPersistentState<ImageGenerationState> _imageGenerationState;
 
+    private readonly ImageSettings _imageSettings;
+
     private readonly ILogger<ImageGeneratorGrain> _logger;
 
     public ImageGeneratorGrain(
         [PersistentState("imageGenerationState", "MySqlSchrodingerImageStore")]
         IPersistentState<ImageGenerationState> imageGeneratorState,
+        ImageSettings imageSettings,
         ILogger<ImageGeneratorGrain> logger)
     {
         _imageGenerationState = imageGeneratorState;
         _logger = logger;
+        _imageSettings = imageSettings;
+
     }
 
     public override async Task OnActivateAsync()
@@ -186,7 +191,6 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
             _imageGenerationState.State.ParentRequestId = parentRequestId;
             _imageGenerationState.State.RequestId = imageRequestId;
             _imageGenerationState.State.Prompt = prompt;
-            await _imageGenerationState.WriteStateAsync();
 
             // Start the image data generation process
             var dalleResponse = await RunDalleAsync(prompt);
@@ -209,10 +213,6 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
 
             // Store the image in the state
             _imageGenerationState.State.Image = image;
-
-            // Persist the state to the database
-            await _imageGenerationState.WriteStateAsync();
-
             _imageGenerationState.State.Status = ImageGenerationStatus.SuccessfulCompletion;
 
             // Store the task in a non-persistent dictionary
@@ -331,8 +331,8 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
         using var ms = new MemoryStream(imageBytes);
         using var output = new MemoryStream();
         using var image = SixLabors.ImageSharp.Image.Load(ms);
-        image.Mutate(x => x.Resize(128, 128));
-        image.Save(output, new SixLabors.ImageSharp.Formats.Webp.WebpEncoder { Quality = 30 });
+        image.Mutate(x => x.Resize(_imageSettings.Width, _imageSettings.Height));
+        image.Save(output, new SixLabors.ImageSharp.Formats.Webp.WebpEncoder { Quality = _imageSettings.Quality });
         return "data:image/webp;base64," + Convert.ToBase64String(output.ToArray());
     }
 
