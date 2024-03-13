@@ -31,8 +31,14 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
     {
         _imageGenerationState = imageGeneratorState;
         _logger = logger;
-        _imageSettings = imageSettingsOptions.Value;
-        _logger.LogInformation("ImageGeneratorGrain Constructor : _imageSettings are: {} ", _imageSettings);
+        _imageSettings = new ImageSettings
+        {
+            Width = 128,
+            Height = 128,
+            Quality = 30
+        };
+        var imgS = Newtonsoft.Json.JsonConvert.SerializeObject(_imageSettings);
+        _logger.LogInformation("ImageGeneratorGrain Constructor : _imageSettings are: "+imgS);
     }
 
     public override async Task OnActivateAsync()
@@ -197,9 +203,10 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
             // Start the image data generation process
             var dalleResponse = await RunDalleAsync(prompt);
 
-            _logger.LogInformation("ImageGeneratorGrain - generatorId: {} , dalleResponse: {}", imageRequestId,
-                dalleResponse);
+            _logger.LogInformation(string.Format("ImageGeneratorGrain - generatorId: {0} , dalleResponse: {1}",
+                imageRequestId, dalleResponse));
 
+            _logger.LogDebug(dalleResponse.ToString());
             // Extract the URL from the result
             var imageUrl = dalleResponse.Data[0].Url;
 
@@ -264,8 +271,8 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
     private async Task<DalleResponse> RunDalleAsync(string prompt)
     {
         _logger.LogInformation(
-            "ImageGeneratorGrain - generatorId: {} , about to call Dalle API to generate image for prompt: {}",
-            _imageGenerationState.State.RequestId, prompt);
+            string.Format("ImageGeneratorGrain - generatorId: {} , about to call Dalle API to generate image for prompt: {}",
+            _imageGenerationState.State.RequestId, prompt));
 
         using var client = new HttpClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);
@@ -282,10 +289,15 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
         var response = await client.PostAsync("https://api.openai.com/v1/images/generations", content);
 
         var jsonResponse = await response.Content.ReadAsStringAsync();
+        
+        _logger.LogInformation(            
+            string.Format("ImageGeneratorGrain - generatorId: {} , Dalle API call response: {}",
+                _imageGenerationState.State.RequestId, jsonResponse));
         var dalleResponse = JsonConvert.DeserializeObject<DalleResponse>(jsonResponse);
 
-        _logger.LogInformation("ImageGeneratorGrain - generatorId: {} , Dalle API response: {}",
-            _imageGenerationState.State.RequestId, dalleResponse);
+        _logger.LogInformation(            
+            string.Format("ImageGeneratorGrain - generatorId: {} , Dalle API response: {}",
+            _imageGenerationState.State.RequestId, dalleResponse));
 
         return dalleResponse;
     }
