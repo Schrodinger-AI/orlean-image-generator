@@ -9,6 +9,19 @@ public class Startup
 {
     public void ConfigureServices(IServiceCollection services)
     {
+
+        var builder = new ConfigurationBuilder()
+        .SetBasePath(Directory.GetCurrentDirectory())
+        .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+        var configuration = builder.Build();
+
+        var connectionString = configuration.GetValue<string>("ConnectionString");
+
+        if (string.IsNullOrEmpty(connectionString))
+        {
+            throw new Exception("ConnectionString must be non-empty.");
+        }
+
         services.AddControllers();
         services.AddSingleton<IClusterClient>(serviceProvider =>
         {
@@ -16,8 +29,7 @@ public class Startup
                  .UseAdoNetClustering(options =>
                 {
                     options.Invariant = "MySql.Data.MySqlClient";
-                    options.ConnectionString = Environment.GetEnvironmentVariable("CONNECTION_STRING");
-                    Console.WriteLine("Connection string: " + options.ConnectionString);
+                    options.ConnectionString = connectionString;
                 })
                 .Configure<ClusterOptions>(options =>
                 {

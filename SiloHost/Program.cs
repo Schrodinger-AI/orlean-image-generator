@@ -25,14 +25,31 @@ namespace SiloHost
             var configuration = builder.Build();
 
             var siloPort = configuration.GetValue<int>("SiloPort");
+
+            if (siloPort == 0)
+            {
+                throw new Exception("SiloPort must be non-zero.");
+            }
+
             var gatewayPort = configuration.GetValue<int>("GatewayPort");
+
+            if (gatewayPort == 0)
+            {
+                throw new Exception("GatewayPort must be non-zero.");
+            }
+
+            var connectionString = configuration.GetValue<string>("ConnectionString");
+
+            if (string.IsNullOrEmpty(connectionString))
+            {
+                throw new Exception("ConnectionString must be non-empty.");
+            }
 
             var host = new SiloHostBuilder()
                 .UseAdoNetClustering(options =>
                 {
                     options.Invariant = "MySql.Data.MySqlClient";
-                    options.ConnectionString = Environment.GetEnvironmentVariable("CONNECTION_STRING");
-                    Console.WriteLine("Connection string: " + options.ConnectionString);
+                    options.ConnectionString = connectionString;
                 })
                 .ConfigureEndpoints(siloPort: siloPort, gatewayPort: gatewayPort)
                 .ConfigureServices((hostContext, services) =>
@@ -47,15 +64,13 @@ namespace SiloHost
                 .UseAdoNetClustering(options =>
                 {
                     options.Invariant = "MySql.Data.MySqlClient";
-                    options.ConnectionString = Environment.GetEnvironmentVariable("CONNECTION_STRING");
-                    Console.WriteLine("Connection string: " + options.ConnectionString);
+                    options.ConnectionString = connectionString;
                 })
                 .AddAdoNetGrainStorage(Grains.Constants.MySqlSchrodingerImageStore, options =>
                 {
                     options.Invariant = "MySql.Data.MySqlClient";
-                    options.ConnectionString = Environment.GetEnvironmentVariable("CONNECTION_STRING");
+                    options.ConnectionString = connectionString;
                     options.UseJsonFormat = false;
-                    Console.WriteLine("Connection string: " + options.ConnectionString);
                 })
                 .ConfigureApplicationParts(parts => parts.AddApplicationPart(typeof(ImageGeneratorGrain).Assembly).WithReferences())
                 .ConfigureLogging(logging => logging.AddSerilog())
