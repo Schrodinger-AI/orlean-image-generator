@@ -1,4 +1,3 @@
-using System.Collections;
 using Grains.types;
 using Grains.usage_tracker;
 using Microsoft.AspNetCore.Mvc;
@@ -13,9 +12,13 @@ public class SchedulerController : ControllerBase
 {
     private readonly IClusterClient _client;
 
-    public SchedulerController(IClusterClient client)
+    private readonly ILogger<SchedulerController> _logger;
+
+
+    public SchedulerController(IClusterClient client, ILogger<SchedulerController> logger)
     {
         _client = client;
+        _logger = logger;
     }
 
     [HttpPost("add")]

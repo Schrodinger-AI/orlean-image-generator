@@ -3,6 +3,8 @@ using Orleans.Hosting;
 using Orleans.Configuration;
 using Shared;
 using Grains;
+using Serilog;
+using Serilog.Formatting.Json;
 using Microsoft.OpenApi.Models;
 
 public class Startup
@@ -46,7 +48,7 @@ public class Startup
         app.UseSwagger();
         app.UseSwaggerUI();
         app.UseDeveloperExceptionPage();
-     
+
         app.Use(async (context, next) =>
         {
             logger.LogInformation("Received request: {Url}", context.Request.Path);

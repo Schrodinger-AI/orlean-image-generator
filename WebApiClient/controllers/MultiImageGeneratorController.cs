@@ -12,9 +12,13 @@ public class MultiImageGeneratorController : ControllerBase
 {
     private readonly IClusterClient _client;
 
-    public MultiImageGeneratorController(IClusterClient client)
+    private readonly ILogger<MultiImageGeneratorController> _logger;
+
+
+    public MultiImageGeneratorController(IClusterClient client, ILogger<MultiImageGeneratorController> logger)
     {
         _client = client;
+        _logger = logger;
     }
 
 
