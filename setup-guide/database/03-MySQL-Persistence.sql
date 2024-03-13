@@ -63,7 +63,7 @@ CREATE TABLE OrleansStorage
     ServiceId                NVARCHAR(150) NOT NULL,
 
     -- Payload
-    PayloadBinary    BLOB NULL,
+    PayloadBinary    MEDIUMBLOB NULL,
 
     -- Informational field, no other use.
     ModifiedOn DATETIME NOT NULL,
@@ -136,7 +136,7 @@ CREATE PROCEDURE WriteToStorage
     in _GrainIdExtensionString NVARCHAR(512),
     in _ServiceId NVARCHAR(150),
     in _GrainStateVersion INT,
-    in _PayloadBinary BLOB
+    in _PayloadBinary MEDIUMBLOB
 )
 BEGIN
     DECLARE _newGrainStateVersion INT;

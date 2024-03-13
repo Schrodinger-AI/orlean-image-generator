@@ -61,14 +61,13 @@ public class MultiImageGeneratorController : ControllerBase
         var multiImageGeneratorGrain = _client.GetGrain<IMultiImageGeneratorGrain>(imageQueryRequest.RequestId);
 
         var imageQueryResponse = await multiImageGeneratorGrain.QueryMultipleImagesAsync();
+        if (imageQueryResponse.Uninitialized)
+            return StatusCode(404, new ImageQueryResponseNotOk { Error = "Request not found" });
 
-        if (imageQueryResponse.Status == ImageGenerationStatus.SuccessfulCompletion)
-        {
-            List<ImageDescription> images = imageQueryResponse.Images ?? new List<ImageDescription>();
-            return StatusCode(200, new ImageQueryResponseOk { Images = images });
-        }
-        else {
-            return StatusCode(202, new ImageQueryResponseNotOk { Error = "result is not ready" });
-        }
+        if (imageQueryResponse.Status != ImageGenerationStatus.SuccessfulCompletion)
+            return StatusCode(202, new ImageQueryResponseNotOk { Error = "The result is not ready." });
+        var images = imageQueryResponse.Images ?? [];
+        return StatusCode(200, new ImageQueryResponseOk { Images = images });
+
     }
 }
