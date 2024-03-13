@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using Serilog.Formatting.Json;
 using Shared;
+using System.Net;
 
 namespace SiloHost
 {
@@ -25,6 +26,7 @@ namespace SiloHost
                     options.ConnectionString = Environment.GetEnvironmentVariable("CONNECTION_STRING");
                     Console.WriteLine("Connection string: " + options.ConnectionString);
                 })
+                .ConfigureEndpoints(siloPort: 11111, gatewayPort: 30000)
                 .ConfigureServices((hostContext, services) =>
                 {
                     services.Configure<TraitConfigOptions>(hostContext.Configuration.GetSection("TraitConfig"));

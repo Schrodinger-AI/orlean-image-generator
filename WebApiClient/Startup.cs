@@ -3,6 +3,7 @@ using Orleans.Hosting;
 using Orleans.Configuration;
 using Grains;
 using Microsoft.OpenApi.Models;
+using System.Net;
 
 public class Startup
 {
@@ -12,7 +13,7 @@ public class Startup
         services.AddSingleton<IClusterClient>(serviceProvider =>
         {
             var client = new ClientBuilder()
-                .UseAdoNetClustering(options =>
+                 .UseAdoNetClustering(options =>
                 {
                     options.Invariant = "MySql.Data.MySqlClient";
                     options.ConnectionString = Environment.GetEnvironmentVariable("CONNECTION_STRING");

@@ -186,7 +186,6 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
             _imageGenerationState.State.ParentRequestId = parentRequestId;
             _imageGenerationState.State.RequestId = imageRequestId;
             _imageGenerationState.State.Prompt = prompt;
-            await _imageGenerationState.WriteStateAsync();
 
             // Start the image data generation process
             var dalleResponse = await RunDalleAsync(prompt);
@@ -209,10 +208,6 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
 
             // Store the image in the state
             _imageGenerationState.State.Image = image;
-
-            // Persist the state to the database
-            await _imageGenerationState.WriteStateAsync();
-
             _imageGenerationState.State.Status = ImageGenerationStatus.SuccessfulCompletion;
 
             // Store the task in a non-persistent dictionary
