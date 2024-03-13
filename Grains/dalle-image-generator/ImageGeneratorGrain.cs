@@ -3,13 +3,11 @@ using System.Text;
 using Newtonsoft.Json;
 using Orleans;
 using Orleans.Runtime;
-using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Processing;
 using Shared;
 using Grains.usage_tracker;
 using Grains.types;
 using Microsoft.Extensions.Logging;
-using SixLabors.ImageSharp.Formats.Jpeg;
 
 namespace Grains;
 
@@ -17,8 +15,6 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
 {
     private string _apiKey;
     private IDisposable _timer;
-
-    private IDisposable _reconcileCheckerTimer;
 
     private readonly IPersistentState<ImageGenerationState> _imageGenerationState;
 
@@ -33,12 +29,12 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
         _logger = logger;
     }
 
-    public override Task OnActivateAsync()
+    public override async Task OnActivateAsync()
     {
         _logger.LogInformation("ImageGeneratorGrain - OnActivateAsync");
         _timer = RegisterTimer(TriggerImageGenerationAsync, null, TimeSpan.Zero, TimeSpan.FromSeconds(1));
-        _reconcileCheckerTimer = RegisterTimer(CheckAndReportForInvalidStates, null, TimeSpan.Zero, TimeSpan.FromSeconds(300));
-        return base.OnActivateAsync();
+        await CheckAndReportForInvalidStates();
+        await base.OnActivateAsync();
     }
 
     public async Task SetImageGenerationRequestData(string prompt, string imageRequestId, string parentRequestId)
@@ -57,7 +53,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
         await Task.CompletedTask;
     }
 
-    private async Task CheckAndReportForInvalidStates(object state)
+    private async Task CheckAndReportForInvalidStates()
     {
         if (string.IsNullOrEmpty(_apiKey) && _imageGenerationState.State.Status == ImageGenerationStatus.InProgress)
         {
@@ -81,13 +77,6 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
                 Message = _imageGenerationState.State.Error
             };
             await schedulerGrain.ReportFailedImageGenerationRequestAsync(requestStatus);
-            return;
-        }
-
-        else if (_imageGenerationState.State.Status == ImageGenerationStatus.SuccessfulCompletion)
-        {
-            _logger.LogInformation("ImageGeneratorGrain - About to dispose _reconcileCheckerTimer for generatorId: {} as image generation is Successful", _imageGenerationState.State.RequestId);
-            _reconcileCheckerTimer.Dispose();
             return;
         }
     }
@@ -351,6 +340,5 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
     public void Dispose()
     {
         _timer?.Dispose();
-        _reconcileCheckerTimer?.Dispose();
     }
 }
