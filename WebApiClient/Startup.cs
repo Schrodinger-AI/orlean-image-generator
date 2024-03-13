@@ -43,13 +43,10 @@ public class Startup
 
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILogger<Startup> logger)
     {
-        if (env.IsDevelopment())
-        {
-            app.UseSwagger();
-            app.UseSwaggerUI();
-            app.UseDeveloperExceptionPage();
-        }
-
+        app.UseSwagger();
+        app.UseSwaggerUI();
+        app.UseDeveloperExceptionPage();
+     
         app.Use(async (context, next) =>
         {
             logger.LogInformation("Received request: {Url}", context.Request.Path);
