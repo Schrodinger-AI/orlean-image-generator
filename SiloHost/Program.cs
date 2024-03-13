@@ -75,7 +75,7 @@ namespace SiloHost
                 })
                 .ConfigureApplicationParts(parts => parts.AddApplicationPart(typeof(ImageGeneratorGrain).Assembly).WithReferences())
                 .ConfigureLogging(logging => logging.AddSerilog())
-                .UseDashboard(options => { })
+                //.UseDashboard(options => { })
                 .Build();
 
             await host.StartAsync();
