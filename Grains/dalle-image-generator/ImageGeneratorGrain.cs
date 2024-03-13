@@ -8,6 +8,7 @@ using Shared;
 using Grains.usage_tracker;
 using Grains.types;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Grains;
 
@@ -25,13 +26,13 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
     public ImageGeneratorGrain(
         [PersistentState("imageGenerationState", "MySqlSchrodingerImageStore")]
         IPersistentState<ImageGenerationState> imageGeneratorState,
-        ImageSettings imageSettings,
+        IOptions<ImageSettings> imageSettingsOptions,
         ILogger<ImageGeneratorGrain> logger)
     {
         _imageGenerationState = imageGeneratorState;
         _logger = logger;
-        _imageSettings = imageSettings;
-
+        _imageSettings = imageSettingsOptions.Value;
+        _logger.LogInformation("ImageGeneratorGrain Constructor : _imageSettings are: {} ", _imageSettings);
     }
 
     public override async Task OnActivateAsync()
@@ -39,6 +40,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
         _logger.LogInformation("ImageGeneratorGrain - OnActivateAsync");
         _timer = RegisterTimer(TriggerImageGenerationAsync, null, TimeSpan.Zero, TimeSpan.FromSeconds(1));
         await CheckAndReportForInvalidStates();
+        _logger.LogInformation("ImageGeneratorGrain - OnActivateAsync - ImageSettings are: {} ", _imageSettings);
         await base.OnActivateAsync();
     }
 
