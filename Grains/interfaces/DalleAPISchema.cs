@@ -74,6 +74,9 @@ public class DalleError
 
     [JsonPropertyName("type")] 
     public string Type { get; set; }
+    
+    [JsonPropertyName("error")]
+    public DalleError Error { get; set; }
 }
 
 public class DalleData

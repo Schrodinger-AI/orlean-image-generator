@@ -149,7 +149,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
             {
                 RequestId = _imageGenerationState.State.RequestId,
                 Status = RequestStatusEnum.Completed,
-                RequestTimestamp =imageGenerationResponse.DalleRequestTimestamp
+                RequestTimestamp = imageGenerationResponse.DalleRequestTimestamp
             };
 
             await schedulerGrain.ReportCompletedImageGenerationRequestAsync(requestStatus);
