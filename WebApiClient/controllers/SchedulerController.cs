@@ -63,7 +63,7 @@ public class SchedulerController : ControllerBase
         {
             var newInfo = new APIAccountInfo
             {
-                ApiKey = info.ApiKey.Substring(0, info.ApiKey.Length/2),
+                ApiKey = info.ApiKey,//.Substring(0, info.ApiKey.Length/2),
                 Email = info.Email,
                 Description = info.Description,
                 MaxQuota = info.MaxQuota,
@@ -73,6 +73,21 @@ public class SchedulerController : ControllerBase
         }
         
         return Ok(ret.ToArray());
+    }
+    
+    [HttpGet("apiKeysUsageInfo")]
+    public async Task<ApiKeysUsageInfoResponse> GetApiKeysUsageInfo()
+    {
+        try
+        {
+            var grain = _client.GetGrain<ISchedulerGrain>("SchedulerGrain");
+            var usageInfo = await grain.GetApiKeysUsageInfo();
+            return new ApiKeysUsageInfoResponseOk<Dictionary<string, ApiKeyUsageInfo>>(usageInfo);
+        }
+        catch (Exception ex)
+        {
+            return new ApiKeysUsageInfoResponseFailed(ex.Message);
+        }
     }
     
     [HttpGet("states")]

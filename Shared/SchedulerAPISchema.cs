@@ -43,3 +43,17 @@ public class ImageGenerationStatesResponseFailed(string error) : ImageGeneration
     [JsonPropertyName("error")]
     public string Error { get; set; } = error;
 }
+
+public abstract class ApiKeysUsageInfoResponse { }
+
+public class ApiKeysUsageInfoResponseOk<T>(T usageInfo) : ApiKeysUsageInfoResponse
+{
+    [JsonPropertyName("apiKeysUsageInfo")]
+    public T ApiKeysUsageInfo { get; set; } = usageInfo;
+}
+
+public class ApiKeysUsageInfoResponseFailed(string error) : ApiKeysUsageInfoResponse
+{
+    [JsonPropertyName("error")]
+    public string Error { get; set; } = error;
+}
