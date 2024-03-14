@@ -105,6 +105,8 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         info.StartedTimestamp = requestStatus.RequestTimestamp;
         _masterTrackerState.State.CompletedImageGenerationRequests.Add(requestStatus.RequestId, info);
         
+        RefreshApiUsageInfo(info.ApiKey);
+        
         return Task.CompletedTask;
     }
 
@@ -276,14 +278,26 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
 
     #region Private Methods
 
+    private void RefreshApiUsageInfo(string apiKey)
+    {
+        if(_apiKeyStatus.TryGetValue(apiKey, out var usageInfo))
+        {
+            usageInfo.Attempts = 0;
+            usageInfo.LastUsedTimestamp = 0;
+            usageInfo.Status = ApiKeyStatus.Active;
+        }
+        else
+        {
+            _logger.LogError($"[SchedulerGrain] API key: {apiKey} not found in usage info");
+        }
+    }
+    
     private void UpdateApiUsageStatus()
     {
         var now = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
         foreach (var usageInfo in _apiKeyStatus.Select(pair => pair.Value).Where(usageInfo => usageInfo.LastUsedTimestamp + (long)Math.Min(Math.Pow(3, usageInfo.Attempts), 27.0) < now))
         {
             usageInfo.Status = ApiKeyStatus.Active;
-            usageInfo.Attempts = 0;
-            usageInfo.LastUsedTimestamp = 0;
         }
     }
     

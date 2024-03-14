@@ -63,7 +63,7 @@ public class SchedulerController : ControllerBase
         {
             var newInfo = new APIAccountInfo
             {
-                ApiKey = info.ApiKey,//.Substring(0, info.ApiKey.Length/2),
+                ApiKey = info.ApiKey.Substring(0, info.ApiKey.Length/2),
                 Email = info.Email,
                 Description = info.Description,
                 MaxQuota = info.MaxQuota,
