@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using Newtonsoft.Json;
@@ -280,11 +281,25 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
         }), Encoding.UTF8, "application/json");
 
         var response = await client.PostAsync("https://api.openai.com/v1/images/generations", content);
-
+        
+        _logger.LogInformation($"ImageGeneratorGrain - generatorId: {_imageGenerationState.State.RequestId} , Dalle API response: {response} - responseCode: {response.StatusCode}");
+        
         var jsonResponse = await response.Content.ReadAsStringAsync();
         
-        _logger.LogInformation($"ImageGeneratorGrain - generatorId: {_imageGenerationState.State.RequestId} , Dalle API call response: {jsonResponse}");
-        DalleResponse dalleResponse = null;
+        _logger.LogInformation($"ImageGeneratorGrain - generatorId: {_imageGenerationState.State.RequestId} , Dalle API call response Content string: {jsonResponse}");
+
+        DalleError dalleError;
+        
+        if (response.StatusCode != HttpStatusCode.OK)
+        {
+            dalleError = HandleDalleError(response.StatusCode, jsonResponse);
+            
+            _logger.LogError($"ImageGeneratorGrain - generatorId: {_imageGenerationState.State.RequestId} , Dalle API call failed with error: {dalleError.Message}");
+            
+            throw new DalleException(dalleError.DalleErrorCode, dalleError.Message);
+        }
+        
+        DalleResponse dalleResponse;
         try
         {
             dalleResponse = JsonConvert.DeserializeObject<DalleResponse>(jsonResponse);
@@ -292,18 +307,66 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
         catch (Exception e)
         {
             _logger.LogError($"ImageGeneratorGrain - generatorId: {_imageGenerationState.State.RequestId} , Dalle API call failed with error: {e.Message}");
-            throw new Exception("Dalle API call failed with error: " + e.Message);
+            throw new DalleException(DalleErrorCodes.api_call_failed, e.Message);
         }
+        
+        _logger.LogError("Dalle ImageGeneration ResponseCode : " + response.StatusCode);
         
         if(dalleResponse.Error != null)
         {
             _logger.LogError($"ImageGeneratorGrain - generatorId: {_imageGenerationState.State.RequestId} , Dalle API call failed with error code: {dalleResponse.Error.Code}");
-            throw new Exception(dalleResponse.Error.Code);
+            throw new DalleException(DalleErrorCodes.dalle_internal_error, dalleResponse.Error.Message);
         }
 
-        _logger.LogInformation($"ImageGeneratorGrain - generatorId: {_imageGenerationState.State.RequestId} , Dalle API response: {dalleResponse}");
+        _logger.LogInformation($"ImageGeneratorGrain - generatorId: {_imageGenerationState.State.RequestId} , Dalle API deserialized response: {dalleResponse}");
 
         return dalleResponse;
+    }
+
+    private DalleError HandleDalleError(HttpStatusCode httpStatusCode, string responseJson)
+    {
+        DalleErrorCodes dalleErrorCodes;
+        
+        var dalleErrorObject = JsonConvert.DeserializeObject<DalleError>(responseJson);
+        
+        switch (httpStatusCode)
+        {
+            case HttpStatusCode.Unauthorized:
+                dalleErrorCodes = DalleErrorCodes.invalid_api_key;
+                break;
+            case HttpStatusCode.TooManyRequests:
+                {
+                    if (dalleErrorObject?.Code == "billing_hard_limit_reached")
+                    {
+                        dalleErrorCodes = DalleErrorCodes.dalle_billing_quota_exceeded;
+                    } else {
+                        dalleErrorCodes = DalleErrorCodes.rate_limit_reached;
+                    }
+                    
+                    break;
+                }
+            case HttpStatusCode.ServiceUnavailable:
+                dalleErrorCodes = DalleErrorCodes.dalle_engine_unavailable;
+                break;
+            case HttpStatusCode.BadRequest:
+                dalleErrorCodes = DalleErrorCodes.bad_request;
+                break;
+            case HttpStatusCode.InternalServerError:
+                dalleErrorCodes = DalleErrorCodes.dalle_internal_error;
+                break;
+            default:
+                dalleErrorCodes = DalleErrorCodes.dalle_internal_error;
+                break;
+        }
+
+        DalleError dalleError = new DalleError
+        {
+            HttpStatusCode = httpStatusCode,
+            DalleErrorCode = dalleErrorCodes,
+            Message = dalleErrorObject!.Message
+        };
+
+        return dalleError;
     }
 
     public async Task<ImageQueryGrainResponse> QueryImageAsync()
