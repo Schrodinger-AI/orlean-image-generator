@@ -15,10 +15,12 @@ namespace Grains.usage_tracker;
 /// </summary>
 public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
 {
-    private const long RATE_LIMIT_DURATION = 60;
-    private const long CLEANUP_INTERVAL = 180;
+    private const long RATE_LIMIT_DURATION = 63; // 1 minute and 3 seconds, 3 seconds for the buffer
+    private const long CLEANUP_INTERVAL = 180; // 3 minutes
     private const int MAX_ATTEMPTS = 99999;
     private const float QUOTA_THRESHOLD = 0.2f;
+    private const long RATE_LIMIT_WAIT = 120; // 2 minutes
+    private const long INVALID_API_KEY_WAIT = 86400; //1 day
 
     private readonly IPersistentState<SchedulerState> _masterTrackerState;
     private readonly ILogger<SchedulerGrain> _logger;
@@ -335,7 +337,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
             case DalleErrorCode.rate_limit_reached:
             case DalleErrorCode.invalid_api_key:
                 var isInvalidKey = errorCode == DalleErrorCode.invalid_api_key;
-                var delay = isInvalidKey ? 86400 : 3600; // 1 day for invalid key, 1 hour for rate limit
+                var delay = isInvalidKey ? INVALID_API_KEY_WAIT : RATE_LIMIT_WAIT; // 1 day for invalid key, 1 hour for rate limit
 
                 if (!_apiKeyStatus.TryGetValue(apiKey, out var usageInfo))
                 {
