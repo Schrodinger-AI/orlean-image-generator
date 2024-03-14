@@ -55,6 +55,12 @@ public class DalleResponse
     public DalleError Error { get; set; }
 }
 
+public class DalleWrappedError
+{
+    [JsonPropertyName("error")]
+    public DalleError Error { get; set; }
+}
+
 public class DalleError
 {
     [JsonPropertyName("httpStatusCode")]
@@ -74,9 +80,6 @@ public class DalleError
 
     [JsonPropertyName("type")] 
     public string Type { get; set; }
-    
-    [JsonPropertyName("error")]
-    public DalleError Error { get; set; }
 }
 
 public class DalleData
