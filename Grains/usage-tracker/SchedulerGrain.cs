@@ -15,20 +15,6 @@ namespace Grains.usage_tracker;
 /// </summary>
 public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
 {
-    private enum ApiKeyStatus
-    {
-        Active,
-        OnHold
-    }
-    
-    private class ApiKeyUsageInfo
-    {
-        public string ApiKey { get; set; }
-        public long LastUsedTimestamp { get; set; }
-        public long Attempts { get; set; }
-        public ApiKeyStatus Status { get; set; }
-    }
-    
     private const long RATE_LIMIT_DURATION = 60;
     private const long CLEANUP_INTERVAL = 180;
     private const int MAX_ATTEMPTS = 99999;
@@ -96,7 +82,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         }
         var unixTimestamp = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
         info.FailedTimestamp = unixTimestamp;
-        info.StartedTimestamp = requestStatus.RequestTimestamp;
+        info.StartedTimestamp = (requestStatus.RequestTimestamp == 0)? info.StartedTimestamp: requestStatus.RequestTimestamp;
         _masterTrackerState.State.FailedImageGenerationRequests.Add(requestStatus.RequestId, info);
         
         HandleErrorCode(info.ApiKey, info.StartedTimestamp, requestStatus.ErrorCode);
@@ -209,6 +195,11 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
     public Task<SchedulerState> GetImageGenerationStates()
     {
         return Task.FromResult(_masterTrackerState.State);
+    }
+    
+    public Task<Dictionary<string, ApiKeyUsageInfo>> GetApiKeysUsageInfo()
+    {
+        return Task.FromResult(_apiKeyStatus);
     }
     
     public async Task TickAsync()
