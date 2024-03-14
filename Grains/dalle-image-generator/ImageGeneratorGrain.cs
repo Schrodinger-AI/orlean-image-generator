@@ -336,7 +336,8 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
     {
         DalleErrorCode dalleErrorCodes;
         
-        var dalleErrorObject = JsonConvert.DeserializeObject<DalleError>(responseJson);
+        var dalleWrappedErrorObject = JsonConvert.DeserializeObject<DalleWrappedError>(responseJson);
+        var dalleErrorObject = dalleWrappedErrorObject?.Error;
         
         switch (httpStatusCode)
         {
