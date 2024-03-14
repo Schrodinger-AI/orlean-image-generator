@@ -46,7 +46,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         }
         catch (Exception e)
         {
-            _logger.LogError("[SchedulerGrain] " + e.Message);
+            _logger.LogError($"[SchedulerGrain] : {e.Message}");
         }
     }
     
@@ -74,7 +74,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
 
     public Task ReportFailedImageGenerationRequestAsync(RequestStatus requestStatus)
     {
-        _logger.LogError("[SchedulerGrain] Image generation failed with message: " + requestStatus.Message);
+        _logger.LogError($"[SchedulerGrain] Image generation failed with message: {requestStatus.Message}");
         var info = PopFromPending(requestStatus.RequestId);
         if (info == null)
         {
@@ -92,7 +92,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
 
     public Task ReportCompletedImageGenerationRequestAsync(RequestStatus requestStatus)
     {
-        _logger.LogInformation("[SchedulerGrain] Report Completed Image Generation Request with ID: " + requestStatus.RequestId);
+        _logger.LogInformation($"[SchedulerGrain] Report Completed Image Generation Request with ID: {requestStatus.RequestId}");
         
         var info = PopFromPending(requestStatus.RequestId);
         if (info == null)
@@ -128,7 +128,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
 
     public Task AddImageGenerationRequest(string requestId, string childId, long requestTimestamp)
     {
-        _logger.LogInformation("[SchedulerGrain] Adding image generation request with ID: " + requestId + " for child ID: " + childId);
+        _logger.LogInformation($"[SchedulerGrain] Adding image generation request with ID: {requestId} for child ID: {childId}");
         _masterTrackerState.State.StartedImageGenerationRequests.Add(childId, new RequestAccountUsageInfo
         {
             RequestId = requestId,
@@ -270,7 +270,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         
         if (unremovedRequests.Count > 0)
         {
-            _logger.LogError("[SchedulerGrain] Requests {} not found in failed or started requests", string.Join(",", unremovedRequests));
+            _logger.LogError($"[SchedulerGrain] Requests {string.Join(",", unremovedRequests)} not found in failed or started requests");
         }
     }
 
@@ -383,7 +383,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
             var imageGenerationGrain = GrainFactory.GetGrain<IImageGeneratorGrain>(info.ChildId);
             if (imageGenerationGrain == null)
             {
-                _logger.LogError("[SchedulerGrain] Cannot find ImageGeneratorGrain with ID: " + info.ChildId);
+                _logger.LogError($"[SchedulerGrain] Cannot find ImageGeneratorGrain with ID: {info.ChildId}");
                 continue;
             }
 
@@ -405,9 +405,9 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
             await imageGenerationGrain.SetApiKey(info.ApiKey);
             
             // remove from list to add to pending
-            _logger.LogWarning("[SchedulerGrain] Request " + requestId + " is pending");
+            _logger.LogWarning($"[SchedulerGrain] Request {requestId} is pending");
             _masterTrackerState.State.PendingImageGenerationRequests.Add(requestId, info);
-            _logger.LogWarning("[SchedulerGrain] Requested " + requestId);
+            _logger.LogWarning($"[SchedulerGrain] Requested {requestId}");
             requestIdToRemove.Add(requestId);
         }
 
@@ -422,7 +422,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
             .ToHashSet();
         if (maxAttemptsReached.Count > 0)
         {
-            _logger.LogError("Requests {} has reached max attempts", string.Join(",", maxAttemptsReached));
+            _logger.LogError($"Requests {string.Join(",", maxAttemptsReached)} has reached max attempts");
         }
 
         var validRequests = requests.ToList();
@@ -439,7 +439,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
 
         if (remainingQuota / (float)totalQuota < QUOTA_THRESHOLD)
         {
-            _logger.LogWarning("[SchedulerGrain] API Keys low on quota, remaining quota: " + remainingQuota);
+            _logger.LogWarning($"[SchedulerGrain] API Keys low on quota, remaining quota: {remainingQuota}");
         }
     }
 
@@ -460,7 +460,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
     {
         if (!_masterTrackerState.State.PendingImageGenerationRequests.ContainsKey(requestId))
         {
-            _logger.LogError("[SchedulerGrain] Request " + requestId + " not found in pending list");
+            _logger.LogError($"[SchedulerGrain] Request {requestId} not found in pending list");
             return null;
         }
         var info = _masterTrackerState.State.PendingImageGenerationRequests[requestId];

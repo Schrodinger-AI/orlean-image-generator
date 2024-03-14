@@ -25,8 +25,7 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
 
     public async Task NotifyImageGenerationStatus(string imageRequestId, ImageGenerationStatus status, string? error)
     {
-        _logger.LogInformation("NotifyImageGenerationStatus called with requestId: {}, status: {}, error: {}",
-            imageRequestId, status, error);
+        _logger.LogInformation($"NotifyImageGenerationStatus called with requestId: {imageRequestId}, status: {status}, error: {error}");
 
         var imageGenerationNotification = new ImageGenerationTracker
         {
@@ -56,8 +55,7 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
         int NumberOfImages, string multiImageRequestId)
     {
         _logger.LogInformation(
-            "GenerateMultipleImagesAsync called with traits: {}, NumberOfImages: {}, multiImageRequestId: {}", traits,
-            NumberOfImages, multiImageRequestId);
+            $"GenerateMultipleImagesAsync called with traits: {traits}, NumberOfImages: {NumberOfImages}, multiImageRequestId: {multiImageRequestId}");
 
         try
         {
@@ -67,7 +65,7 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
             // Extract trait names from the request
             var prompt = await GeneratePromptAsync(traits);
 
-            _logger.LogInformation("For MultiImageRequest: {} Prompt generated: {}", multiImageRequestId, prompt);
+            _logger.LogInformation($"For MultiImageRequest: {multiImageRequestId} Prompt generated: {prompt}");
 
             _multiImageGenerationState.State.Prompt = prompt;
             _multiImageGenerationState.State.Traits = traits;
@@ -89,8 +87,7 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
                 _multiImageGenerationState.State.ImageGenerationRequestIds.Add(imageRequestId);
 
                 _logger.LogInformation(
-                    "For MultiImageRequest: {} ImageRequest: {} added to the list of imageGenerationRequestIds",
-                    multiImageRequestId, imageRequestId);
+                    $"For MultiImageRequest: {multiImageRequestId} ImageRequest: {imageRequestId} added to the list of imageGenerationRequestIds");
 
                 await schedulerGrain.AddImageGenerationRequest(multiImageRequestId, imageRequestId, unixTimestamp);
             }
@@ -108,8 +105,7 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error occurred in GenerateMultipleImagesAsync for MultiImageRequest: {}",
-                multiImageRequestId);
+            _logger.LogError(ex, $"Error occurred in GenerateMultipleImagesAsync for MultiImageRequest: {multiImageRequestId}");
             if (_multiImageGenerationState.State.Errors == null)
             {
                 _multiImageGenerationState.State.Errors = [];
@@ -131,7 +127,7 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
 
     public async Task<Dictionary<string, TraitEntry>> lookupTraitDefinitions(List<Attribute> requestTraits)
     {
-        _logger.LogInformation("lookupTraitDefinitions called with requestTraits: {}", requestTraits);
+        _logger.LogInformation($"lookupTraitDefinitions called with requestTraits: {requestTraits}");
         // Extract trait names from the request
         var traitNames = requestTraits.Select(t => t.TraitType).ToList();
 
