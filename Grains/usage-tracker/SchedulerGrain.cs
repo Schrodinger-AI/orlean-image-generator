@@ -19,6 +19,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
     private const long CLEANUP_INTERVAL = 180;
     private const int MAX_ATTEMPTS = 99999;
     private const float QUOTA_THRESHOLD = 0.15f;
+    private const float LOWEST_QUOTA_THRESHOLD = 0.05f;
 
     private readonly IPersistentState<SchedulerState> _masterTrackerState;
     private readonly ILogger<SchedulerGrain> _logger;
@@ -203,6 +204,11 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
     {
         return Task.FromResult(_apiKeyStatus);
     }
+
+    public Task<bool> IsOverloaded()
+    {
+        return Task.FromResult(IsCurrentlyOverloaded());
+    }
     
     public async Task TickAsync()
     {
@@ -220,28 +226,8 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         }
         
         var now = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
-        //get all requests that are within the rate limit duration
-        var cutoff = now - RATE_LIMIT_DURATION;
-        var allRequests = _masterTrackerState.State.CompletedImageGenerationRequests
-            .Concat(_masterTrackerState.State.FailedImageGenerationRequests)
-            .Concat(_masterTrackerState.State.PendingImageGenerationRequests)
-            .Concat(_masterTrackerState.State.StartedImageGenerationRequests)
-            .ToList();
-        var usedQuota = allRequests
-            .Where(i=> i.Value.StartedTimestamp > cutoff)
-            .GroupBy(
-            x=>x.Value.ApiKey,
-            x=>x
-            ).ToDictionary(x=>x.Key, x=>x.Count());
-        var remainingQuotaByApiKey = _masterTrackerState.State.ApiAccountInfoList
-                .ToDictionary(i=>i.ApiKey, i=> i.MaxQuota  - usedQuota.GetValueOrDefault(i.ApiKey, 0));
         
-        //remove on hold api keys
-        var apiKeysOnHold = _apiKeyStatus
-            .Where(pair => pair.Value.Status == ApiKeyStatus.OnHold)
-            .Select(pair => pair.Key)
-            .ToList();
-        apiKeysOnHold.ForEach(key => remainingQuotaByApiKey.Remove(key));
+        var remainingQuotaByApiKey = GetRemainingQuotaByApiKeys();
         
         CleanUpExpiredCompletedRequests();
 
@@ -278,6 +264,36 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
 
     #region Private Methods
 
+    private Dictionary<string, int> GetRemainingQuotaByApiKeys()
+    {
+        var now = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
+        
+        //get all requests that are within the rate limit duration
+        var cutoff = now - RATE_LIMIT_DURATION;
+        var allRequests = _masterTrackerState.State.CompletedImageGenerationRequests
+            .Concat(_masterTrackerState.State.FailedImageGenerationRequests)
+            .Concat(_masterTrackerState.State.PendingImageGenerationRequests)
+            .Concat(_masterTrackerState.State.StartedImageGenerationRequests)
+            .ToList();
+        var usedQuota = allRequests
+            .Where(i=> i.Value.StartedTimestamp > cutoff)
+            .GroupBy(
+                x=>x.Value.ApiKey,
+                x=>x
+            ).ToDictionary(x=>x.Key, x=>x.Count());
+        var remainingQuotaByApiKey = _masterTrackerState.State.ApiAccountInfoList
+            .ToDictionary(i=>i.ApiKey, i=> i.MaxQuota  - usedQuota.GetValueOrDefault(i.ApiKey, 0));
+
+        //remove on hold api keys
+        var apiKeysOnHold = _apiKeyStatus
+            .Where(pair => pair.Value.Status == ApiKeyStatus.OnHold)
+            .Select(pair => pair.Key)
+            .ToList();
+        apiKeysOnHold.ForEach(key => remainingQuotaByApiKey.Remove(key));
+        
+        return remainingQuotaByApiKey;
+    }
+    
     private void RefreshApiUsageInfo(string apiKey)
     {
         if(_apiKeyStatus.TryGetValue(apiKey, out var usageInfo))
@@ -447,14 +463,30 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
     private void AlarmWhenLowOnQuota(IDictionary<string, int> apiQuota)
     {
         var remainingQuota = apiQuota.Sum(pair => pair.Value);
-
-        var apiInfoList = _masterTrackerState.State.ApiAccountInfoList;
-        var totalQuota = apiInfoList.Sum(apiInfo => apiInfo.MaxQuota);
+        var totalQuota = GetTotalApiKeyQuota();
 
         if (remainingQuota / (float)totalQuota < QUOTA_THRESHOLD)
         {
             _logger.LogWarning($"[SchedulerGrain] API Keys low on quota, remaining quota: {remainingQuota}");
         }
+    }
+    
+    private bool IsCurrentlyOverloaded()
+    {
+        var apiQuota = GetRemainingQuotaByApiKeys();
+        
+        var remainingQuota = apiQuota.Sum(pair => pair.Value);
+        var totalQuota = GetTotalApiKeyQuota();
+        
+        return remainingQuota / (float)totalQuota < LOWEST_QUOTA_THRESHOLD;
+    }
+
+    private int GetTotalApiKeyQuota()
+    {
+        var apiInfoList = _masterTrackerState.State.ApiAccountInfoList;
+        var totalQuota = apiInfoList.Sum(apiInfo => apiInfo.MaxQuota);
+
+        return totalQuota;
     }
 
     private static string GetApiKey(IDictionary<string, int> apiQuota)

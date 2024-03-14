@@ -57,3 +57,17 @@ public class ApiKeysUsageInfoResponseFailed(string error) : ApiKeysUsageInfoResp
     [JsonPropertyName("error")]
     public string Error { get; set; } = error;
 }
+
+public abstract class IsOverloadedResponse { }
+
+public class IsOverloadedResponseOk(bool isOverloaded) : IsOverloadedResponse
+{
+    [JsonPropertyName("IsOverloaded")]
+    public bool IsOverloaded { get; set; } = isOverloaded;
+}
+
+public class IsOverloadedResponseFailed(string error) : IsOverloadedResponse
+{
+    [JsonPropertyName("error")]
+    public string Error { get; set; } = error;
+}
