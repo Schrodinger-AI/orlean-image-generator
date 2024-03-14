@@ -47,6 +47,24 @@ public class DalleResponse
 
     [JsonPropertyName("data")]
     public List<DalleData> Data { get; set; }
+    
+    [JsonPropertyName("error")]
+    public DalleError Error { get; set; }
+}
+
+public class DalleError
+{
+    [JsonPropertyName("code")] 
+    public string Code { get; set; }
+
+    [JsonPropertyName("message")] 
+    public string Message { get; set; }
+
+    [JsonPropertyName("param")] 
+    public string Param { get; set; }
+
+    [JsonPropertyName("type")] 
+    public string Type { get; set; }
 }
 
 public class DalleData
