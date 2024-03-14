@@ -345,22 +345,25 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
                 dalleErrorCodes = DalleErrorCode.invalid_api_key;
                 break;
             case HttpStatusCode.TooManyRequests:
-                {
-                    if (dalleErrorObject?.Code == "billing_hard_limit_reached")
-                    {
-                        dalleErrorCodes = DalleErrorCode.dalle_billing_quota_exceeded;
-                    } else {
-                        dalleErrorCodes = DalleErrorCode.rate_limit_reached;
-                    }
-                    
+                { 
+                    dalleErrorCodes = DalleErrorCode.rate_limit_reached;
                     break;
                 }
             case HttpStatusCode.ServiceUnavailable:
                 dalleErrorCodes = DalleErrorCode.dalle_engine_unavailable;
                 break;
             case HttpStatusCode.BadRequest:
-                dalleErrorCodes = DalleErrorCode.bad_request;
+            {
+                if (dalleErrorObject?.Code == "billing_hard_limit_reached")
+                {
+                    dalleErrorCodes = DalleErrorCode.dalle_billing_quota_exceeded;
+                }
+                else
+                {
+                    dalleErrorCodes = DalleErrorCode.bad_request;
+                }
                 break;
+            }
             case HttpStatusCode.InternalServerError:
                 dalleErrorCodes = DalleErrorCode.dalle_internal_error;
                 break;
