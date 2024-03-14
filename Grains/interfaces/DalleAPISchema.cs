@@ -64,7 +64,7 @@ public class DalleError
     public string Code { get; set; }
     
     [JsonPropertyName("dalleErrorCode")]
-    public DalleErrorCodes DalleErrorCode { get; set; }
+    public DalleErrorCode DalleErrorCode { get; set; }
 
     [JsonPropertyName("message")] 
     public string Message { get; set; }
