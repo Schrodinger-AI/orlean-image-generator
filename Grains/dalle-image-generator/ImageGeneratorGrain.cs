@@ -34,7 +34,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
         _logger = logger;
         _imageSettings = imageSettingsOptions.Value;
         var imgS = Newtonsoft.Json.JsonConvert.SerializeObject(_imageSettings);
-        _logger.LogInformation("ImageGeneratorGrain Constructor : _imageSettings are: "+imgS);
+        _logger.LogInformation($"ImageGeneratorGrain Constructor : _imageSettings are: ${imgS}");
     }
 
     public override async Task OnActivateAsync()
@@ -42,7 +42,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
         _logger.LogInformation("ImageGeneratorGrain - OnActivateAsync");
         _timer = RegisterTimer(TriggerImageGenerationAsync, null, TimeSpan.Zero, TimeSpan.FromSeconds(1));
         await CheckAndReportForInvalidStates();
-        _logger.LogInformation("ImageGeneratorGrain - OnActivateAsync - ImageSettings are: {} ", _imageSettings);
+        _logger.LogInformation($"ImageGeneratorGrain - OnActivateAsync - ImageSettings are: {_imageSettings}");
         await base.OnActivateAsync();
     }
 
@@ -56,8 +56,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
 
     public async Task SetApiKey(string key)
     {
-        _logger.LogInformation("ImageGeneratorGrain - Settting ApiKey: {} for imageGeneratorId: {}", key,
-            _imageGenerationState.State.RequestId);
+        _logger.LogInformation($"ImageGeneratorGrain - Setting ApiKey: {key} for imageGeneratorId: {_imageGenerationState.State.RequestId}");
         _apiKey = key;
         await Task.CompletedTask;
     }
@@ -66,7 +65,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
     {
         if (string.IsNullOrEmpty(_apiKey) && _imageGenerationState.State.Status == ImageGenerationStatus.InProgress)
         {
-            _logger.LogInformation("ImageGeneratorGrain - generatorId: {} : ApiKey is null", _imageGenerationState.State.RequestId);
+            _logger.LogInformation($"ImageGeneratorGrain - generatorId: {_imageGenerationState.State.RequestId} : ApiKey is null");
 
             // Handle the case where the API key does not exist or image-generation in-progress
             _imageGenerationState.State.Status = ImageGenerationStatus.FailedCompletion;
@@ -92,21 +91,19 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
 
     private async Task TriggerImageGenerationAsync(object state)
     {
-        _logger.LogInformation("ImageGeneratorGrain - TriggerImageGenerationAsync with ApiKey: {}", _apiKey);
+        _logger.LogInformation($"ImageGeneratorGrain - TriggerImageGenerationAsync with ApiKey: {_apiKey}");
 
         // Check if the API key exists in memory
         if (string.IsNullOrEmpty(_apiKey))
         {
-            _logger.LogInformation("ImageGeneratorGrain - generatorId: {} : ApiKey is null",
-                _imageGenerationState.State.RequestId);
+            _logger.LogInformation($"ImageGeneratorGrain - generatorId: {_imageGenerationState.State.RequestId} : ApiKey is null");
             // Handle the case where the API key does not exist or image-generation in-progress
             return;
         }
 
         if (_imageGenerationState.State.Status == ImageGenerationStatus.InProgress)
         {
-            _logger.LogInformation("ImageGeneratorGrain - generatorId: {} , image generation is in progress",
-                _imageGenerationState.State.RequestId);
+            _logger.LogInformation($"ImageGeneratorGrain - generatorId: {_imageGenerationState.State.RequestId} , image generation is in progress");
             // Handle the case where the image generation is already in progress
             return;
         }
@@ -114,8 +111,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
         // Check if the image generation is not already completed
         if (_imageGenerationState.State.Status == ImageGenerationStatus.SuccessfulCompletion)
         {
-            _logger.LogInformation("ImageGeneratorGrain - generatorId: {} , image generation is successful",
-                _imageGenerationState.State.RequestId);
+            _logger.LogInformation($"ImageGeneratorGrain - generatorId: {_imageGenerationState.State.RequestId} , image generation is successful");
             // Handle the case where the image generation is already completed
             _timer.Dispose();
             return;
@@ -129,8 +125,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
             _imageGenerationState.State.Prompt, _imageGenerationState.State.RequestId,
             _imageGenerationState.State.ParentRequestId);
 
-        _logger.LogInformation("ImageGeneratorGrain - generatorId: {} , imageGenerationResponse: {}",
-            _imageGenerationState.State.RequestId, imageGenerationResponse);
+        _logger.LogInformation($"ImageGeneratorGrain - generatorId: {_imageGenerationState.State.RequestId} , imageGenerationResponse: {imageGenerationResponse}");
 
         //load the scheduler Grain and update with 
         var parentGeneratorGrain =
@@ -142,8 +137,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
             // Handle the case where the image generation is successful
             _timer.Dispose();
 
-            _logger.LogInformation("ImageGeneratorGrain - generatorId: {} , image generation is successful",
-                _imageGenerationState.State.RequestId);
+            _logger.LogInformation($"ImageGeneratorGrain - generatorId: {_imageGenerationState.State.RequestId} , image generation is successful");
 
             // notify about successful completion to parentGrain
             await parentGeneratorGrain.NotifyImageGenerationStatus(_imageGenerationState.State.RequestId,
@@ -161,8 +155,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
         }
         else
         {
-            _logger.LogInformation("ImageGeneratorGrain - generatorId: {} , image generation failed with Error: {}",
-                _imageGenerationState.State.RequestId, imageGenerationResponse.Error);
+            _logger.LogInformation($"ImageGeneratorGrain - generatorId: {_imageGenerationState.State.RequestId} , image generation failed with Error: {imageGenerationResponse.Error}");
 
             // notify about failed completion to parentGrain
             await parentGeneratorGrain.NotifyImageGenerationStatus(_imageGenerationState.State.RequestId,
@@ -187,8 +180,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
         string parentRequestId)
     {
         _logger.LogInformation(
-            "ImageGeneratorGrain - generatorId: {} , GenerateImageFromPromptAsync invoked with prompt: {} \n",
-            imageRequestId, prompt);
+            $"ImageGeneratorGrain - generatorId: {imageRequestId} , GenerateImageFromPromptAsync invoked with prompt: {prompt}");
 
         try
         {
@@ -199,8 +191,10 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
             // Start the image data generation process
             var dalleResponse = await RunDalleAsync(prompt);
 
-            _logger.LogInformation(string.Format("ImageGeneratorGrain - generatorId: {0} , dalleResponse: {1}",
-                imageRequestId, dalleResponse));
+            _logger.LogInformation($"ImageGeneratorGrain - generatorId: {imageRequestId} , dalleResponse: {dalleResponse}");
+
+            _logger.LogInformation(
+                $"ImageGeneratorGrain - generatorId: {imageRequestId} , dalleResponse: {dalleResponse}");
 
             _logger.LogDebug(dalleResponse.ToString());
             // Extract the URL from the result
@@ -233,13 +227,11 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
         catch (Exception e)
         {
             _logger.LogError(
-                "ImageGeneratorGrain - generatorId: {} , GenerateImageFromPromptAsync failed with Error: {}",
-                imageRequestId, e.Message);
+                $"ImageGeneratorGrain - generatorId: {imageRequestId} , GenerateImageFromPromptAsync failed with Error: {e.Message}");
             _imageGenerationState.State.Status = ImageGenerationStatus.FailedCompletion;
             _imageGenerationState.State.Error = e.Message;
             await _imageGenerationState.WriteStateAsync();
-
-
+            
             //load the scheduler Grain and update with 
             var parentGeneratorGrain = GrainFactory.GetGrain<IMultiImageGeneratorGrain>(_imageGenerationState.State.ParentRequestId);
             await parentGeneratorGrain.NotifyImageGenerationStatus(_imageGenerationState.State.RequestId, ImageGenerationStatus.FailedCompletion, e.Message);
@@ -326,7 +318,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
             throw new DalleException(DalleErrorCode.api_call_failed, e.Message);
         }
         
-        _logger.LogError("Dalle ImageGeneration ResponseCode : " + response.StatusCode);
+        _logger.LogError($"Dalle ImageGeneration ResponseCode : {response.StatusCode}");
         
         if(dalleResponse.Error != null)
         {
