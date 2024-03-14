@@ -75,6 +75,21 @@ public class SchedulerController : ControllerBase
         return Ok(ret.ToArray());
     }
     
+    [HttpGet("apiKeysUsageInfo")]
+    public async Task<ApiKeysUsageInfoResponse> GetApiKeysUsageInfo()
+    {
+        try
+        {
+            var grain = _client.GetGrain<ISchedulerGrain>("SchedulerGrain");
+            var usageInfo = await grain.GetApiKeysUsageInfo();
+            return new ApiKeysUsageInfoResponseOk<Dictionary<string, ApiKeyUsageInfo>>(usageInfo);
+        }
+        catch (Exception ex)
+        {
+            return new ApiKeysUsageInfoResponseFailed(ex.Message);
+        }
+    }
+    
     [HttpGet("states")]
     public async Task<ImageGenerationStatesResponse> GetImageGenerationStates()
     {

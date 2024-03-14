@@ -25,6 +25,8 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
     
     private IDisposable? _timer;
     private IDisposable? _flushTimer;
+    
+    private Dictionary<string, ApiKeyUsageInfo> _apiKeyStatus = new();
 
     public SchedulerGrain(
         [PersistentState("masterTrackerState", "MySqlSchrodingerImageStore")]
@@ -80,8 +82,10 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         }
         var unixTimestamp = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
         info.FailedTimestamp = unixTimestamp;
-        info.StartedTimestamp = requestStatus.RequestTimestamp;
+        info.StartedTimestamp = (requestStatus.RequestTimestamp == 0)? info.StartedTimestamp: requestStatus.RequestTimestamp;
         _masterTrackerState.State.FailedImageGenerationRequests.Add(requestStatus.RequestId, info);
+        
+        HandleErrorCode(info.ApiKey, info.StartedTimestamp, requestStatus.ErrorCode);
         
         return Task.CompletedTask;
     }
@@ -100,6 +104,8 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         info.CompletedTimestamp = unixTimestamp;
         info.StartedTimestamp = requestStatus.RequestTimestamp;
         _masterTrackerState.State.CompletedImageGenerationRequests.Add(requestStatus.RequestId, info);
+        
+        RefreshApiUsageInfo(info.ApiKey);
         
         return Task.CompletedTask;
     }
@@ -193,6 +199,11 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         return Task.FromResult(_masterTrackerState.State);
     }
     
+    public Task<Dictionary<string, ApiKeyUsageInfo>> GetApiKeysUsageInfo()
+    {
+        return Task.FromResult(_apiKeyStatus);
+    }
+    
     public async Task TickAsync()
     {
         // 1. Purge completed requests
@@ -200,6 +211,8 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         // 3. Check remaining quota for all accounts
         // 4. For all pending tasks, find the account with the most remaining quota
         // 5. Schedule the task, update the account usage info
+        
+        UpdateApiUsageStatus();
 
         if (_masterTrackerState.State.ApiAccountInfoList == null)
         {
@@ -207,6 +220,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         }
         
         var now = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
+        //get all requests that are within the rate limit duration
         var cutoff = now - RATE_LIMIT_DURATION;
         var allRequests = _masterTrackerState.State.CompletedImageGenerationRequests
             .Concat(_masterTrackerState.State.FailedImageGenerationRequests)
@@ -221,6 +235,13 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
             ).ToDictionary(x=>x.Key, x=>x.Count());
         var remainingQuotaByApiKey = _masterTrackerState.State.ApiAccountInfoList
                 .ToDictionary(i=>i.ApiKey, i=> i.MaxQuota  - usedQuota.GetValueOrDefault(i.ApiKey, 0));
+        
+        //remove on hold api keys
+        var apiKeysOnHold = _apiKeyStatus
+            .Where(pair => pair.Value.Status == ApiKeyStatus.OnHold)
+            .Select(pair => pair.Key)
+            .ToList();
+        apiKeysOnHold.ForEach(key => remainingQuotaByApiKey.Remove(key));
         
         CleanUpExpiredCompletedRequests();
 
@@ -256,6 +277,81 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
     }
 
     #region Private Methods
+
+    private void RefreshApiUsageInfo(string apiKey)
+    {
+        if(_apiKeyStatus.TryGetValue(apiKey, out var usageInfo))
+        {
+            usageInfo.Attempts = 0;
+            usageInfo.LastUsedTimestamp = 0;
+            usageInfo.Status = ApiKeyStatus.Active;
+        }
+        else
+        {
+            _logger.LogError($"[SchedulerGrain] API key: {apiKey} not found in usage info");
+        }
+    }
+    
+    private void UpdateApiUsageStatus()
+    {
+        var now = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
+        foreach (var usageInfo in _apiKeyStatus.Select(pair => pair.Value).Where(usageInfo => usageInfo.LastUsedTimestamp + (long)Math.Min(Math.Pow(3, usageInfo.Attempts), 27.0) < now))
+        {
+            usageInfo.Status = ApiKeyStatus.Active;
+        }
+    }
+    
+    private void HandleErrorCode(string apiKey, long lastUsedTimestamp, DalleErrorCode? errorCode)
+    {
+        if(errorCode == null)
+            return;
+        
+        _logger.LogError($"[SchedulerGrain] Error code: {errorCode.ToString()} for API key: {apiKey}");
+        
+        var apiInfo = _masterTrackerState.State.ApiAccountInfoList.Find(info => info.ApiKey == apiKey);
+        if (apiInfo == null)
+        {
+            _logger.LogError($"[SchedulerGrain] API key: {apiKey} not found in the list");
+            return;
+        }
+        
+        switch (errorCode)
+        {
+            case DalleErrorCode.rate_limit_reached:
+            case DalleErrorCode.invalid_api_key:
+                var isInvalidKey = errorCode == DalleErrorCode.invalid_api_key;
+                var delay = isInvalidKey ? 86400 : 3600; // 1 day for invalid key, 1 hour for rate limit
+
+                if (!_apiKeyStatus.TryGetValue(apiKey, out var usageInfo))
+                {
+                    usageInfo = new ApiKeyUsageInfo { ApiKey = apiKey };
+                    _apiKeyStatus.Add(apiKey, usageInfo);
+                }
+
+                usageInfo.Attempts = isInvalidKey ? 0 : usageInfo.Attempts + 1;
+                usageInfo.LastUsedTimestamp = lastUsedTimestamp + delay;
+                usageInfo.Status = ApiKeyStatus.OnHold;
+                break;
+            default:
+                if (_apiKeyStatus.TryGetValue(apiKey, out usageInfo))
+                {
+                    usageInfo.Attempts++;
+                    usageInfo.LastUsedTimestamp = lastUsedTimestamp;
+                    usageInfo.Status = ApiKeyStatus.OnHold;
+                }
+                else
+                {
+                    _apiKeyStatus.Add(apiKey, new ApiKeyUsageInfo
+                    {
+                        ApiKey = apiKey,
+                        LastUsedTimestamp = lastUsedTimestamp,
+                        Status = ApiKeyStatus.OnHold,
+                        Attempts = 1
+                    });
+                }
+                break;
+        }
+    }
 
     private async Task FlushTimerAsync()
     {
