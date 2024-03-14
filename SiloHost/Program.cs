@@ -54,10 +54,7 @@ namespace SiloHost
                 .ConfigureEndpoints(siloPort: siloPort, gatewayPort: gatewayPort)
                 .ConfigureServices((hostContext, services) =>
                 {
-var x =                    hostContext.Configuration.GetSection("TraitConfig");
-Console.WriteLine(x.ToString());
-                    services.Configure<TraitConfigOptions>(hostContext.Configuration.GetSection("TraitConfig"));
-                    services.Configure<ImageSettings>(hostContext.Configuration.GetSection("ImageSettings"));
+                    services.Configure<ImageSettings>(configuration.GetSection("ImageSettings"));
                 })
                 .Configure<ClusterOptions>(options =>
                 {

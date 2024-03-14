@@ -31,12 +31,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
     {
         _imageGenerationState = imageGeneratorState;
         _logger = logger;
-        _imageSettings = new ImageSettings
-        {
-            Width = 128,
-            Height = 128,
-            Quality = 30
-        };
+        _imageSettings = imageSettingsOptions.Value;
         var imgS = Newtonsoft.Json.JsonConvert.SerializeObject(_imageSettings);
         _logger.LogInformation("ImageGeneratorGrain Constructor : _imageSettings are: "+imgS);
     }
@@ -259,9 +254,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
 
     private async Task<DalleResponse> RunDalleAsync(string prompt)
     {
-        _logger.LogInformation(
-            string.Format("ImageGeneratorGrain - generatorId: {} , about to call Dalle API to generate image for prompt: {}",
-            _imageGenerationState.State.RequestId, prompt));
+        _logger.LogInformation($"ImageGeneratorGrain - generatorId: {_imageGenerationState.State.RequestId} , about to call Dalle API to generate image for prompt: {prompt}");
 
         using var client = new HttpClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);
@@ -279,14 +272,25 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
 
         var jsonResponse = await response.Content.ReadAsStringAsync();
         
-        _logger.LogInformation(            
-            string.Format("ImageGeneratorGrain - generatorId: {} , Dalle API call response: {}",
-                _imageGenerationState.State.RequestId, jsonResponse));
-        var dalleResponse = JsonConvert.DeserializeObject<DalleResponse>(jsonResponse);
+        _logger.LogInformation($"ImageGeneratorGrain - generatorId: {_imageGenerationState.State.RequestId} , Dalle API call response: {jsonResponse}");
+        DalleResponse dalleResponse = null;
+        try
+        {
+            dalleResponse = JsonConvert.DeserializeObject<DalleResponse>(jsonResponse);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError($"ImageGeneratorGrain - generatorId: {_imageGenerationState.State.RequestId} , Dalle API call failed with error: {e.Message}");
+            throw new Exception("Dalle API call failed with error: " + e.Message);
+        }
+        
+        if(dalleResponse.Error != null)
+        {
+            _logger.LogError($"ImageGeneratorGrain - generatorId: {_imageGenerationState.State.RequestId} , Dalle API call failed with error code: {dalleResponse.Error.Code}");
+            throw new Exception(dalleResponse.Error.Code);
+        }
 
-        _logger.LogInformation(            
-            string.Format("ImageGeneratorGrain - generatorId: {} , Dalle API response: {}",
-            _imageGenerationState.State.RequestId, dalleResponse));
+        _logger.LogInformation($"ImageGeneratorGrain - generatorId: {_imageGenerationState.State.RequestId} , Dalle API response: {dalleResponse}");
 
         return dalleResponse;
     }
