@@ -44,7 +44,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
     public override async Task OnActivateAsync()
     {
         _logger.LogInformation("ImageGeneratorGrain - OnActivateAsync");
-        _timer = RegisterTimer(TriggerImageGenerationAsync, null, TimeSpan.Zero, TimeSpan.FromSeconds(1));
+        _timer = RegisterTimer(asyncCallback: _ => this.AsReference<IImageGeneratorGrain>().TriggerImageGenerationAsync(), null, TimeSpan.Zero, TimeSpan.FromSeconds(1));
         await CheckAndReportForInvalidStates();
         _logger.LogInformation("ImageGeneratorGrain - OnActivateAsync - ImageSettings are: {} ", _imageSettings);
         await base.OnActivateAsync();
@@ -94,7 +94,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
         }
     }
 
-    private async Task TriggerImageGenerationAsync(object state)
+    public async Task TriggerImageGenerationAsync()
     {
         _logger.LogInformation("ImageGeneratorGrain - TriggerImageGenerationAsync with ApiKey: {}", _apiKey);
 
@@ -247,18 +247,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
             //load the scheduler Grain and update with 
             var parentGeneratorGrain = GrainFactory.GetGrain<IMultiImageGeneratorGrain>(_imageGenerationState.State.ParentRequestId);
             await parentGeneratorGrain.NotifyImageGenerationStatus(_imageGenerationState.State.RequestId, ImageGenerationStatus.FailedCompletion, e.Message);
-
-            // notify the scheduler grain about the failed completion
-            var requestStatus = new RequestStatus
-            {
-                RequestId = _imageGenerationState.State.RequestId,
-                Status = RequestStatusEnum.Failed,
-                Message = e.Message
-            };
-
-            var schedulerGrain = GrainFactory.GetGrain<IImageGenerationRequestStatusReceiver>("SchedulerGrain");
-            await schedulerGrain.ReportFailedImageGenerationRequestAsync(requestStatus);
-
+            
             return new ImageGenerationGrainResponse
             {
                 RequestId = imageRequestId,
