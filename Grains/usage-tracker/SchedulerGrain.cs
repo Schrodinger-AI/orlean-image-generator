@@ -18,8 +18,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
     private const long RATE_LIMIT_DURATION = 60;
     private const long CLEANUP_INTERVAL = 180;
     private const int MAX_ATTEMPTS = 99999;
-    private const float QUOTA_THRESHOLD = 0.15f;
-    private const float LOWEST_QUOTA_THRESHOLD = 0.05f;
+    private const float QUOTA_THRESHOLD = 0.2f;
 
     private readonly IPersistentState<SchedulerState> _masterTrackerState;
     private readonly ILogger<SchedulerGrain> _logger;
@@ -478,7 +477,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         var remainingQuota = apiQuota.Sum(pair => pair.Value);
         var totalQuota = GetTotalApiKeyQuota();
         
-        return remainingQuota / (float)totalQuota < LOWEST_QUOTA_THRESHOLD;
+        return remainingQuota / (float)totalQuota < QUOTA_THRESHOLD;
     }
 
     private int GetTotalApiKeyQuota()
