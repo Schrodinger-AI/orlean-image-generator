@@ -1,4 +1,7 @@
+using System.Net;
 using System.Text.Json.Serialization;
+using Newtonsoft.Json;
+using Shared;
 
 namespace Grains;
 public class Message
@@ -54,8 +57,14 @@ public class DalleResponse
 
 public class DalleError
 {
+    [JsonPropertyName("httpStatusCode")]
+    public HttpStatusCode HttpStatusCode { get; set; }
+    
     [JsonPropertyName("code")] 
     public string Code { get; set; }
+    
+    [JsonPropertyName("dalleErrorCode")]
+    public DalleErrorCodes DalleErrorCode { get; set; }
 
     [JsonPropertyName("message")] 
     public string Message { get; set; }
