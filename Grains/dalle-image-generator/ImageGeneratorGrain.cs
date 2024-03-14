@@ -168,7 +168,8 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
                 RequestId = _imageGenerationState.State.RequestId,
                 Status = RequestStatusEnum.Failed,
                 Message = imageGenerationResponse.Error,
-                RequestTimestamp = imageGenerationResponse.DalleRequestTimestamp
+                RequestTimestamp = imageGenerationResponse.DalleRequestTimestamp,
+                ErrorCode = imageGenerationResponse.ErrorCode
             };
 
             await schedulerGrain.ReportFailedImageGenerationRequestAsync(requestStatus);
@@ -232,7 +233,8 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
                 RequestId = imageRequestId,
                 IsSuccessful = true,
                 Error = null,
-                DalleRequestTimestamp = dalleRequestTimestamp
+                DalleRequestTimestamp = dalleRequestTimestamp,
+                ErrorCode = null
             };
         }
         catch (Exception e)
@@ -247,12 +249,20 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
             var parentGeneratorGrain = GrainFactory.GetGrain<IMultiImageGeneratorGrain>(_imageGenerationState.State.ParentRequestId);
             await parentGeneratorGrain.NotifyImageGenerationStatus(_imageGenerationState.State.RequestId, ImageGenerationStatus.FailedCompletion, e.Message);
 
+            DalleErrorCode? dalleErrorCode = null;
+            var dalleException = e as DalleException;
+            if (dalleException != null)
+            {
+                dalleErrorCode = dalleException.ErrorCode;
+            }
+            
             return new ImageGenerationGrainResponse
             {
                 RequestId = imageRequestId,
                 IsSuccessful = false,
                 Error = e.Message,
-                DalleRequestTimestamp = dalleRequestTimestamp
+                DalleRequestTimestamp = dalleRequestTimestamp,
+                ErrorCode = dalleErrorCode
             };
         }
     }

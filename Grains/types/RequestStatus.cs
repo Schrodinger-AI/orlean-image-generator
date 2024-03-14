@@ -16,5 +16,5 @@ public class RequestStatus
     public RequestStatusEnum Status { get; set; }
     public string Message { get; set; }
     public long RequestTimestamp { get; set; }
-    public DalleErrorCodes? ErrorCode { get; set; }
+    public DalleErrorCode? ErrorCode { get; set; }
 }

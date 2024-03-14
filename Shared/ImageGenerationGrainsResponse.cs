@@ -39,6 +39,7 @@ namespace Shared
         
         public bool IsSuccessful { get; set; }
         public string? Error { get; set; }
+        public DalleErrorCode? ErrorCode { get; set; }
     }
 
     public class MultiImageGenerationGrainResponse

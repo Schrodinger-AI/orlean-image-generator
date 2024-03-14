@@ -287,7 +287,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         }
     }
     
-    private void HandleErrorCode(string apiKey, long lastUsedTimestamp, DalleErrorCodes? errorCode)
+    private void HandleErrorCode(string apiKey, long lastUsedTimestamp, DalleErrorCode? errorCode)
     {
         if(errorCode == null)
             return;
@@ -303,9 +303,9 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         
         switch (errorCode)
         {
-            case DalleErrorCodes.rate_limit_reached:
-            case DalleErrorCodes.invalid_api_key:
-                var isInvalidKey = errorCode == DalleErrorCodes.invalid_api_key;
+            case DalleErrorCode.rate_limit_reached:
+            case DalleErrorCode.invalid_api_key:
+                var isInvalidKey = errorCode == DalleErrorCode.invalid_api_key;
                 var delay = isInvalidKey ? 86400 : 3600; // 1 day for invalid key, 1 hour for rate limit
 
                 if (!_apiKeyStatus.TryGetValue(apiKey, out var usageInfo))
