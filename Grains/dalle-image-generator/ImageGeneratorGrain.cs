@@ -82,7 +82,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
             {
                 RequestId = _imageGenerationState.State.RequestId,
                 Status = RequestStatusEnum.Failed,
-                Message = _imageGenerationState.State.Error
+                Message = _imageGenerationState.State.Error,
             };
             await schedulerGrain.ReportFailedImageGenerationRequestAsync(requestStatus);
             return;
@@ -148,7 +148,8 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
             var requestStatus = new RequestStatus
             {
                 RequestId = _imageGenerationState.State.RequestId,
-                Status = RequestStatusEnum.Completed
+                Status = RequestStatusEnum.Completed,
+                RequestTimestamp =imageGenerationResponse.DalleRequestTimestamp
             };
 
             await schedulerGrain.ReportCompletedImageGenerationRequestAsync(requestStatus);
@@ -166,7 +167,8 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
             {
                 RequestId = _imageGenerationState.State.RequestId,
                 Status = RequestStatusEnum.Failed,
-                Message = imageGenerationResponse.Error
+                Message = imageGenerationResponse.Error,
+                RequestTimestamp = imageGenerationResponse.DalleRequestTimestamp
             };
 
             await schedulerGrain.ReportFailedImageGenerationRequestAsync(requestStatus);
@@ -176,18 +178,26 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
         _apiKey = null;
     }
 
+    private long GetCurrentUTCTimeInSeconds()
+    {
+        //get timestamp
+        var requestTimestamp = DateTime.UtcNow;
+        var unixTimestamp = ((DateTimeOffset)requestTimestamp).ToUnixTimeSeconds();
+        return unixTimestamp;
+    }
+
     public async Task<ImageGenerationGrainResponse> GenerateImageFromPromptAsync(string prompt, string imageRequestId,
         string parentRequestId)
     {
         _logger.LogInformation(
             $"ImageGeneratorGrain - generatorId: {imageRequestId} , GenerateImageFromPromptAsync invoked with prompt: {prompt}");
-
+        var dalleRequestTimestamp = GetCurrentUTCTimeInSeconds();
         try
         {
             _imageGenerationState.State.ParentRequestId = parentRequestId;
             _imageGenerationState.State.RequestId = imageRequestId;
             _imageGenerationState.State.Prompt = prompt;
-
+            
             // Start the image data generation process
             var dalleResponse = await RunDalleAsync(prompt);
 
@@ -221,7 +231,8 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
             {
                 RequestId = imageRequestId,
                 IsSuccessful = true,
-                Error = null
+                Error = null,
+                DalleRequestTimestamp = dalleRequestTimestamp
             };
         }
         catch (Exception e)
@@ -241,7 +252,8 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
             {
                 RequestId = _imageGenerationState.State.RequestId,
                 Status = RequestStatusEnum.Failed,
-                Message = e.Message
+                Message = e.Message,
+                RequestTimestamp = dalleRequestTimestamp
             };
 
             var schedulerGrain = GrainFactory.GetGrain<IImageGenerationRequestStatusReceiver>("SchedulerGrain");
@@ -251,7 +263,8 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
             {
                 RequestId = imageRequestId,
                 IsSuccessful = false,
-                Error = e.Message
+                Error = e.Message,
+                DalleRequestTimestamp = dalleRequestTimestamp
             };
         }
     }
