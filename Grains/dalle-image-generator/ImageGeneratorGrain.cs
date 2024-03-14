@@ -82,7 +82,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
             {
                 RequestId = _imageGenerationState.State.RequestId,
                 Status = RequestStatusEnum.Failed,
-                Message = _imageGenerationState.State.Error,
+                Message = _imageGenerationState.State.Error
             };
             await schedulerGrain.ReportFailedImageGenerationRequestAsync(requestStatus);
             return;
@@ -149,7 +149,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
             {
                 RequestId = _imageGenerationState.State.RequestId,
                 Status = RequestStatusEnum.Completed,
-                RequestTimestamp =imageGenerationResponse.DalleRequestTimestamp
+                RequestTimestamp = imageGenerationResponse.DalleRequestTimestamp
             };
 
             await schedulerGrain.ReportCompletedImageGenerationRequestAsync(requestStatus);
