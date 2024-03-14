@@ -34,7 +34,9 @@ namespace Shared
     public class ImageGenerationGrainResponse
     {
         public string RequestId { get; set; }
-
+        
+        public long DalleRequestTimestamp { get; set; }
+        
         public bool IsSuccessful { get; set; }
         public string? Error { get; set; }
     }
