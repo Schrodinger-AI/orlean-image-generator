@@ -31,12 +31,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
     {
         _imageGenerationState = imageGeneratorState;
         _logger = logger;
-        _imageSettings = new ImageSettings
-        {
-            Width = 128,
-            Height = 128,
-            Quality = 30
-        };
+        _imageSettings = imageSettingsOptions.Value;
         var imgS = Newtonsoft.Json.JsonConvert.SerializeObject(_imageSettings);
         _logger.LogInformation("ImageGeneratorGrain Constructor : _imageSettings are: "+imgS);
     }
