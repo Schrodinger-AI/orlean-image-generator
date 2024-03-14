@@ -99,7 +99,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         info.StartedTimestamp = requestStatus.RequestTimestamp;
         _masterTrackerState.State.FailedImageGenerationRequests.Add(requestStatus.RequestId, info);
         
-        HandleErrorCode(info.ApiKey, info.StartedTimestamp, requestStatus.Message);
+        HandleErrorCode(info.ApiKey, info.StartedTimestamp, requestStatus.ErrorCode);
         
         return Task.CompletedTask;
     }
@@ -296,9 +296,12 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         }
     }
     
-    private void HandleErrorCode(string apiKey, long lastUsedTimestamp, string errorCode)
+    private void HandleErrorCode(string apiKey, long lastUsedTimestamp, DalleErrorCodes? errorCode)
     {
-        _logger.LogError($"[SchedulerGrain] Error code: {errorCode} for API key: {apiKey}");
+        if(errorCode == null)
+            return;
+        
+        _logger.LogError($"[SchedulerGrain] Error code: {errorCode.ToString()} for API key: {apiKey}");
         
         var apiInfo = _masterTrackerState.State.ApiAccountInfoList.Find(info => info.ApiKey == apiKey);
         if (apiInfo == null)
@@ -307,28 +310,41 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
             return;
         }
         
-        if (errorCode.Contains("billing_hard_limit_reached"))
+        switch (errorCode)
         {
-            if(_apiKeyStatus.TryGetValue(apiKey, out var usageInfo))
-            {
-                usageInfo.Attempts++;
-                usageInfo.LastUsedTimestamp = lastUsedTimestamp;
-                usageInfo.Status = ApiKeyStatus.OnHold;
-            }
-            else
-            {
-                _apiKeyStatus.Add(apiKey, new ApiKeyUsageInfo()
+            case DalleErrorCodes.rate_limit_reached:
+            case DalleErrorCodes.invalid_api_key:
+                var isInvalidKey = errorCode == DalleErrorCodes.invalid_api_key;
+                var delay = isInvalidKey ? 86400 : 3600; // 1 day for invalid key, 1 hour for rate limit
+
+                if (!_apiKeyStatus.TryGetValue(apiKey, out var usageInfo))
                 {
-                    ApiKey = apiKey,
-                    LastUsedTimestamp = lastUsedTimestamp,
-                    Status = ApiKeyStatus.OnHold,
-                    Attempts = 1
-                });
-            }
-        }
-        else if(errorCode.Contains("invalid_api_key"))
-        {
-            
+                    usageInfo = new ApiKeyUsageInfo { ApiKey = apiKey };
+                    _apiKeyStatus.Add(apiKey, usageInfo);
+                }
+
+                usageInfo.Attempts = isInvalidKey ? 0 : usageInfo.Attempts + 1;
+                usageInfo.LastUsedTimestamp = lastUsedTimestamp + delay;
+                usageInfo.Status = ApiKeyStatus.OnHold;
+                break;
+            default:
+                if (_apiKeyStatus.TryGetValue(apiKey, out usageInfo))
+                {
+                    usageInfo.Attempts++;
+                    usageInfo.LastUsedTimestamp = lastUsedTimestamp;
+                    usageInfo.Status = ApiKeyStatus.OnHold;
+                }
+                else
+                {
+                    _apiKeyStatus.Add(apiKey, new ApiKeyUsageInfo
+                    {
+                        ApiKey = apiKey,
+                        LastUsedTimestamp = lastUsedTimestamp,
+                        Status = ApiKeyStatus.OnHold,
+                        Attempts = 1
+                    });
+                }
+                break;
         }
     }
 

@@ -244,12 +244,19 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
             var parentGeneratorGrain = GrainFactory.GetGrain<IMultiImageGeneratorGrain>(_imageGenerationState.State.ParentRequestId);
             await parentGeneratorGrain.NotifyImageGenerationStatus(_imageGenerationState.State.RequestId, ImageGenerationStatus.FailedCompletion, e.Message);
 
+            DalleErrorCodes? dalleErrorCode = null;
+            var dalleException = e as DalleException;
+            if (dalleException != null)
+            {
+                dalleErrorCode = dalleException.ErrorCode;
+            }
             // notify the scheduler grain about the failed completion
             var requestStatus = new RequestStatus
             {
                 RequestId = _imageGenerationState.State.RequestId,
                 Status = RequestStatusEnum.Failed,
-                Message = e.Message
+                Message = e.Message,
+                ErrorCode = dalleErrorCode
             };
 
             var schedulerGrain = GrainFactory.GetGrain<IImageGenerationRequestStatusReceiver>("SchedulerGrain");
