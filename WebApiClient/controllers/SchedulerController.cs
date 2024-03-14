@@ -90,6 +90,21 @@ public class SchedulerController : ControllerBase
         }
     }
     
+    [HttpGet("isOverloaded")]
+    public async Task<IsOverloadedResponse> IsOverloaded()
+    {
+        try
+        {
+            var grain = _client.GetGrain<ISchedulerGrain>("SchedulerGrain");
+            var isOverloaded = await grain.IsOverloaded();
+            return new IsOverloadedResponseOk(isOverloaded);
+        }
+        catch (Exception ex)
+        {
+            return new IsOverloadedResponseFailed(ex.Message);
+        }
+    }
+    
     [HttpGet("states")]
     public async Task<ImageGenerationStatesResponse> GetImageGenerationStates()
     {
