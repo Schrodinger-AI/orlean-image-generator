@@ -63,10 +63,31 @@ public class MultiImageGeneratorController : ControllerBase
     public async Task<ObjectResult> QueryImage(ImageQueryRequest imageQueryRequest)
     {
         _logger.LogInformation("MultiImageGeneratorController - Querying image with request id: " + imageQueryRequest.RequestId);
-        var multiImageGeneratorGrain = _client.GetGrain<IMultiImageGeneratorGrain>(imageQueryRequest.RequestId);
 
-        var imageQueryResponse = await multiImageGeneratorGrain.QueryMultipleImagesAsync();
+        IMultiImageGeneratorGrain multiImageGeneratorGrain;
+
+        try
+        { 
+            multiImageGeneratorGrain = _client.GetGrain<IMultiImageGeneratorGrain>(imageQueryRequest.RequestId);
+        } catch (Exception e)
+        {
+            _logger.LogError("$MultiImageGeneratorController - Querying image with request id: " + imageQueryRequest.RequestId + " - Error: " + e.Message);
+            return StatusCode(404, new ImageQueryResponseNotOk { Error = "Request not found" });
+        }
         
+        _logger.LogInformation("$MultiImageGeneratorController - got Grain with request id: " + imageQueryRequest.RequestId + " - with grain: " + multiImageGeneratorGrain);
+
+        MultiImageQueryGrainResponse imageQueryResponse;
+
+        try
+        {
+            imageQueryResponse = await multiImageGeneratorGrain.QueryMultipleImagesAsync();
+        } catch(Exception e)
+        {
+            _logger.LogError("$MultiImageGeneratorController - Querying multiImageGeneratorGrain for image with request id: " + imageQueryRequest.RequestId + " - Error: " + e.Message);
+            return StatusCode(500, new ImageQueryResponseNotOk { Error = "Internal server error" });
+        }
+
         _logger.LogInformation("MultiImageGeneratorController - Querying image with request id: " + imageQueryRequest.RequestId + " - Response: " + imageQueryResponse.Status);
         
         if (imageQueryResponse.Uninitialized)
