@@ -140,6 +140,44 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
         return response;
     }
 
+    private ImageGenerationStatus GetCurrentImageGenerationStatus()
+    {
+        ImageGenerationStatus finalStatus = ImageGenerationStatus.Dormant;
+
+        var statusArray = new List<ImageGenerationStatus>();
+        
+        //get child grain references
+        foreach (var imageGenerationRequestId in _multiImageGenerationState.State.ImageGenerationRequestIds)
+        {
+            //check the imageTracker for imageGenerationRequestId
+            var imageGenerationTracker = _multiImageGenerationState.State.imageGenerationTrackers[imageGenerationRequestId];
+
+            //if the status is not successful, return false
+            // if status is inProgress, break loop and return the Status as InProgress
+            if(imageGenerationTracker.Status == ImageGenerationStatus.InProgress)
+            {
+                return imageGenerationTracker.Status;
+            }
+            
+            statusArray.Add(imageGenerationTracker.Status);
+        }
+        
+        // if all statuses are successful, return true
+        if (statusArray.All(status => status == ImageGenerationStatus.SuccessfulCompletion))
+        {
+            return ImageGenerationStatus.SuccessfulCompletion;
+        }
+        
+        // if all statuses are failed, return false
+        if (statusArray.All(status => status == ImageGenerationStatus.FailedCompletion))
+        {
+            return ImageGenerationStatus.FailedCompletion;
+        }
+        
+        // else return inProgress
+        return ImageGenerationStatus.InProgress;
+    }
+
     public async Task<MultiImageQueryGrainResponse> QueryMultipleImagesAsync()
     {
         _logger.LogInformation($"QueryMultipleImagesAsync called for MultiImageRequest: {_multiImageGenerationState.State.RequestId}");
@@ -150,6 +188,17 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
             return new MultiImageQueryGrainResponse()
             {
                 Uninitialized = true
+            };
+        }
+        
+        ImageGenerationStatus imageGenerationStatus = GetCurrentImageGenerationStatus();
+
+        if (imageGenerationStatus == ImageGenerationStatus.InProgress)
+        {
+            _logger.LogInformation($"Some images for MultiImageRequest: {_multiImageGenerationState.State.RequestId} are still in progress");
+            return new MultiImageQueryGrainResponse
+            {
+                Status = ImageGenerationStatus.InProgress
             };
         }
 
