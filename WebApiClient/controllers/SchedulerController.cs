@@ -1,3 +1,4 @@
+using System.Globalization;
 using Grains.types;
 using Grains.usage_tracker;
 using Microsoft.AspNetCore.Mvc;
@@ -82,12 +83,28 @@ public class SchedulerController : ControllerBase
         {
             var grain = _client.GetGrain<ISchedulerGrain>("SchedulerGrain");
             var usageInfo = await grain.GetApiKeysUsageInfo();
-            return new ApiKeysUsageInfoResponseOk<Dictionary<string, ApiKeyUsageInfo>>(usageInfo);
+
+            var apiKeyUsageInfoDtos = usageInfo.Select(i => new ApiKeyUsageInfoDto
+            {
+                ApiKey = i.Key,
+                ReactivationTimestamp = UnixTimeStampInSecondsToDateTime(i.Value.GetReactivationTimestamp()).ToString(CultureInfo.InvariantCulture),
+                Status = i.Value.Status.ToString(),
+                ErrorCode = i.Value.ErrorCode?.ToString()
+            });
+
+            return new ApiKeysUsageInfoResponseOk<IEnumerable<ApiKeyUsageInfoDto>>(apiKeyUsageInfoDtos);
         }
         catch (Exception ex)
         {
             return new ApiKeysUsageInfoResponseFailed(ex.Message);
         }
+    }
+    
+    private static DateTime UnixTimeStampInSecondsToDateTime( long unixTimeStamp )
+    {
+        var dateTimeOffset = DateTimeOffset.FromUnixTimeSeconds(unixTimeStamp);
+        var dateTime = new DateTime(dateTimeOffset.Ticks, DateTimeKind.Utc);
+        return dateTime;
     }
     
     [HttpGet("isOverloaded")]
@@ -112,26 +129,42 @@ public class SchedulerController : ControllerBase
         {
             var grain = _client.GetGrain<ISchedulerGrain>("SchedulerGrain");
             var states = await grain.GetImageGenerationStates();
-            var startedImageGenerationRequests = new List<RequestAccountUsageInfo>(states.StartedImageGenerationRequests.Values);
-            startedImageGenerationRequests.ForEach(item => item.ApiKey = "");
-            var pendingImageGenerationRequests = new List<RequestAccountUsageInfo>(states.PendingImageGenerationRequests.Values);
-            pendingImageGenerationRequests.ForEach(item => item.ApiKey = "");
-            var completedImageGenerationRequests = new List<RequestAccountUsageInfo>(states.CompletedImageGenerationRequests.Values);
-            completedImageGenerationRequests.ForEach(item => item.ApiKey = "");
-            var failedImageGenerationRequests = new List<RequestAccountUsageInfo>(states.FailedImageGenerationRequests.Values);
-            failedImageGenerationRequests.ForEach(item => item.ApiKey = "");
-            var imageGenerationRequests = new Dictionary<string, List<RequestAccountUsageInfo>>()
+            
+            var startedImageGenerationRequests = GetRequestAccountUsageInfoDtoList(states.StartedImageGenerationRequests);
+            var pendingImageGenerationRequests = GetRequestAccountUsageInfoDtoList(states.PendingImageGenerationRequests);
+            var completedImageGenerationRequests = GetRequestAccountUsageInfoDtoList(states.CompletedImageGenerationRequests);
+            var failedImageGenerationRequests = GetRequestAccountUsageInfoDtoList(states.FailedImageGenerationRequests);
+            
+            var imageGenerationRequests = new Dictionary<string, IEnumerable<RequestAccountUsageInfoDto>>()
             {
                 {"startedRequests", startedImageGenerationRequests},
                 {"pendingRequests", pendingImageGenerationRequests},
                 {"completedRequests", completedImageGenerationRequests},
                 {"failedRequests", failedImageGenerationRequests}
             };
-            return new ImageGenerationStatesResponseOk<Dictionary<string, List<RequestAccountUsageInfo>>>(imageGenerationRequests);
+            return new ImageGenerationStatesResponseOk<Dictionary<string, IEnumerable<RequestAccountUsageInfoDto>>>(imageGenerationRequests);
         }
         catch (Exception ex)
         {
             return new ImageGenerationStatesResponseFailed(ex.Message);
         }
+    }
+
+    private static IEnumerable<RequestAccountUsageInfoDto> GetRequestAccountUsageInfoDtoList(Dictionary<string, RequestAccountUsageInfo> requests)
+    {
+        var failedImageGenerationRequests = new List<RequestAccountUsageInfo>(requests.Values);
+        failedImageGenerationRequests.ForEach(item => item.ApiKey = item.ApiKey[..(item.ApiKey.Length/2)]);
+        var ret = failedImageGenerationRequests.Select(i => new RequestAccountUsageInfoDto
+        {
+            RequestId = i.RequestId,
+            RequestTimestamp = UnixTimeStampInSecondsToDateTime(i.RequestTimestamp).ToString(CultureInfo.InvariantCulture),
+            StartedTimestamp = UnixTimeStampInSecondsToDateTime(i.StartedTimestamp).ToString(CultureInfo.InvariantCulture),
+            FailedTimestamp = UnixTimeStampInSecondsToDateTime(i.FailedTimestamp).ToString(CultureInfo.InvariantCulture),
+            CompletedTimestamp = UnixTimeStampInSecondsToDateTime(i.CompletedTimestamp).ToString(CultureInfo.InvariantCulture),
+            Attempts = i.Attempts,
+            ApiKey = i.ApiKey,
+            ChildId = i.ChildId
+        });
+        return ret;
     }
 }
