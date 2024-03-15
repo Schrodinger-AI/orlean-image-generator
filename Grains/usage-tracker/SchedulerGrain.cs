@@ -112,6 +112,14 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         return Task.CompletedTask;
     }
 
+    public Task ReportBlockedImageGenerationRequestAsync(RequestStatus requestStatus)
+    {
+        _logger.LogInformation($"[SchedulerGrain] Report Block Image Generation Request with ID: {requestStatus.RequestId}");
+
+        //TODO this is to be changed
+        return Task.CompletedTask;
+    }
+
     public Task<IReadOnlyDictionary<string, RequestAccountUsageInfo>> GetFailedImageGenerationRequestsAsync()
     {
         return Task.FromResult<IReadOnlyDictionary<string, RequestAccountUsageInfo>>(
