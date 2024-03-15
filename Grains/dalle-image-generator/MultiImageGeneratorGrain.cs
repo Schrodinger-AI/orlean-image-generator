@@ -82,6 +82,12 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
 
                 var imageGeneratorGrain = GrainFactory.GetGrain<IImageGeneratorGrain>(imageRequestId);
 
+                _multiImageGenerationState.State.imageGenerationTrackers[imageRequestId] = new ImageGenerationTracker
+                {
+                    RequestId = imageRequestId,
+                    Status = ImageGenerationStatus.InProgress
+                };
+
                 await imageGeneratorGrain.SetImageGenerationRequestData(prompt, imageRequestId, multiImageRequestId);
 
                 _multiImageGenerationState.State.ImageGenerationRequestIds.Add(imageRequestId);
