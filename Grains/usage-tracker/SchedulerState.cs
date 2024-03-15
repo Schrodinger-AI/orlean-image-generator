@@ -11,6 +11,7 @@ public class SchedulerState
     /// Completed will be purged periodically by the scheduler
     /// </summary>
     public Dictionary<string, RequestAccountUsageInfo> CompletedImageGenerationRequests { get; set; }
+    public Dictionary<string, BlockedRequestInfo> BlockedImageGenerationRequests { get; set; }
     
     public List<APIAccountInfo> ApiAccountInfoList { get; set; }
     
