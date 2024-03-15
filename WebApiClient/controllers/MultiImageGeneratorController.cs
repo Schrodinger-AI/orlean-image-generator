@@ -62,9 +62,13 @@ public class MultiImageGeneratorController : ControllerBase
     [HttpPost("query")]
     public async Task<ObjectResult> QueryImage(ImageQueryRequest imageQueryRequest)
     {
+        _logger.LogInformation("MultiImageGeneratorController - Querying image with request id: " + imageQueryRequest.RequestId);
         var multiImageGeneratorGrain = _client.GetGrain<IMultiImageGeneratorGrain>(imageQueryRequest.RequestId);
 
         var imageQueryResponse = await multiImageGeneratorGrain.QueryMultipleImagesAsync();
+        
+        _logger.LogInformation("MultiImageGeneratorController - Querying image with request id: " + imageQueryRequest.RequestId + " - Response: " + imageQueryResponse.Status);
+        
         if (imageQueryResponse.Uninitialized)
             return StatusCode(404, new ImageQueryResponseNotOk { Error = "Request not found" });
 
