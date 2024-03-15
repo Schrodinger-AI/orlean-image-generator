@@ -203,10 +203,10 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
         {
             _imageGenerationState.State.ParentRequestId = parentRequestId;
             _imageGenerationState.State.RequestId = imageRequestId;
-            _imageGenerationState.State.Prompt = "I NEED to test how the tool works with extremely simple prompts. DO NOT add any detail, just use it AS-IS: A medium resolution pixel art image of a Somali cat in an upright, bipedal stance, facing directly at the viewer, with Flower Crown, Cap Toe Shoes, Palazzo Jumpsuit, Fuzzy Paw, Shimmering, Teal Feather Wings,and Saddle Stitch Belt.";
+            _imageGenerationState.State.Prompt = prompt;
             
             // Start the image data generation process
-            var dalleResponse = await RunDalleAsync( _imageGenerationState.State.Prompt);
+            var dalleResponse = await RunDalleAsync(prompt);
 
             _logger.LogInformation($"ImageGeneratorGrain - generatorId: {imageRequestId} , dalleResponse: {dalleResponse}");
 
