@@ -19,8 +19,6 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
     private const long CLEANUP_INTERVAL = 180; // 3 minutes
     private const int MAX_ATTEMPTS = 99999;
     private const float QUOTA_THRESHOLD = 0.2f;
-    private const long RATE_LIMIT_WAIT = 120; // 2 minutes
-    private const long INVALID_API_KEY_WAIT = 86400; //1 day
 
     private readonly IPersistentState<SchedulerState> _masterTrackerState;
     private readonly ILogger<SchedulerGrain> _logger;
