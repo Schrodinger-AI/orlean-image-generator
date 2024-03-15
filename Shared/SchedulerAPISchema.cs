@@ -30,6 +30,18 @@ public class RemoveApiKeyResponseFailed(string error) : RemoveApiKeyAPIResponse
     public string Error { get; set; } = error;
 }
 
+public class RequestAccountUsageInfoDto
+{
+    public string RequestId { get; set; } = "";
+    public string RequestTimestamp { get; set; } = "";
+    public string StartedTimestamp { get; set; } = "";
+    public string FailedTimestamp { get; set; } = "";
+    public string CompletedTimestamp { get; set; } = "";
+    public int Attempts { get; set; } = 0;
+    public string ApiKey { get; set; } = "";
+    public string ChildId { get; set; } = "";
+}
+
 public abstract class ImageGenerationStatesResponse { }
 
 public class ImageGenerationStatesResponseOk<T>(T imageGenerationStates) : ImageGenerationStatesResponse
@@ -42,6 +54,14 @@ public class ImageGenerationStatesResponseFailed(string error) : ImageGeneration
 {
     [JsonPropertyName("error")]
     public string Error { get; set; } = error;
+}
+
+public class ApiKeyUsageInfoDto
+{
+    public string ApiKey { get; set; } = "";
+    public string ReactivationTimestamp { get; set; } = "";
+    public string Status { get; set; } = "";
+    public string? ErrorCode { get; set; }
 }
 
 public abstract class ApiKeysUsageInfoResponse { }

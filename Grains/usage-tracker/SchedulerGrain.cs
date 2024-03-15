@@ -107,7 +107,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         info.StartedTimestamp = requestStatus.RequestTimestamp;
         _masterTrackerState.State.CompletedImageGenerationRequests.Add(requestStatus.RequestId, info);
         
-        RefreshApiUsageInfo(info.ApiKey);
+        ResetApiUsageInfo(info.ApiKey);
         
         return Task.CompletedTask;
     }
@@ -295,24 +295,25 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         return remainingQuotaByApiKey;
     }
     
-    private void RefreshApiUsageInfo(string apiKey)
+    private void ResetApiUsageInfo(string apiKey)
     {
         if(_apiKeyStatus.TryGetValue(apiKey, out var usageInfo))
         {
             usageInfo.Attempts = 0;
             usageInfo.LastUsedTimestamp = 0;
             usageInfo.Status = ApiKeyStatus.Active;
+            usageInfo.ErrorCode = null;
         }
         else
         {
-            _logger.LogError($"[SchedulerGrain] API key: {apiKey} not found in usage info");
+            _logger.LogWarning($"[SchedulerGrain] API key: {apiKey} not found in usage info");
         }
     }
     
     private void UpdateApiUsageStatus()
     {
         var now = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
-        foreach (var usageInfo in _apiKeyStatus.Select(pair => pair.Value).Where(usageInfo => usageInfo.LastUsedTimestamp + (long)Math.Min(Math.Pow(3, usageInfo.Attempts), 27.0) < now))
+        foreach (var usageInfo in _apiKeyStatus.Select(pair => pair.Value).Where(usageInfo => usageInfo.GetReactivationTimestamp() < now))
         {
             usageInfo.Status = ApiKeyStatus.Active;
         }
@@ -332,42 +333,16 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
             return;
         }
         
-        switch (errorCode)
+        if (!_apiKeyStatus.TryGetValue(apiKey, out var usageInfo))
         {
-            case DalleErrorCode.rate_limit_reached:
-            case DalleErrorCode.invalid_api_key:
-                var isInvalidKey = errorCode == DalleErrorCode.invalid_api_key;
-                var delay = isInvalidKey ? INVALID_API_KEY_WAIT : RATE_LIMIT_WAIT; // 1 day for invalid key, 1 hour for rate limit
-
-                if (!_apiKeyStatus.TryGetValue(apiKey, out var usageInfo))
-                {
-                    usageInfo = new ApiKeyUsageInfo { ApiKey = apiKey };
-                    _apiKeyStatus.Add(apiKey, usageInfo);
-                }
-
-                usageInfo.Attempts = isInvalidKey ? 0 : usageInfo.Attempts + 1;
-                usageInfo.LastUsedTimestamp = lastUsedTimestamp + delay;
-                usageInfo.Status = ApiKeyStatus.OnHold;
-                break;
-            default:
-                if (_apiKeyStatus.TryGetValue(apiKey, out usageInfo))
-                {
-                    usageInfo.Attempts++;
-                    usageInfo.LastUsedTimestamp = lastUsedTimestamp;
-                    usageInfo.Status = ApiKeyStatus.OnHold;
-                }
-                else
-                {
-                    _apiKeyStatus.Add(apiKey, new ApiKeyUsageInfo
-                    {
-                        ApiKey = apiKey,
-                        LastUsedTimestamp = lastUsedTimestamp,
-                        Status = ApiKeyStatus.OnHold,
-                        Attempts = 1
-                    });
-                }
-                break;
+            usageInfo = new ApiKeyUsageInfo { ApiKey = apiKey };
+            _apiKeyStatus.Add(apiKey, usageInfo);
         }
+
+        usageInfo.Attempts = errorCode is DalleErrorCode.rate_limit_reached or DalleErrorCode.invalid_api_key ? 1 : usageInfo.Attempts + 1;
+        usageInfo.LastUsedTimestamp = lastUsedTimestamp;
+        usageInfo.Status = ApiKeyStatus.OnHold;
+        usageInfo.ErrorCode = errorCode;
     }
 
     private async Task FlushTimerAsync()
