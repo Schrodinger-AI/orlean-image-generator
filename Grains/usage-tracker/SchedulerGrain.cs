@@ -69,6 +69,8 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
             _masterTrackerState.State.PendingImageGenerationRequests = new Dictionary<string, RequestAccountUsageInfo>();
         if(_masterTrackerState.State.StartedImageGenerationRequests == null)
             _masterTrackerState.State.StartedImageGenerationRequests = new Dictionary<string, RequestAccountUsageInfo>();
+        if(_masterTrackerState.State.BlockedImageGenerationRequests == null)
+            _masterTrackerState.State.BlockedImageGenerationRequests = new Dictionary<string, BlockedRequestInfo>();
         
         return base.OnActivateAsync();
     }
