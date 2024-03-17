@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   pull_request:
   push:
-    branches: ["main", "develop"]
+    branches: ["develop"]
 
 jobs:
   build-dotnet:
@@ -54,7 +54,7 @@ jobs:
         with:
           images: ${{ secrets.DOCKER_USERNAME }}/orlean-image-generator-${{ matrix.servicename }}
           tags: |
-            type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') }}
+            type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'develop') }}
             type=ref,event=tag
             type=ref,event=pr
       - name: Build and push
