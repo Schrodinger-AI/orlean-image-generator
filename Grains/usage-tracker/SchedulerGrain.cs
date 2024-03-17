@@ -2,7 +2,6 @@ using Grains.types;
 using Microsoft.Extensions.Logging;
 using Orleans;
 using Orleans.Runtime;
-using Orleans.Timers;
 using Shared;
 // ReSharper disable TooManyChainedReferences
 
@@ -70,6 +69,8 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
             _masterTrackerState.State.PendingImageGenerationRequests = new Dictionary<string, RequestAccountUsageInfo>();
         if(_masterTrackerState.State.StartedImageGenerationRequests == null)
             _masterTrackerState.State.StartedImageGenerationRequests = new Dictionary<string, RequestAccountUsageInfo>();
+        if(_masterTrackerState.State.ApiAccountInfoList == null)
+            _masterTrackerState.State.ApiAccountInfoList = new List<APIAccountInfo>();
         
         return base.OnActivateAsync();
     }

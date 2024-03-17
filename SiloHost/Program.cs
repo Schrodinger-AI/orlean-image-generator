@@ -7,6 +7,7 @@ using Serilog;
 using Serilog.Formatting.Json;
 using Shared;
 using Microsoft.Extensions.Configuration;
+using SiloHost.startup;
 
 namespace SiloHost
 {
@@ -74,6 +75,7 @@ namespace SiloHost
                 })
                 .ConfigureApplicationParts(parts => parts.AddApplicationPart(typeof(ImageGeneratorGrain).Assembly).WithReferences())
                 .ConfigureLogging(logging => logging.AddSerilog())
+                .AddStartupTask<SchedulerGrainStartupTask>()
                 //.UseDashboard(options => { })
                 .Build();
 
