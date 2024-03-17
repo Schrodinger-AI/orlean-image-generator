@@ -18,6 +18,12 @@ jobs:
         with:
           dotnet-version: '8.0'
       - run: dotnet publish ${{ matrix.servicename }}/${{ matrix.servicename }}.csproj -o out/${{ matrix.servicename }}
+      - name: 'Upload Artifact'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.servicename }}
+          path: out/${{ matrix.servicename }}
+          retention-days: 1
       
   build-and-push-image:
     needs: build-dotnet
@@ -26,6 +32,12 @@ jobs:
       matrix:
         servicename: [SiloHost, WebApiClient]
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Download a single artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.servicename }}
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
