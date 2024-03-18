@@ -1,3 +1,5 @@
+using Shared;
+
 namespace Grains.types;
 
 public class RequestAccountUsageInfo
@@ -8,6 +10,6 @@ public class RequestAccountUsageInfo
     public long FailedTimestamp { get; set; } = 0;
     public long CompletedTimestamp { get; set; } = 0;
     public int Attempts { get; set; } = 0;
-    public string ApiKey { get; set; } = "";
+    public ApiKey? ApiKey { get; set; } = null;
     public string ChildId { get; set; } = "";
 }

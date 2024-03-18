@@ -9,11 +9,11 @@ public interface ISchedulerGrain : ISchrodingerGrain, Orleans.IGrainWithStringKe
     Task<IReadOnlyDictionary<string, RequestAccountUsageInfo>> GetStartedImageGenerationRequestsAsync();
     Task<IReadOnlyDictionary<string, RequestAccountUsageInfo>> GetPendingImageGenerationRequestsAsync();
     Task AddImageGenerationRequest(string requestId, string childId, long requestTimestamp);
-    Task<List<string>> AddApiKeys(List<ApiKeyEntry> apiKeyEntries);
-    Task<List<string>> RemoveApiKeys(List<string> apiKey);
+    Task<List<ApiKey>> AddApiKeys(List<APIAccountInfo> apiKeyEntries);
+    Task<List<ApiKey>> RemoveApiKeys(List<ApiKey> apiKeys);
     Task<IReadOnlyList<APIAccountInfo>> GetAllApiKeys();
     Task<SchedulerState> GetImageGenerationStates();
-    Task<Dictionary<string, ApiKeyUsageInfo>> GetApiKeysUsageInfo();
+    Task<Dictionary<ApiKey, ApiKeyUsageInfo>> GetApiKeysUsageInfo();
     Task<bool> IsOverloaded();
     Task FlushAsync();
     Task TickAsync();

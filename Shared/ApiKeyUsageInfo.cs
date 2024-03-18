@@ -11,7 +11,7 @@ public class ApiKeyUsageInfo
     public const long RATE_LIMIT_WAIT = 120; // 2 minutes
     public const long INVALID_API_KEY_WAIT = 86400; //1 day
     
-    public string ApiKey { get; set; }
+    public ApiKey ApiKey { get; set; }
     public long LastUsedTimestamp { get; set; }
     public long Attempts { get; set; }
     public ApiKeyStatus Status { get; set; }
