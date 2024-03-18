@@ -408,7 +408,8 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
             
             info.StartedTimestamp = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
             // Get child gen grain to process failed request again with the new api key
-            await imageGenerationGrain.SetApiKey(info.ApiKey);
+            // TODO @Zhifeng Defaulted to DalleOpenAI, this should be updated to chose between available AI Service providers
+            await imageGenerationGrain.SetImageGenerationServiceProvider(info.ApiKey, ImageGenerationServiceProvider.DalleOpenAI);
             
             // remove from list to add to pending
             _logger.LogWarning($"[SchedulerGrain] Request {requestId} is pending");
