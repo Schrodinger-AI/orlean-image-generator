@@ -13,14 +13,13 @@ public class AzureOpenAIImageGenerator : IImageGenerator
         _logger = logger;
     }
     
-    // Your existing code goes here, but with the method names changed to match the interface
     public async Task<ImageGenerationResponse> RunImageGenerationAsync(string prompt, string apikey, int numberOfImages, string requestId)
     {
-        return null;
+        throw new Exception("Azure ImageGeneration Not Implemented");
     }
 
     public ImageGenerationError HandleImageGenerationError(HttpStatusCode httpStatusCode, string responseJson)
     {
-        return null;
+        throw new Exception("Azure HandleImageGenerationError Not Implemented");
     }
 }
