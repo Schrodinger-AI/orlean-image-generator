@@ -27,9 +27,22 @@ public class SchedulerController : ControllerBase
     {
         try
         {
+            var apiAccountInfos = apiKeyEntries.Select(entry => new APIAccountInfo
+            {
+                ApiKey = new ApiKey
+                {
+                    ApiKeyString = entry.ApiKey.ApiKeyString,
+                    ServiceProvider = GetServiceProvider(entry.ApiKey.ServiceProvider)
+                },
+                Email = entry.Email,
+                Tier = entry.Tier,
+                MaxQuota = entry.MaxQuota
+            }).ToList();
+
             var grain = _client.GetGrain<ISchedulerGrain>("SchedulerGrain");
-            var addedApiKeys = await grain.AddApiKeys(apiKeyEntries);
-            return new AddApiKeyResponseOk(addedApiKeys);
+            var addedApiKeys = await grain.AddApiKeys(apiAccountInfos);
+            var ret = addedApiKeys.Select(apiKey => new ApiKeyDto { ApiKeyString = apiKey.ApiKeyString.Substring(0, apiKey.ApiKeyString.Length / 2), ServiceProvider = apiKey.ServiceProvider.ToString() }).ToList();
+            return new AddApiKeyResponseOk(ret);
         }
         catch (Exception ex)
         {
@@ -38,13 +51,26 @@ public class SchedulerController : ControllerBase
     }
     
     [HttpPost("remove")]
-    public async Task<RemoveApiKeyAPIResponse> RemoveApiKeys(List<string> apiKeys)
+    public async Task<RemoveApiKeyAPIResponse> RemoveApiKeys(List<ApiKeyDto> apiKeyDtos)
     {
         try
         {
+            var apiKeys = apiKeyDtos.Select(dto => new ApiKey
+            {
+                ApiKeyString = dto.ApiKeyString,
+                ServiceProvider = GetServiceProvider(dto.ServiceProvider)
+            }).ToList() ?? throw new ArgumentNullException("apiKeyDtos.Select(dto =>\n            {\n                return new ApiKey\n                {\n                    ApiKeyString = dto.ApiKeyString,\n                    ServiceProvider = GetServiceProvider(dto.ServiceProvider)\n                };\n            }).ToList()");
+
             var grain = _client.GetGrain<ISchedulerGrain>("SchedulerGrain");
             var addedApiKeys = await grain.RemoveApiKeys(apiKeys);
-            return new RemoveApiKeyResponseOk(addedApiKeys);
+            
+            apiKeyDtos.Clear();
+            apiKeyDtos.AddRange(addedApiKeys.Select(apiKey => new ApiKeyDto
+            {
+                ApiKeyString = apiKey.ApiKeyString,
+                ServiceProvider = apiKey.ServiceProvider.ToString()
+            }));
+            return new RemoveApiKeyResponseOk(apiKeyDtos);
         }
         catch (Exception ex)
         {
@@ -53,20 +79,23 @@ public class SchedulerController : ControllerBase
     }
     
     [HttpGet]
-    public async Task<ActionResult<APIAccountInfo[]>> GetAllApiKeys()
+    public async Task<ActionResult<ApiKeyEntry[]>> GetAllApiKeys()
     {
         var grain = _client.GetGrain<ISchedulerGrain>("SchedulerGrain");
         var apiAccountInfos = await grain.GetAllApiKeys();
         
         //hack for when we do not have user protection
-        var ret = new List<APIAccountInfo>();
+        var ret = new List<ApiKeyEntry>();
         foreach (var info in apiAccountInfos)
         {
-            var newInfo = new APIAccountInfo
+            var newInfo = new ApiKeyEntry
             {
-                ApiKey = info.ApiKey.Substring(0, info.ApiKey.Length/2),
+                ApiKey = new ApiKeyDto
+                {
+                    ApiKeyString = info.ApiKey.ApiKeyString.Substring(0, info.ApiKey.ApiKeyString.Length/2),
+                    ServiceProvider = info.ApiKey.ServiceProvider.ToString()
+                },
                 Email = info.Email,
-                Description = info.Description,
                 MaxQuota = info.MaxQuota,
                 Tier = info.Tier
             };
@@ -186,9 +215,13 @@ public class SchedulerController : ControllerBase
 
     private static IEnumerable<RequestAccountUsageInfoDto> GetRequestAccountUsageInfoDtoList(Dictionary<string, RequestAccountUsageInfo> requests)
     {
-        var failedImageGenerationRequests = new List<RequestAccountUsageInfo>(requests.Values);
-        failedImageGenerationRequests.ForEach(item => item.ApiKey = item.ApiKey[..(item.ApiKey.Length/2)]);
-        var ret = failedImageGenerationRequests.Select(i => new RequestAccountUsageInfoDto
+        var imageGenerationRequests = new List<RequestAccountUsageInfo>(requests.Values);
+        imageGenerationRequests.ForEach(item =>
+        {
+            if (item.ApiKey != null)
+                item.ApiKey.ApiKeyString = item.ApiKey.ApiKeyString[..(item.ApiKey.ApiKeyString.Length / 2)];
+        });
+        var ret = imageGenerationRequests.Select(i => new RequestAccountUsageInfoDto
         {
             RequestId = i.RequestId,
             RequestTimestamp = UnixTimeStampInSecondsToDateTime(i.RequestTimestamp).ToString(CultureInfo.InvariantCulture),
@@ -200,5 +233,15 @@ public class SchedulerController : ControllerBase
             ChildId = i.ChildId
         });
         return ret;
+    }
+    
+    private static ImageGenerationServiceProvider GetServiceProvider(string serviceProvider)
+    {
+        return serviceProvider switch
+        {
+            "DalleOpenAI" => ImageGenerationServiceProvider.DalleOpenAI,
+            "AzureOpenAI" => ImageGenerationServiceProvider.AzureOpenAI,
+            _ => throw new ArgumentOutOfRangeException(nameof(serviceProvider), serviceProvider, null)
+        };
     }
 }
