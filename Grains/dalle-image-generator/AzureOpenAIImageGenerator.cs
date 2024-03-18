@@ -47,38 +47,35 @@ public class AzureOpenAIImageGenerator : IImageGenerator
         }
         catch (Exception e)
         {
-            _logger.LogError($"Azure ImageGeneratorGrain - generatorId: {requestId} , Azure-Dalle API call failed with error: {e.Message}");
+            _logger.LogError($"AzureImageGenerator - generatorId: {requestId} , Azure-Dalle API call failed with error: {e.Message}");
             throw new ImageGenerationException(ImageGenerationErrorCode.internal_error, e.Message);
         }
 
-        ImageGenerationResponse imageGenerationResponse;
-        
-        
-        
-        try
-        {
-            imageGenerationResponse = new ImageGenerationResponse
-            {
-                
-                // get latest timestamp in seconds
-                Created =  (int)DateTimeOffset.Now.ToUnixTimeSeconds(),
-                Data = azureImageGenerationResponse.Data.Select(data => new ImageGenerationOpenAIData
-                {
-                    Url = data.Url,
-                    RevisedPrompt = data.RevisedPrompt
-                }).ToList()
-            };
-        }
-        catch (Exception e)
-        {
-            _logger.LogError($"ImageGeneratorGrain - generatorId: {requestId} , Dalle API call failed with error: {e.Message}");
-            throw new ImageGenerationException(ImageGenerationErrorCode.api_call_failed, e.Message);
-        }
-
-        _logger.LogError($"Dalle ImageGeneration ResponseCode : {httpStatusCode}");
+        ImageGenerationResponse imageGenerationResponse = null;
+        _logger.LogError($"AzureImageGenerator - ImageGeneration ResponseCode : {httpStatusCode}");
 
         if (httpStatusCode != (int)HttpStatusCode.OK)
         {
+            try
+            {
+                imageGenerationResponse = new ImageGenerationResponse
+                {
+                
+                    // get latest timestamp in seconds
+                    Created =  (int)DateTimeOffset.Now.ToUnixTimeSeconds(),
+                    Data = azureImageGenerationResponse.Data.Select(data => new ImageGenerationOpenAIData
+                    {
+                        Url = data.Url,
+                        RevisedPrompt = data.RevisedPrompt
+                    }).ToList()
+                };
+            }
+            catch (Exception e)
+            {
+                _logger.LogError($"AzureImageGenerator - generatorId: {requestId} , Dalle API call failed with error: {e.Message}");
+                throw new ImageGenerationException(ImageGenerationErrorCode.api_call_failed, e.Message);
+            }
+        } else {
             ImageGenerationError dalleError;
             try
             {
@@ -86,16 +83,16 @@ public class AzureOpenAIImageGenerator : IImageGenerator
             }
             catch (Exception e)
             {
-                _logger.LogError($"ImageGeneratorGrain - generatorId: {requestId} , Dalle API call failed with error: {e.Message}");
+                _logger.LogError($"AzureImageGenerator - generatorId: {requestId} , Dalle API call failed with error: {e.Message}");
                 throw new ImageGenerationException(ImageGenerationErrorCode.internal_error, e.Message);
             }
             
-            _logger.LogError($"ImageGeneratorGrain - generatorId: {requestId} , Dalle API call failed with error: {dalleError.Message}");
+            _logger.LogError($"AzureImageGenerator - generatorId: {requestId} , Dalle API call failed with error: {dalleError.Message}");
             
             throw new ImageGenerationException(dalleError.ImageGenerationErrorCode, dalleError.Message);
         }
 
-        _logger.LogInformation($"ImageGeneratorGrain - generatorId: {requestId} , Dalle API deserialized response: {imageGenerationResponse}");
+        _logger.LogInformation($"AzureImageGenerator - generatorId: {requestId} , Dalle API deserialized response: {imageGenerationResponse}");
 
         return imageGenerationResponse;
     }
