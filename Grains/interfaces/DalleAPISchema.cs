@@ -43,25 +43,25 @@ public class Result
     public List<Choice> Choices { get; set; }
 }
 
-public class DalleResponse
+public class ImageGenerationResponse
 {
     [JsonPropertyName("created")]
     public long Created { get; set; }
 
     [JsonPropertyName("data")]
-    public List<DalleData> Data { get; set; }
+    public List<ImageGenerationOpenAIData> Data { get; set; }
     
     [JsonPropertyName("error")]
-    public DalleError Error { get; set; }
+    public ImageGenerationError Error { get; set; }
 }
 
-public class DalleWrappedError
+public class ImageGenerationWrappedError
 {
     [JsonPropertyName("error")]
-    public DalleError Error { get; set; }
+    public ImageGenerationError Error { get; set; }
 }
 
-public class DalleError
+public class ImageGenerationError
 {
     [JsonPropertyName("httpStatusCode")]
     public HttpStatusCode HttpStatusCode { get; set; }
@@ -69,8 +69,8 @@ public class DalleError
     [JsonPropertyName("code")] 
     public string Code { get; set; }
     
-    [JsonPropertyName("dalleErrorCode")]
-    public DalleErrorCode DalleErrorCode { get; set; }
+    [JsonPropertyName("imageGenerationErrorCode")]
+    public ImageGenerationErrorCode ImageGenerationErrorCode { get; set; }
 
     [JsonPropertyName("message")] 
     public string Message { get; set; }
@@ -82,7 +82,7 @@ public class DalleError
     public string Type { get; set; }
 }
 
-public class DalleData
+public class ImageGenerationOpenAIData
 {
     [JsonPropertyName("revised_prompt")]
     public string RevisedPrompt { get; set; }

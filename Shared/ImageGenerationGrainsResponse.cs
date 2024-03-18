@@ -35,11 +35,11 @@ namespace Shared
     {
         public string RequestId { get; set; }
         
-        public long DalleRequestTimestamp { get; set; }
+        public long ImageGenerationRequestTimestamp { get; set; }
         
         public bool IsSuccessful { get; set; }
         public string? Error { get; set; }
-        public DalleErrorCode? ErrorCode { get; set; }
+        public ImageGenerationErrorCode? ErrorCode { get; set; }
     }
 
     public class MultiImageGenerationGrainResponse
