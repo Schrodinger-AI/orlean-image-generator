@@ -84,14 +84,6 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
         await Task.CompletedTask;
     }
 
-
-    public async Task SetApiKey(string key)
-    {
-        _logger.LogInformation($"ImageGeneratorGrain - Setting ApiKey: {key} for imageGeneratorId: {_imageGenerationState.State.RequestId}");
-        _apiKey = key;
-        await Task.CompletedTask;
-    }
-
     private async Task CheckAndReportForInvalidStates()
     {
         if (string.IsNullOrEmpty(_apiKey) && _imageGenerationState.State.Status == ImageGenerationStatus.InProgress)
