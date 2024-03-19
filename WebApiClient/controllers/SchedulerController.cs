@@ -188,7 +188,7 @@ public class SchedulerController : ControllerBase
             var blockedRequests = await grain.GetBlockedImageGenerationRequestsAsync();
             
             var requestList = new List<BlockedRequestInfo>(blockedRequests.Values);
-            requestList.ForEach(item => item.RequestAccountUsageInfo.ApiKey = item.RequestAccountUsageInfo.ApiKey[..(item.RequestAccountUsageInfo.ApiKey.Length/2)]);
+            requestList.ForEach(item => item.RequestAccountUsageInfo.ApiKey.ApiKeyString = item.RequestAccountUsageInfo.ApiKey.ApiKeyString[..(item.RequestAccountUsageInfo.ApiKey.ApiKeyString.Length/2)]);
             var result = requestList.Select(i => new BlockedRequestInfoDto
             {
                 BlockedReason = i.BlockedReason?.ToString(),
