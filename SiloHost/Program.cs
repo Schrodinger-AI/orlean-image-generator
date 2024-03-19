@@ -1,4 +1,7 @@
 ﻿using Grains;
+using Grains.AzureOpenAI;
+using Grains.DalleOpenAI;
+using Grains.ImageGenerator;
 using Orleans;
 using Orleans.Configuration;
 using Orleans.Hosting;
@@ -59,6 +62,8 @@ namespace SiloHost
                         .ConfigureServices(services =>
                         {
                             services.Configure<ImageSettings>(configuration.GetSection("ImageSettings"));
+                            services.AddTransient<IImageGenerator, DalleOpenAIImageGenerator>();
+                            services.AddTransient<IImageGenerator, AzureOpenAIImageGenerator>();
                             services.AddSerializer(serializerBuilder =>
                             {
                                 serializerBuilder.AddNewtonsoftJsonSerializer(
