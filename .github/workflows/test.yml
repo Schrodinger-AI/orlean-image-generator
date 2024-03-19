@@ -26,14 +26,15 @@ jobs:
       - name: Run SiloHost
         run: |
           cd SiloHost
-          dotnet run
+          dotnet run &
 #          nohup dotnet run > silohost.out 2> silohost.err < /dev/null & echo $! > pid.txt
 
       - name: Run WebApiClient
         run: |
           cd WebApiClient
-          nohup dotnet run > webapi.out 2> webapi.err < /dev/null & echo $! > pid.txt
-          echo $?
+          dotnet run &
+#          nohup dotnet run > webapi.out 2> webapi.err < /dev/null & echo $! > pid.txt
+#          echo $?
 
       - name: Netstat
         run: |
