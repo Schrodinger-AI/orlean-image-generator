@@ -1,0 +1,55 @@
+name: Debug GCP
+
+on:
+  push:
+    branches: ['develop']
+
+env:
+  PROJECT_ID: ${{ vars.PROJECT_ID }}
+  PROJECT_NUMBER: ${{ vars.PROJECT_NUMBER }}
+  REPOSITORY: orlean-image-generator
+  REPOSITORY_REGION: us-central1
+  DEPLOY_OWNER: Schrodinger-AI
+  DEPLOY_REPO: orlean-image-generator-deployment
+
+jobs:
+      
+  try-auth:
+    runs-on: ubuntu-latest
+    environment: development
+    permissions:
+      id-token: write
+      contents: read
+    outputs:
+      image: ${{ steps.tag.outputs.tag }}
+    steps:
+      #
+      # Authenticate to Google Cloud using workload identity federation
+      #
+      - id: 'auth'
+        name: 'Obtain access token by using workload identity federation'
+        uses: 'google-github-actions/auth@v2'
+        with:
+          create_credentials_file: true
+          token_format: access_token
+          workload_identity_provider: projects/${{ env.PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-actions/providers/github-actions-oidc
+          service_account: github-actions-workflow@${{ env.PROJECT_ID }}.iam.gserviceaccount.com
+
+      - name: Connect to Artifact Registry
+        run: |-
+          echo ${{ steps.auth.outputs.access_token }} | docker login -u oauth2accesstoken --password-stdin https://${{ env.REPOSITORY_REGION }}-docker.pkg.dev
+
+      - name: Create image tag
+        run: echo "IMAGE_TAG=${{ env.REPOSITORY_REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE }}:$GITHUB_SHA" >> $GITHUB_ENV
+
+      - id: tag
+        run: echo "tag=${{ env.IMAGE_TAG }}" >> "$GITHUB_OUTPUT"
+
+  trigger:
+    needs: build-and-push-image
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          OUTPUT: ${{needs.build-and-push-image.outputs}}
+        run: echo "$OUTPUT"
+      
