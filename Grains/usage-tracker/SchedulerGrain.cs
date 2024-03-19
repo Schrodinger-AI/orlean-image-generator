@@ -115,8 +115,6 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
 
     public Task ReportBlockedImageGenerationRequestAsync(RequestStatus requestStatus)
     {
-        _logger.LogInformation($"[SchedulerGrain] Report Block Image Generation Request with ID: {requestStatus.RequestId} with error: {requestStatus.ErrorCode?.ToString()}");
-        
         var info = PopFromPending(requestStatus.RequestId);
         if (info == null)
         {
@@ -133,7 +131,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         };
         
         _masterTrackerState.State.BlockedImageGenerationRequests.Add(requestStatus.RequestId, blockedRequest);
-        
+
         return Task.CompletedTask;
     }
 

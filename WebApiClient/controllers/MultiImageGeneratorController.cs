@@ -62,9 +62,13 @@ public class MultiImageGeneratorController : ControllerBase
     [HttpPost("query")]
     public async Task<ObjectResult> QueryImage(ImageQueryRequest imageQueryRequest)
     {
-        var multiImageGeneratorGrain = _client.GetGrain<IMultiImageGeneratorGrain>(imageQueryRequest.RequestId);
+        _logger.LogInformation("MultiImageGeneratorController - Querying image with request id: " + imageQueryRequest.RequestId);
 
+        var multiImageGeneratorGrain = _client.GetGrain<IMultiImageGeneratorGrain>(imageQueryRequest.RequestId);
         var imageQueryResponse = await multiImageGeneratorGrain.QueryMultipleImagesAsync();
+
+        _logger.LogInformation("$MultiImageGeneratorController - Querying image with request id: " + imageQueryRequest.RequestId + " - Response: " + imageQueryResponse.Status);
+        
         if (imageQueryResponse.Uninitialized)
             return StatusCode(404, new ImageQueryResponseNotOk { Error = "Request not found" });
 
@@ -72,6 +76,5 @@ public class MultiImageGeneratorController : ControllerBase
             return StatusCode(202, new ImageQueryResponseNotOk { Error = "The result is not ready." });
         var images = imageQueryResponse.Images ?? [];
         return StatusCode(200, new ImageQueryResponseOk { Images = images });
-
     }
 }

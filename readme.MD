@@ -59,3 +59,8 @@ Ensure the WebApiClient startup is successful
 
 - or refer to the postman collection in this directory
 [orlean-image-generator-postman-collection](./setup-guide/postman/Orlean%20Image%20Generator.postman_collection.json)
+
+
+## Image Generation Status Transition
+
+[Image-Generation-Status-Transition](./docs/image-generation-status-transition.MD)
