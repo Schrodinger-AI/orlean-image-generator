@@ -1,4 +1,5 @@
-﻿using Grains;
+﻿using Google.Cloud.Diagnostics.Common;
+using Grains;
 using Orleans;
 using Orleans.Configuration;
 using Orleans.Hosting;
@@ -44,6 +45,8 @@ namespace SiloHost
             {
                 throw new Exception("ConnectionString must be non-empty.");
             }
+            
+            var logType = configuration.GetValue<string>("LogType");
 
             var host = new SiloHostBuilder()
                 .UseAdoNetClustering(options =>
@@ -73,7 +76,17 @@ namespace SiloHost
                     options.UseJsonFormat = false;
                 })
                 .ConfigureApplicationParts(parts => parts.AddApplicationPart(typeof(ImageGeneratorGrain).Assembly).WithReferences())
-                .ConfigureLogging(logging => logging.AddSerilog())
+                .ConfigureLogging(logging =>
+                {
+                    if (logType is LogTypeConstants.Gcp)
+                    {
+                        logging.AddGoogle(new LoggingServiceOptions {ProjectId = "schrodingerai-dev"});
+                    }
+                    else
+                    {
+                        logging.AddSerilog();
+                    }
+                })
                 //.UseDashboard(options => { })
                 .Build();
 

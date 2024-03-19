@@ -1,5 +1,7 @@
+using Google.Cloud.Diagnostics.Common;
 using Serilog;
 using Serilog.Formatting.Json;
+using Shared;
 
 public class Program
 {
@@ -31,5 +33,17 @@ public class Program
             {
                 webBuilder.UseStartup<Startup>();
             })
-            .UseSerilog();
+            // .ConfigureLogging((context, logging) =>
+            // {
+            //     var logType = context.Configuration.GetValue<string>("LogType");
+            //     if (logType is LogTypeConstants.Gcp)
+            //     {
+            //         logging.AddGoogle(new LoggingServiceOptions {ProjectId = "schrodingerai-dev"});
+            //     }
+            //     else
+            //     {
+            //         logging.AddSerilog();
+            //     }
+            // });
+    .UseSerilog();
 }

@@ -289,7 +289,10 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
             response = await client.PostAsync("https://api.openai.com/v1/images/generations", content);
 
             _logger.LogInformation(
-                $"ImageGeneratorGrain - generatorId: {_imageGenerationState.State.RequestId} , Dalle API response: {response} - responseCode: {response.StatusCode}");
+                $"ImageGeneratorGrain - generatorId: {_imageGenerationState.State.RequestId} , Dalle API response: {response} - responseCode: {response.StatusCode}",response );
+
+            _logger.LogInformation(
+                "test---01 ImageGeneratorGrain - generatorId: {RequestId} , Dalle API responseCode: {responseStatusCode} - responseReason: {responseReason} - response: {response}", _imageGenerationState.State.RequestId, response.StatusCode, response.ReasonPhrase, response);
 
             jsonResponse = await response.Content.ReadAsStringAsync();
         } catch (Exception e)
