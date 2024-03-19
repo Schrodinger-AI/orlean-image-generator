@@ -39,6 +39,14 @@ jobs:
         run: |
           netstat -tuln
 
+      - name: Print SiloHost log
+        run: |
+          cat SiloHost/log.txt
+
+      - name: Print WebApiClient log
+        run: |
+          cat WebApiClient/log.txt
+
       - name: Upload SiloHost log
         uses: actions/upload-artifact@v2
         with:
