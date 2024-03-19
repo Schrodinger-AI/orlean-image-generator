@@ -60,7 +60,6 @@ public class AzureOpenAIImageGenerator : IImageGenerator
             {
                 imageGenerationResponse = new ImageGenerationResponse
                 {
-                
                     // get latest timestamp in seconds
                     Created =  (int)DateTimeOffset.Now.ToUnixTimeSeconds(),
                     Data = azureImageGenerationResponse.Data.Select(data => new ImageGenerationOpenAIData
