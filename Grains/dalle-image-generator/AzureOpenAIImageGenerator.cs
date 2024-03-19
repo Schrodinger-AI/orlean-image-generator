@@ -2,6 +2,7 @@ using System.Net;
 using Azure;
 using Microsoft.Extensions.Logging;
 using Azure.AI.OpenAI;
+using Grains.Azure;
 using Shared;
 using Newtonsoft.Json;
 
@@ -78,7 +79,7 @@ public class AzureOpenAIImageGenerator : IImageGenerator
             ImageGenerationError dalleError;
             try
             {
-                dalleError = HandleImageGenerationError((HttpStatusCode)httpStatusCode, JsonConvert.SerializeObject(imageGenerationResponse));
+                dalleError = HandleImageGenerationError(rawResponse);
             }
             catch (Exception e)
             {
@@ -96,8 +97,65 @@ public class AzureOpenAIImageGenerator : IImageGenerator
         return imageGenerationResponse;
     }
 
-    public ImageGenerationError HandleImageGenerationError(HttpStatusCode httpStatusCode, string responseJson)
+    public ImageGenerationError HandleImageGenerationError(Response rawResponse)
     {
-        throw new Exception("Azure HandleImageGenerationError Not Implemented");
+        //get error message from rawResponse
+        string responseJson = rawResponse.Content.ToString();
+        
+        //get http status code
+        HttpStatusCode httpStatusCode = (HttpStatusCode)rawResponse.Status;
+        
+        ImageGenerationErrorCode dalleErrorCodes;
+        
+        var azureErrorWrapper = JsonConvert.DeserializeObject<AzureErrorWrapper>(responseJson);
+        
+        // get code from AzureErrorWrapper
+        var azureError = azureErrorWrapper?.Error;
+        
+        switch (httpStatusCode)
+        {
+            case HttpStatusCode.Unauthorized:
+                dalleErrorCodes = ImageGenerationErrorCode.invalid_api_key;
+                break;
+            case HttpStatusCode.TooManyRequests:
+            { 
+                dalleErrorCodes = ImageGenerationErrorCode.rate_limit_reached;
+                break;
+            }
+            case HttpStatusCode.ServiceUnavailable:
+                dalleErrorCodes = ImageGenerationErrorCode.engine_unavailable;
+                break;
+            case HttpStatusCode.BadRequest:
+            {
+                if (azureError?.Code == "billing_hard_limit_reached")
+                {
+                    dalleErrorCodes = ImageGenerationErrorCode.billing_quota_exceeded;
+                }
+                else if (azureError?.Code == "content_filter")
+                {
+                    dalleErrorCodes = ImageGenerationErrorCode.content_violation;
+                }
+                else
+                {
+                    dalleErrorCodes = ImageGenerationErrorCode.bad_request;
+                }
+                break;
+            }
+            case HttpStatusCode.InternalServerError:
+                dalleErrorCodes = ImageGenerationErrorCode.internal_error;
+                break;
+            default:
+                dalleErrorCodes = ImageGenerationErrorCode.internal_error;
+                break;
+        }
+
+        ImageGenerationError dalleError = new ImageGenerationError
+        {
+            HttpStatusCode = httpStatusCode,
+            ImageGenerationErrorCode = dalleErrorCodes,
+            Message = azureError!.Message
+        };
+
+        return dalleError;
     }
 }

@@ -9,6 +9,7 @@ public enum ImageGenerationErrorCode
         engine_unavailable,
         bad_request,
         billing_quota_exceeded,
+        content_violation,
 }
 
 public enum ImageGenerationServiceProvider
