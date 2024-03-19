@@ -23,55 +23,13 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
-      - name: Run SiloHost
+      - name: Test
         run: |
           cd SiloHost
-          dotnet run & disown
-#          nohup dotnet run > silohost.out 2> silohost.err < /dev/null & echo $! > pid.txt
-
-      - name: Run WebApiClient
-        run: |
+          dotnet run &
           cd WebApiClient
-          dotnet run & disown
-#          nohup dotnet run > webapi.out 2> webapi.err < /dev/null & echo $! > pid.txt
-#          echo $?
-
-      - name: Netstat
-        run: |
-          netstat -tuln
-
-      - name: Print SiloHost log
-        run: |
-          cat SiloHost/silohost.out
-
-      - name: Print WebApiClient log
-        run: |
-          cat WebApiClient/webapi.out
-
-      - name: Upload SiloHost log
-        uses: actions/upload-artifact@v4
-        with:
-          name: log
-          path: SiloHost/silohost.out
-
-      - name: Upload WebApiClient log
-        uses: actions/upload-artifact@v4
-        with:
-          name: log
-          path: WebApiClient/webapi.out
-
-      - name: Initialize Service
-        run: |
+          dotnet run &
+          sleep 10
           bash scripts/set-config.sh
           bash scripts/add-api-key.sh
           bash scripts/generate-image.sh
-
-      - name: Kill SiloHost
-        run: |
-          cd SiloHost
-          kill $(cat pid.txt)
-
-      - name: Kill WebApiClient
-        run: |
-          cd WebApiClient
-          kill $(cat pid.txt)
