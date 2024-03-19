@@ -1,6 +1,5 @@
 using Grains.types;
 using Microsoft.Extensions.Logging;
-using Orleans;
 using Orleans.Runtime;
 using Shared;
 // ReSharper disable TooManyChainedReferences
@@ -12,6 +11,7 @@ namespace Grains.usage_tracker;
 /// one minute ago but haven't completed). It will compare this count against the account's quota and choose the least
 /// loaded account for the next job.
 /// </summary>
+[KeepAlive]
 public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
 {
     private const long RATE_LIMIT_DURATION = 63; // 1 minute and 3 seconds, 3 seconds for the buffer
