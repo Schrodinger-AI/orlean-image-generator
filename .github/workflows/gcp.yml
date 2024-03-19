@@ -64,9 +64,8 @@ jobs:
         name: 'Obtain access token by using workload identity federation'
         uses: 'google-github-actions/auth@v2'
         with:
-          token_format: access_token
-          workload_identity_provider: projects/${{ env.PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-actions/providers/github-actions-oidc
-          service_account: github-actions-workflow@${{ env.PROJECT_ID }}.iam.gserviceaccount.com
+          token_format: "access_token"
+          credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}'
 
       - name: Login to GAR
         uses: docker/login-action@v3
