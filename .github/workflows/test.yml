@@ -27,11 +27,13 @@ jobs:
         run: |
           cd SiloHost
           nohup dotnet run > log.txt 2>&1 & echo $! > pid.txt
+          echo $?
 
       - name: Run WebApiClient
         run: |
           cd WebApiClient
           nohup dotnet run > log.txt 2>&1 & echo $! > pid.txt
+          echo $?
 
       - name: Netstat
         run: |
