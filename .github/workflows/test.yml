@@ -26,13 +26,13 @@ jobs:
       - name: Run SiloHost
         run: |
           cd SiloHost
-          nohup dotnet run > log.txt 2>&1 & echo $! > pid.txt
+          nohup dotnet run > silohost.out 2> silohost.err < /dev/null & echo $! > pid.txt
           echo $?
 
       - name: Run WebApiClient
         run: |
           cd WebApiClient
-          nohup dotnet run > log.txt 2>&1 & echo $! > pid.txt
+          nohup dotnet run > webapi.out 2> webapi.err < /dev/null & echo $! > pid.txt
           echo $?
 
       - name: Netstat
@@ -41,23 +41,23 @@ jobs:
 
       - name: Print SiloHost log
         run: |
-          cat SiloHost/log.txt
+          cat SiloHost/silohost.out
 
       - name: Print WebApiClient log
         run: |
-          cat WebApiClient/log.txt
+          cat WebApiClient/webapi.out
 
       - name: Upload SiloHost log
         uses: actions/upload-artifact@v4
         with:
           name: log
-          path: SiloHost/log.txt
+          path: SiloHost/silohost.out
 
       - name: Upload WebApiClient log
         uses: actions/upload-artifact@v4
         with:
           name: log
-          path: WebApiClient/log.txt
+          path: WebApiClient/webapi.out
 
       - name: Initialize Service
         run: |
