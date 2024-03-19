@@ -1,49 +1,70 @@
+using System.Configuration;
 using Orleans;
 using Orleans.Hosting;
 using Orleans.Configuration;
 using Grains;
 using Microsoft.OpenApi.Models;
 using System.Net;
+using Serilog;
+
+// ReSharper disable ComplexConditionExpression
 
 public class Startup
 {
+    public IConfiguration Configuration { get; }
+
+    public Startup(IConfiguration configuration)
+    {
+        Configuration = configuration;
+    }
+
+
     public void ConfigureServices(IServiceCollection services)
     {
+        var environment = Configuration.GetValue<string>("ASPNETCORE_ENVIRONMENT", "Production") ?? "Production";
 
-        var builder = new ConfigurationBuilder()
-        .SetBasePath(Directory.GetCurrentDirectory())
-        .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
-        var configuration = builder.Build();
-
-        var connectionString = configuration.GetValue<string>("ConnectionString");
-
-        if (string.IsNullOrEmpty(connectionString))
+        var clientBuilder = new ClientBuilder();
+        if (environment == "Development")
         {
-            throw new Exception("ConnectionString must be non-empty.");
+            clientBuilder.UseLocalhostClustering();
         }
+        else
+        {
+            var connectionString = Configuration.GetValue<string>("ConnectionString");
+
+            if (string.IsNullOrEmpty(connectionString))
+            {
+                throw new Exception("ConnectionString must be non-empty.");
+            }
+
+            clientBuilder
+                .UseAdoNetClustering(options =>
+                {
+                    options.Invariant = "MySql.Data.MySqlClient";
+                    options.ConnectionString = connectionString;
+                });
+        }
+
+        var client = clientBuilder
+            .Configure<ClusterOptions>(options =>
+            {
+                options.ClusterId = "dev"; // TODO: Make this configurable
+                options.ServiceId = "OrleansService";
+            })
+            .ConfigureApplicationParts(parts =>
+                parts.AddApplicationPart(typeof(ImageGeneratorGrain).Assembly).WithReferences())
+            .ConfigureLogging(logging =>
+            {
+                logging.AddConsole();
+                logging.SetMinimumLevel(LogLevel.Debug); // Set log level to Debug for more detailed logging
+            })
+            .Build();
 
         services.AddControllers();
         services.AddSingleton<IClusterClient>(serviceProvider =>
         {
-            var client = new ClientBuilder()
-                 .UseAdoNetClustering(options =>
-                {
-                    options.Invariant = "MySql.Data.MySqlClient";
-                    options.ConnectionString = connectionString;
-                })
-                .Configure<ClusterOptions>(options =>
-                {
-                    options.ClusterId = "dev";
-                    options.ServiceId = "OrleansService";
-                })
-                .ConfigureApplicationParts(parts => parts.AddApplicationPart(typeof(ImageGeneratorGrain).Assembly).WithReferences())
-                .ConfigureLogging(logging =>
-                {
-                    logging.AddConsole();
-                    logging.SetMinimumLevel(LogLevel.Debug); // Set log level to Debug for more detailed logging
-                })
-                .Build();
-
+            
+            // TODO: Don't do connect and wait here
             client.Connect().Wait();
             return client;
         });
@@ -73,9 +94,6 @@ public class Startup
 
         app.UseRouting();
 
-        app.UseEndpoints(endpoints =>
-        {
-            endpoints.MapControllers();
-        });
+        app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
     }
 }
