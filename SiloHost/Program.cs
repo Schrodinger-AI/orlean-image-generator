@@ -17,7 +17,6 @@ namespace SiloHost
     {
         static async Task Main(string[] args)
         {
-
             var hostBuilder = Host.CreateDefaultBuilder(args)
                 .ConfigureAppConfiguration((hostingContext, config) =>
                 {
@@ -74,7 +73,8 @@ namespace SiloHost
                                 options.ConnectionString = connectionString;
                                 options.UseJsonFormat = false;
                             })
-                            .ConfigureEndpoints(siloPort: 11111, gatewayPort: 30000)
+                            .ConfigureEndpoints(siloPort: siloPort, gatewayPort: gatewayPort,
+                                listenOnAnyHostAddress: true)
                             .ConfigureLogging(logging => logging.AddSerilog());
 
                         Log.Logger = new LoggerConfiguration()
