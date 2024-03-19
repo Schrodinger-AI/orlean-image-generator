@@ -1,0 +1,40 @@
+name: Test
+
+on:
+  push:
+    branches: ["ci-experiment"]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      ASPNETCORE_ENVIRONMENT: Development
+    steps:
+      - name: Install dependencies
+        run: |
+            sudo apt-get update
+            sudo apt-get install -y curl jq
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: '5.0.x' # adjust this to your project's .NET version
+
+      - name: Run SiloHost
+        run: |
+          cd SiloHost
+          dotnet run
+
+      - name: Run WebApiClient
+        run: |
+          cd WebApiClient
+          dotnet run
+
+      - name: Initialize Service
+        run: |
+          bash scripts/set-config.sh
+          bash scripts/add-api-key.sh
+          bash scripts/generate-image.sh
