@@ -82,7 +82,7 @@ jobs:
   trigger:
     needs: build-and-push-image
     runs-on: ubuntu-latest
-    jobs:
+    steps:
       - env:
           OUTPUT: ${{needs.build-and-push-image.outputs}}
         run: echo "$OUTPUT"
