@@ -73,8 +73,11 @@ jobs:
       - name: Create image tag
         run: echo "IMAGE_TAG=${{ env.REPOSITORY_REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ matrix.servicename }}:$GITHUB_SHA" >> $GITHUB_ENV
 
+      - name: Make lowercase
+        run: echo "IMAGE_TAG=${{ env.IMAGE_TAG@L }}" >> $GITHUB_ENV
+
       - name: Build Docker image
-        run: docker build --tag "${{ env.IMAGE_TAG }}" ${{ matrix.servicename@L }}
+        run: docker build --tag "${{ env.IMAGE_TAG }}" ${{ matrix.servicename }}
 
       - name: Publish Docker image to Google Artifact Registry
         run: docker push "${{ env.IMAGE_TAG }}"
