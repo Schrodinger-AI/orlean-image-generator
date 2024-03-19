@@ -19,7 +19,7 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0'
-      - run: dotnet publish -c Release
+      - run: dotnet publish
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
