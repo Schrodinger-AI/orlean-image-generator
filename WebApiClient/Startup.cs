@@ -1,52 +1,10 @@
-using Orleans;
-using Orleans.Hosting;
-using Orleans.Configuration;
-using Grains;
 using Microsoft.OpenApi.Models;
-using System.Net;
 
 public class Startup
 {
     public void ConfigureServices(IServiceCollection services)
     {
-
-        var builder = new ConfigurationBuilder()
-        .SetBasePath(Directory.GetCurrentDirectory())
-        .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
-        var configuration = builder.Build();
-
-        var connectionString = configuration.GetValue<string>("ConnectionString");
-
-        if (string.IsNullOrEmpty(connectionString))
-        {
-            throw new Exception("ConnectionString must be non-empty.");
-        }
-
         services.AddControllers();
-        services.AddSingleton<IClusterClient>(serviceProvider =>
-        {
-            var client = new ClientBuilder()
-                 .UseAdoNetClustering(options =>
-                {
-                    options.Invariant = "MySql.Data.MySqlClient";
-                    options.ConnectionString = connectionString;
-                })
-                .Configure<ClusterOptions>(options =>
-                {
-                    options.ClusterId = "dev";
-                    options.ServiceId = "OrleansService";
-                })
-                .ConfigureApplicationParts(parts => parts.AddApplicationPart(typeof(ImageGeneratorGrain).Assembly).WithReferences())
-                .ConfigureLogging(logging =>
-                {
-                    logging.AddConsole();
-                    logging.SetMinimumLevel(LogLevel.Debug); // Set log level to Debug for more detailed logging
-                })
-                .Build();
-
-            client.Connect().Wait();
-            return client;
-        });
         services.AddSwaggerGen(c =>
         {
             c.SwaggerDoc("v1", new OpenApiInfo { Title = "My API", Version = "v1" });

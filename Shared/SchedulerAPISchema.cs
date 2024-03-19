@@ -91,3 +91,23 @@ public class IsOverloadedResponseFailed(string error) : IsOverloadedResponse
     [JsonPropertyName("error")]
     public string Error { get; set; } = error;
 }
+
+public class BlockedRequestInfoDto
+{
+    public string? BlockedReason { get; set; } = "";
+    public RequestAccountUsageInfoDto RequestInfo { get; set; }
+}
+
+public abstract class BlockedRequestResponse { }
+
+public class BlockedRequestResponseOk<T>(T request) : BlockedRequestResponse
+{
+    [JsonPropertyName("blockedRequests")]
+    public T BlockedRequests { get; set; } = request;
+}
+
+public class BlockedRequestResponseFailed(string error) : BlockedRequestResponse
+{
+    [JsonPropertyName("error")]
+    public string Error { get; set; } = error;
+}

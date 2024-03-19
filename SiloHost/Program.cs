@@ -7,6 +7,8 @@ using Serilog;
 using Serilog.Formatting.Json;
 using Shared;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
+using Orleans.Serialization;
 
 namespace SiloHost
 {
@@ -45,36 +47,44 @@ namespace SiloHost
                 throw new Exception("ConnectionString must be non-empty.");
             }
 
-            var host = new SiloHostBuilder()
-                .UseAdoNetClustering(options =>
+            var host = new HostBuilder()
+                .UseOrleans(c =>
                 {
-                    options.Invariant = "MySql.Data.MySqlClient";
-                    options.ConnectionString = connectionString;
+                    c.UseAdoNetClustering(options =>
+                        {
+                            options.Invariant = "MySql.Data.MySqlClient";
+                            options.ConnectionString = connectionString;
+                        })
+                        .ConfigureEndpoints(siloPort: siloPort, gatewayPort: gatewayPort)
+                        .ConfigureServices(services =>
+                        {
+                            services.Configure<ImageSettings>(configuration.GetSection("ImageSettings"));
+                            services.AddSerializer(serializerBuilder =>
+                            {
+                                serializerBuilder.AddNewtonsoftJsonSerializer(
+                                        isSupported: type => type.Namespace.StartsWith("Grains"))
+                                    .AddNewtonsoftJsonSerializer(
+                                        isSupported: type => type.Namespace.StartsWith("Shared"));
+                            });
+                        })
+                        .Configure<ClusterOptions>(options =>
+                        {
+                            options.ClusterId = "dev";
+                            options.ServiceId = "OrleansImageGeneratorService";
+                        })
+                        .UseAdoNetClustering(options =>
+                        {
+                            options.Invariant = "MySql.Data.MySqlClient";
+                            options.ConnectionString = connectionString;
+                        })
+                        .AddAdoNetGrainStorage(Constants.MySqlSchrodingerImageStore, (Action<AdoNetGrainStorageOptions>) (options =>
+                        {
+                            options.Invariant = "MySql.Data.MySqlClient";
+                            options.ConnectionString = connectionString;
+                        }))
+                        .ConfigureLogging(logging => logging.AddSerilog());
+                    //.UseDashboard(options => { })
                 })
-                .ConfigureEndpoints(siloPort: siloPort, gatewayPort: gatewayPort)
-                .ConfigureServices((hostContext, services) =>
-                {
-                    services.Configure<ImageSettings>(configuration.GetSection("ImageSettings"));
-                })
-                .Configure<ClusterOptions>(options =>
-                {
-                    options.ClusterId = "dev";
-                    options.ServiceId = "OrleansImageGeneratorService";
-                })
-                .UseAdoNetClustering(options =>
-                {
-                    options.Invariant = "MySql.Data.MySqlClient";
-                    options.ConnectionString = connectionString;
-                })
-                .AddAdoNetGrainStorage(Grains.Constants.MySqlSchrodingerImageStore, options =>
-                {
-                    options.Invariant = "MySql.Data.MySqlClient";
-                    options.ConnectionString = connectionString;
-                    options.UseJsonFormat = false;
-                })
-                .ConfigureApplicationParts(parts => parts.AddApplicationPart(typeof(ImageGeneratorGrain).Assembly).WithReferences())
-                .ConfigureLogging(logging => logging.AddSerilog())
-                //.UseDashboard(options => { })
                 .Build();
 
             await host.StartAsync();

@@ -37,13 +37,13 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
         _logger.LogInformation($"ImageGeneratorGrain Constructor : _imageSettings are: ${imgS}");
     }
 
-    public override async Task OnActivateAsync()
+    public override async Task OnActivateAsync(CancellationToken cancellationToken)
     {
         _logger.LogInformation("ImageGeneratorGrain - OnActivateAsync");
         _timer = RegisterTimer(asyncCallback: _ => this.AsReference<IImageGeneratorGrain>().TriggerImageGenerationAsync(), null, TimeSpan.Zero, TimeSpan.FromSeconds(1));
         await CheckAndReportForInvalidStates();
         _logger.LogInformation($"ImageGeneratorGrain - OnActivateAsync - ImageSettings are: {_imageSettings}");
-        await base.OnActivateAsync();
+        await base.OnActivateAsync(cancellationToken);
     }
 
     public async Task SetImageGenerationRequestData(string prompt, string imageRequestId, string parentRequestId)
@@ -203,10 +203,10 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
         {
             _imageGenerationState.State.ParentRequestId = parentRequestId;
             _imageGenerationState.State.RequestId = imageRequestId;
-            _imageGenerationState.State.Prompt = prompt;
+            _imageGenerationState.State.Prompt = "I NEED to test how the tool works with extremely simple prompts. DO NOT add any detail, just use it AS-IS: A medium resolution pixel art image of a Somali cat in an upright, bipedal stance, facing directly at the viewer, with Flower Crown, Cap Toe Shoes, Palazzo Jumpsuit, Fuzzy Paw, Shimmering, Teal Feather Wings,and Saddle Stitch Belt.";
             
             // Start the image data generation process
-            var dalleResponse = await RunDalleAsync(prompt);
+            var dalleResponse = await RunDalleAsync( _imageGenerationState.State.Prompt);
 
             _logger.LogInformation($"ImageGeneratorGrain - generatorId: {imageRequestId} , dalleResponse: {dalleResponse}");
 
@@ -335,7 +335,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
             throw new DalleException(DalleErrorCode.api_call_failed, e.Message);
         }
         
-        _logger.LogError($"Dalle ImageGeneration ResponseCode : {response.StatusCode}");
+        _logger.LogInformation($"Dalle ImageGeneration ResponseCode : {response.StatusCode}");
         
         if(dalleResponse.Error != null)
         {
