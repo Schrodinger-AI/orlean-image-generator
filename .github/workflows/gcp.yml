@@ -64,13 +64,12 @@ jobs:
           version: '>= 363.0.0'
 
       - name: 'Docker auth'
-        run: |-
-          gcloud auth configure-docker ${{ env.REPOSITORY_REGION }}-docker.pkg.dev
+        run: gcloud auth configure-docker -q
 
       #
       # Build the Docker image and push it to Artifact Registry
       #
-      
+
       - name: Create image tag
         id: meta
         uses: docker/metadata-action@v5
