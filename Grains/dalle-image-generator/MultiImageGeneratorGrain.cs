@@ -221,6 +221,7 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
             var response = await imageGeneratorGrain.QueryImageAsync();
             
             _logger.LogInformation($"Query response for ImageGenerationRequestId: {imageGenerationRequestId} is: {response}");
+            _logger.LogInformation("t-02 Query response for ImageGenerationRequestId: {imageGenerationRequestId} is: {response}", imageGenerationRequestId, response);
 
             if (response is not ImageQueryGrainResponse grainResponse)
             {
