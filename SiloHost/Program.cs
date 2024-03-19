@@ -72,11 +72,6 @@ namespace SiloHost
                             options.ClusterId = "dev";
                             options.ServiceId = "OrleansImageGeneratorService";
                         })
-                        .UseAdoNetClustering(options =>
-                        {
-                            options.Invariant = "MySql.Data.MySqlClient";
-                            options.ConnectionString = connectionString;
-                        })
                         .AddAdoNetGrainStorage(Constants.MySqlSchrodingerImageStore, (Action<AdoNetGrainStorageOptions>) (options =>
                         {
                             options.Invariant = "MySql.Data.MySqlClient";
