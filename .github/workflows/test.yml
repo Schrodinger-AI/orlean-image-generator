@@ -14,7 +14,7 @@ jobs:
       - name: Install dependencies
         run: |
             sudo apt-get update
-            sudo apt-get install -y curl jq
+            sudo apt-get install -y curl jq net-tools
       - name: Checkout code
         uses: actions/checkout@v2
 
@@ -32,6 +32,22 @@ jobs:
         run: |
           cd WebApiClient
           nohup dotnet run & echo $! > pid.txt
+
+      - name: Netstat
+        run: |
+          netstat -tuln
+
+      - name: Upload SiloHost log
+        uses: actions/upload-artifact@v2
+        with:
+          name: log
+          path: SiloHost/log.txt
+
+      - name: Upload WebApiClient log
+        uses: actions/upload-artifact@v2
+        with:
+          name: log
+          path: WebApiClient/log.txt
 
       - name: Initialize Service
         run: |
