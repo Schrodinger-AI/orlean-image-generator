@@ -4,6 +4,7 @@ namespace Shared
 {
 
     public abstract class AddTraitsAPIResponse { }
+    
     public class AddTraitsResponseOk(Dictionary<string, TraitEntry> addedTraits) : AddTraitsAPIResponse
     {
         [JsonPropertyName("totalTraitsCount")]

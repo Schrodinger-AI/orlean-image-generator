@@ -51,7 +51,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         }
     }
     
-    public override Task OnActivateAsync()
+    public override Task OnActivateAsync(CancellationToken cancellationToken)
     {
         _timer = RegisterTimer(asyncCallback: _ => this.AsReference<ISchedulerGrain>().TickAsync(),null,
             dueTime: TimeSpan.Zero,
@@ -72,7 +72,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         if(_masterTrackerState.State.BlockedImageGenerationRequests == null)
             _masterTrackerState.State.BlockedImageGenerationRequests = new Dictionary<string, BlockedRequestInfo>();
         
-        return base.OnActivateAsync();
+        return base.OnActivateAsync(cancellationToken);
     }
 
     public Task ReportFailedImageGenerationRequestAsync(RequestStatus requestStatus)

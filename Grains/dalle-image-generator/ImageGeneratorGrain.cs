@@ -37,13 +37,13 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
         _logger.LogInformation($"ImageGeneratorGrain Constructor : _imageSettings are: ${imgS}");
     }
 
-    public override async Task OnActivateAsync()
+    public override async Task OnActivateAsync(CancellationToken cancellationToken)
     {
         _logger.LogInformation("ImageGeneratorGrain - OnActivateAsync");
         _timer = RegisterTimer(asyncCallback: _ => this.AsReference<IImageGeneratorGrain>().TriggerImageGenerationAsync(), null, TimeSpan.Zero, TimeSpan.FromSeconds(1));
         await CheckAndReportForInvalidStates();
         _logger.LogInformation($"ImageGeneratorGrain - OnActivateAsync - ImageSettings are: {_imageSettings}");
-        await base.OnActivateAsync();
+        await base.OnActivateAsync(cancellationToken);
     }
 
     public async Task SetImageGenerationRequestData(string prompt, string imageRequestId, string parentRequestId)
