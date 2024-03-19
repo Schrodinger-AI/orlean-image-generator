@@ -18,8 +18,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
     private const long CLEANUP_INTERVAL = 180; // 3 minutes
     private const int MAX_ATTEMPTS = 99999;
     private const float QUOTA_THRESHOLD = 0.2f;
-    private const long RATE_LIMIT_WAIT = 120; // 2 minutes
-    private const long INVALID_API_KEY_WAIT = 86400; //1 day
+    private const long PENDING_EXPIRY_THRESHOLD = 43200; // 12 hours
 
     private readonly IPersistentState<SchedulerState> _masterTrackerState;
     private readonly ILogger<SchedulerGrain> _logger;
@@ -51,7 +50,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         }
     }
     
-    public override Task OnActivateAsync()
+    public override Task OnActivateAsync(CancellationToken cancellationToken)
     {
         _timer = RegisterTimer(asyncCallback: _ => this.AsReference<ISchedulerGrain>().TickAsync(),null,
             dueTime: TimeSpan.Zero,
@@ -69,10 +68,12 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
             _masterTrackerState.State.PendingImageGenerationRequests = new Dictionary<string, RequestAccountUsageInfo>();
         if(_masterTrackerState.State.StartedImageGenerationRequests == null)
             _masterTrackerState.State.StartedImageGenerationRequests = new Dictionary<string, RequestAccountUsageInfo>();
+        if(_masterTrackerState.State.BlockedImageGenerationRequests == null)
+            _masterTrackerState.State.BlockedImageGenerationRequests = new Dictionary<string, BlockedRequestInfo>();
         if(_masterTrackerState.State.ApiAccountInfoList == null)
             _masterTrackerState.State.ApiAccountInfoList = new List<APIAccountInfo>();
         
-        return base.OnActivateAsync();
+        return base.OnActivateAsync(cancellationToken);
     }
 
     public Task ReportFailedImageGenerationRequestAsync(RequestStatus requestStatus)
@@ -113,6 +114,28 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         return Task.CompletedTask;
     }
 
+    public Task ReportBlockedImageGenerationRequestAsync(RequestStatus requestStatus)
+    {
+        var info = PopFromPending(requestStatus.RequestId);
+        if (info == null)
+        {
+            return Task.CompletedTask;
+        }
+        
+        info.FailedTimestamp = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
+        info.StartedTimestamp = (requestStatus.RequestTimestamp == 0)? info.StartedTimestamp: requestStatus.RequestTimestamp;
+
+        var blockedRequest = new BlockedRequestInfo()
+        {
+            RequestAccountUsageInfo = info,
+            BlockedReason = requestStatus.ErrorCode?.ToString()
+        };
+        
+        _masterTrackerState.State.BlockedImageGenerationRequests.Add(requestStatus.RequestId, blockedRequest);
+
+        return Task.CompletedTask;
+    }
+
     public Task<IReadOnlyDictionary<string, RequestAccountUsageInfo>> GetFailedImageGenerationRequestsAsync()
     {
         return Task.FromResult<IReadOnlyDictionary<string, RequestAccountUsageInfo>>(
@@ -129,6 +152,12 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
     {
         return Task.FromResult<IReadOnlyDictionary<string, RequestAccountUsageInfo>>(_masterTrackerState.State
             .PendingImageGenerationRequests);
+    }
+
+    public Task<IReadOnlyDictionary<string, BlockedRequestInfo>> GetBlockedImageGenerationRequestsAsync()
+    {
+        return Task.FromResult<IReadOnlyDictionary<string, BlockedRequestInfo>>(_masterTrackerState.State
+            .BlockedImageGenerationRequests);
     }
 
     public Task AddImageGenerationRequest(string requestId, string childId, long requestTimestamp)
@@ -221,6 +250,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         // 5. Schedule the task, update the account usage info
         
         UpdateApiUsageStatus();
+        UpdateExpiredPendingRequestsToBlocked();
 
         if (_masterTrackerState.State.ApiAccountInfoList == null)
         {
@@ -266,6 +296,24 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
 
     #region Private Methods
 
+    private void UpdateExpiredPendingRequestsToBlocked()
+    {
+        var now = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
+        var cutoff = now - PENDING_EXPIRY_THRESHOLD;
+        var expiredPendingRequests = _masterTrackerState.State.PendingImageGenerationRequests
+            .Where(i => i.Value.StartedTimestamp < cutoff)
+            .ToList();
+        foreach (var (requestId, info) in expiredPendingRequests)
+        {
+            _masterTrackerState.State.PendingImageGenerationRequests.Remove(requestId);
+            _masterTrackerState.State.BlockedImageGenerationRequests.Add(requestId, new BlockedRequestInfo
+            {
+                RequestAccountUsageInfo = info,
+                BlockedReason = "Pending request expired"
+            });
+        }
+    }
+    
     private Dictionary<string, int> GetRemainingQuotaByApiKeys()
     {
         var now = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();

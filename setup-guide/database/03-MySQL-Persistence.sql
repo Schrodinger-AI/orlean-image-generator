@@ -99,30 +99,30 @@ BEGIN
     SET _newGrainStateVersion = _GrainStateVersion;
 
     -- Default level is REPEATABLE READ and may cause Gap Lock issues
-    SET TRANSACTION ISOLATION LEVEL READ COMMITTED;
-    START TRANSACTION;
-    UPDATE OrleansStorage
-    SET
-        PayloadBinary = NULL,
-        Version = Version + 1
-    WHERE
-        GrainIdHash = _GrainIdHash AND _GrainIdHash IS NOT NULL
-        AND GrainTypeHash = _GrainTypeHash AND _GrainTypeHash IS NOT NULL
-        AND GrainIdN0 = _GrainIdN0 AND _GrainIdN0 IS NOT NULL
-        AND GrainIdN1 = _GrainIdN1 AND _GrainIdN1 IS NOT NULL
-        AND GrainTypeString = _GrainTypeString AND _GrainTypeString IS NOT NULL
-        AND ((_GrainIdExtensionString IS NOT NULL AND GrainIdExtensionString IS NOT NULL AND GrainIdExtensionString = _GrainIdExtensionString) OR _GrainIdExtensionString IS NULL AND GrainIdExtensionString IS NULL)
-        AND ServiceId = _ServiceId AND _ServiceId IS NOT NULL
-        AND Version IS NOT NULL AND Version = _GrainStateVersion AND _GrainStateVersion IS NOT NULL
-        LIMIT 1;
+SET TRANSACTION ISOLATION LEVEL READ COMMITTED;
+START TRANSACTION;
+UPDATE OrleansStorage
+SET
+    PayloadBinary = NULL,
+    Version = Version + 1
+WHERE
+    GrainIdHash = _GrainIdHash AND _GrainIdHash IS NOT NULL
+  AND GrainTypeHash = _GrainTypeHash AND _GrainTypeHash IS NOT NULL
+  AND GrainIdN0 = _GrainIdN0 AND _GrainIdN0 IS NOT NULL
+  AND GrainIdN1 = _GrainIdN1 AND _GrainIdN1 IS NOT NULL
+  AND GrainTypeString = _GrainTypeString AND _GrainTypeString IS NOT NULL
+  AND ((_GrainIdExtensionString IS NOT NULL AND GrainIdExtensionString IS NOT NULL AND GrainIdExtensionString = _GrainIdExtensionString) OR _GrainIdExtensionString IS NULL AND GrainIdExtensionString IS NULL)
+  AND ServiceId = _ServiceId AND _ServiceId IS NOT NULL
+  AND Version IS NOT NULL AND Version = _GrainStateVersion AND _GrainStateVersion IS NOT NULL
+    LIMIT 1;
 
-    IF ROW_COUNT() > 0
+IF ROW_COUNT() > 0
     THEN
         SET _newGrainStateVersion = _GrainStateVersion + 1;
-    END IF;
+END IF;
 
-    SELECT _newGrainStateVersion AS NewGrainStateVersion;
-    COMMIT;
+SELECT _newGrainStateVersion AS NewGrainStateVersion;
+COMMIT;
 END$$
 
 DELIMITER $$
@@ -147,51 +147,51 @@ BEGIN
     SET _newGrainStateVersion = _GrainStateVersion;
 
     -- Default level is REPEATABLE READ and may cause Gap Lock issues
-    SET TRANSACTION ISOLATION LEVEL READ COMMITTED;
-    START TRANSACTION;
+SET TRANSACTION ISOLATION LEVEL READ COMMITTED;
+START TRANSACTION;
 
-    -- Grain state is not null, so the state must have been read from the storage before.
-    -- Let's try to update it.
-    --
-    -- When Orleans is running in normal, non-split state, there will
-    -- be only one grain with the given ID and type combination only. This
-    -- grain saves states mostly serially if Orleans guarantees are upheld. Even
-    -- if not, the updates should work correctly due to version number.
-    --
-    -- In split brain situations there can be a situation where there are two or more
-    -- grains with the given ID and type combination. When they try to INSERT
-    -- concurrently, the table needs to be locked pessimistically before one of
-    -- the grains gets @GrainStateVersion = 1 in return and the other grains will fail
-    -- to update storage. The following arrangement is made to reduce locking in normal operation.
-    --
-    -- If the version number explicitly returned is still the same, Orleans interprets it so the update did not succeed
-    -- and throws an InconsistentStateException.
-    --
-    -- See further information at https://learn.microsoft.com/dotnet/orleans/grains/grain-persistence.
-    IF _GrainStateVersion IS NOT NULL
+-- Grain state is not null, so the state must have been read from the storage before.
+-- Let's try to update it.
+--
+-- When Orleans is running in normal, non-split state, there will
+-- be only one grain with the given ID and type combination only. This
+-- grain saves states mostly serially if Orleans guarantees are upheld. Even
+-- if not, the updates should work correctly due to version number.
+--
+-- In split brain situations there can be a situation where there are two or more
+-- grains with the given ID and type combination. When they try to INSERT
+-- concurrently, the table needs to be locked pessimistically before one of
+-- the grains gets @GrainStateVersion = 1 in return and the other grains will fail
+-- to update storage. The following arrangement is made to reduce locking in normal operation.
+--
+-- If the version number explicitly returned is still the same, Orleans interprets it so the update did not succeed
+-- and throws an InconsistentStateException.
+--
+-- See further information at https://learn.microsoft.com/dotnet/orleans/grains/grain-persistence.
+IF _GrainStateVersion IS NOT NULL
     THEN
-        UPDATE OrleansStorage
-        SET
-            PayloadBinary = _PayloadBinary,
-            ModifiedOn = UTC_TIMESTAMP(),
-            Version = Version + 1
-        WHERE
-            GrainIdHash = _GrainIdHash AND _GrainIdHash IS NOT NULL
-            AND GrainTypeHash = _GrainTypeHash AND _GrainTypeHash IS NOT NULL
-            AND GrainIdN0 = _GrainIdN0 AND _GrainIdN0 IS NOT NULL
-            AND GrainIdN1 = _GrainIdN1 AND _GrainIdN1 IS NOT NULL
-            AND GrainTypeString = _GrainTypeString AND _GrainTypeString IS NOT NULL
-            AND ((_GrainIdExtensionString IS NOT NULL AND GrainIdExtensionString IS NOT NULL AND GrainIdExtensionString = _GrainIdExtensionString) OR _GrainIdExtensionString IS NULL AND GrainIdExtensionString IS NULL)
-            AND ServiceId = _ServiceId AND _ServiceId IS NOT NULL
-            AND Version IS NOT NULL AND Version = _GrainStateVersion AND _GrainStateVersion IS NOT NULL
-            LIMIT 1;
+UPDATE OrleansStorage
+SET
+    PayloadBinary = _PayloadBinary,
+    ModifiedOn = UTC_TIMESTAMP(),
+    Version = Version + 1
+WHERE
+    GrainIdHash = _GrainIdHash AND _GrainIdHash IS NOT NULL
+  AND GrainTypeHash = _GrainTypeHash AND _GrainTypeHash IS NOT NULL
+  AND GrainIdN0 = _GrainIdN0 AND _GrainIdN0 IS NOT NULL
+  AND GrainIdN1 = _GrainIdN1 AND _GrainIdN1 IS NOT NULL
+  AND GrainTypeString = _GrainTypeString AND _GrainTypeString IS NOT NULL
+  AND ((_GrainIdExtensionString IS NOT NULL AND GrainIdExtensionString IS NOT NULL AND GrainIdExtensionString = _GrainIdExtensionString) OR _GrainIdExtensionString IS NULL AND GrainIdExtensionString IS NULL)
+  AND ServiceId = _ServiceId AND _ServiceId IS NOT NULL
+  AND Version IS NOT NULL AND Version = _GrainStateVersion AND _GrainStateVersion IS NOT NULL
+    LIMIT 1;
 
-        IF ROW_COUNT() > 0
+IF ROW_COUNT() > 0
         THEN
             SET _newGrainStateVersion = _GrainStateVersion + 1;
             SET _GrainStateVersion = _newGrainStateVersion;
-        END IF;
-    END IF;
+END IF;
+END IF;
 
     -- The grain state has not been read. The following locks rather pessimistically
     -- to ensure only on INSERT succeeds.
@@ -210,75 +210,75 @@ BEGIN
             ModifiedOn,
             Version
         )
-        SELECT * FROM ( SELECT
-            _GrainIdHash,
-            _GrainIdN0,
-            _GrainIdN1,
-            _GrainTypeHash,
-            _GrainTypeString,
-            _GrainIdExtensionString,
-            _ServiceId,
-            _PayloadBinary,
-            UTC_TIMESTAMP(),
-            1) AS TMP
-        WHERE NOT EXISTS
-        (
-            -- There should not be any version of this grain state.
-            SELECT 1
-            FROM OrleansStorage
-            WHERE
-                GrainIdHash = _GrainIdHash AND _GrainIdHash IS NOT NULL
+SELECT * FROM ( SELECT
+                    _GrainIdHash,
+                    _GrainIdN0,
+                    _GrainIdN1,
+                    _GrainTypeHash,
+                    _GrainTypeString,
+                    _GrainIdExtensionString,
+                    _ServiceId,
+                    _PayloadBinary,
+                    UTC_TIMESTAMP(),
+                    1) AS TMP
+WHERE NOT EXISTS
+          (
+              -- There should not be any version of this grain state.
+              SELECT 1
+              FROM OrleansStorage
+              WHERE
+                  GrainIdHash = _GrainIdHash AND _GrainIdHash IS NOT NULL
                 AND GrainTypeHash = _GrainTypeHash AND _GrainTypeHash IS NOT NULL
                 AND GrainIdN0 = _GrainIdN0 AND _GrainIdN0 IS NOT NULL
                 AND GrainIdN1 = _GrainIdN1 AND _GrainIdN1 IS NOT NULL
                 AND GrainTypeString = _GrainTypeString AND _GrainTypeString IS NOT NULL
                 AND ((_GrainIdExtensionString IS NOT NULL AND GrainIdExtensionString IS NOT NULL AND GrainIdExtensionString = _GrainIdExtensionString) OR _GrainIdExtensionString IS NULL AND GrainIdExtensionString IS NULL)
                 AND ServiceId = _ServiceId AND _ServiceId IS NOT NULL
-        ) LIMIT 1;
+          ) LIMIT 1;
 
-        IF ROW_COUNT() > 0
+IF ROW_COUNT() > 0
         THEN
             SET _newGrainStateVersion = 1;
-        END IF;
-    END IF;
+END IF;
+END IF;
 
-    SELECT _newGrainStateVersion AS NewGrainStateVersion;
-    COMMIT;
+SELECT _newGrainStateVersion AS NewGrainStateVersion;
+COMMIT;
 END$$
 
 DELIMITER ;
 
 INSERT INTO OrleansQuery(QueryKey, QueryText)
 VALUES
-(
-    'ReadFromStorageKey',
-    'SELECT
-        PayloadBinary,
-        UTC_TIMESTAMP(),
-        Version
-    FROM
-        OrleansStorage
-    WHERE
-        GrainIdHash = @GrainIdHash
-        AND GrainTypeHash = @GrainTypeHash AND @GrainTypeHash IS NOT NULL
-        AND GrainIdN0 = @GrainIdN0 AND @GrainIdN0 IS NOT NULL
-        AND GrainIdN1 = @GrainIdN1 AND @GrainIdN1 IS NOT NULL
-        AND GrainTypeString = @GrainTypeString AND GrainTypeString IS NOT NULL
-        AND ((@GrainIdExtensionString IS NOT NULL AND GrainIdExtensionString IS NOT NULL AND GrainIdExtensionString = @GrainIdExtensionString) OR @GrainIdExtensionString IS NULL AND GrainIdExtensionString IS NULL)
-        AND ServiceId = @ServiceId AND @ServiceId IS NOT NULL
-        LIMIT 1;'
-);
+    (
+        'ReadFromStorageKey',
+        'SELECT
+            PayloadBinary,
+            UTC_TIMESTAMP(),
+            Version
+        FROM
+            OrleansStorage
+        WHERE
+            GrainIdHash = @GrainIdHash
+            AND GrainTypeHash = @GrainTypeHash AND @GrainTypeHash IS NOT NULL
+            AND GrainIdN0 = @GrainIdN0 AND @GrainIdN0 IS NOT NULL
+            AND GrainIdN1 = @GrainIdN1 AND @GrainIdN1 IS NOT NULL
+            AND GrainTypeString = @GrainTypeString AND GrainTypeString IS NOT NULL
+            AND ((@GrainIdExtensionString IS NOT NULL AND GrainIdExtensionString IS NOT NULL AND GrainIdExtensionString = @GrainIdExtensionString) OR @GrainIdExtensionString IS NULL AND GrainIdExtensionString IS NULL)
+            AND ServiceId = @ServiceId AND @ServiceId IS NOT NULL
+            LIMIT 1;'
+    );
 
 INSERT INTO OrleansQuery(QueryKey, QueryText)
 VALUES
-(
-    'WriteToStorageKey','
+    (
+        'WriteToStorageKey','
     call WriteToStorage(@GrainIdHash, @GrainIdN0, @GrainIdN1, @GrainTypeHash, @GrainTypeString, @GrainIdExtensionString, @ServiceId, @GrainStateVersion, @PayloadBinary);'
-);
+    );
 
 INSERT INTO OrleansQuery(QueryKey, QueryText)
 VALUES
-(
-    'ClearStorageKey','
+    (
+        'ClearStorageKey','
     call ClearStorage(@GrainIdHash, @GrainIdN0, @GrainIdN1, @GrainTypeHash, @GrainTypeString, @GrainIdExtensionString, @ServiceId, @GrainStateVersion);'
-);
+    );

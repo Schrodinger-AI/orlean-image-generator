@@ -149,6 +149,40 @@ public class SchedulerController : ControllerBase
             return new ImageGenerationStatesResponseFailed(ex.Message);
         }
     }
+    
+    [HttpGet("blocked")]
+    public async Task<BlockedRequestResponse> GetBlockedRequests()
+    {
+        try
+        {
+            var grain = _client.GetGrain<ISchedulerGrain>("SchedulerGrain");
+            var blockedRequests = await grain.GetBlockedImageGenerationRequestsAsync();
+            
+            var requestList = new List<BlockedRequestInfo>(blockedRequests.Values);
+            requestList.ForEach(item => item.RequestAccountUsageInfo.ApiKey = item.RequestAccountUsageInfo.ApiKey[..(item.RequestAccountUsageInfo.ApiKey.Length/2)]);
+            var result = requestList.Select(i => new BlockedRequestInfoDto
+            {
+                BlockedReason = i.BlockedReason?.ToString(),
+                RequestInfo = new RequestAccountUsageInfoDto
+                {
+                    RequestId = i.RequestAccountUsageInfo.RequestId,
+                    RequestTimestamp = UnixTimeStampInSecondsToDateTime(i.RequestAccountUsageInfo.RequestTimestamp).ToString(CultureInfo.InvariantCulture),
+                    StartedTimestamp = UnixTimeStampInSecondsToDateTime(i.RequestAccountUsageInfo.StartedTimestamp).ToString(CultureInfo.InvariantCulture),
+                    FailedTimestamp = UnixTimeStampInSecondsToDateTime(i.RequestAccountUsageInfo.FailedTimestamp).ToString(CultureInfo.InvariantCulture),
+                    CompletedTimestamp = UnixTimeStampInSecondsToDateTime(i.RequestAccountUsageInfo.CompletedTimestamp).ToString(CultureInfo.InvariantCulture),
+                    Attempts = i.RequestAccountUsageInfo.Attempts,
+                    ApiKey = i.RequestAccountUsageInfo.ApiKey,
+                    ChildId = i.RequestAccountUsageInfo.ChildId,
+                }
+            });
+            
+            return new BlockedRequestResponseOk<IEnumerable<BlockedRequestInfoDto>>(result);
+        }
+        catch (Exception ex)
+        {
+            return new BlockedRequestResponseFailed(ex.Message);
+        }
+    }
 
     private static IEnumerable<RequestAccountUsageInfoDto> GetRequestAccountUsageInfoDtoList(Dictionary<string, RequestAccountUsageInfo> requests)
     {

@@ -13,4 +13,5 @@ public enum DalleErrorCode
         dalle_engine_unavailable,
         bad_request,
         dalle_billing_quota_exceeded,
+        content_policy_violation
 }

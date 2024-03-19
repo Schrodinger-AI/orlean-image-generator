@@ -1,3 +1,4 @@
+using Orleans.Configuration;
 using Serilog;
 using Serilog.Formatting.Json;
 
@@ -27,6 +28,37 @@ public class Program
 
     public static IHostBuilder CreateHostBuilder(string[] args) =>
         Host.CreateDefaultBuilder(args)
+            .UseOrleansClient(c =>
+            {
+                var builder = new ConfigurationBuilder()
+                    .SetBasePath(Directory.GetCurrentDirectory())
+                    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+                var configuration = builder.Build();
+
+                var connectionString = configuration.GetValue<string>("ConnectionString");
+
+                if (string.IsNullOrEmpty(connectionString))
+                {
+                    throw new Exception("ConnectionString must be non-empty.");
+                }
+                
+                c.UseAdoNetClustering((Action<AdoNetClusteringClientOptions>)(options =>
+                    {
+                        options.Invariant = "MySql.Data.MySqlClient";
+                        options.ConnectionString = connectionString;
+                    }))
+                    .Configure<ClusterOptions>(options =>
+                    {
+                        options.ClusterId = "dev";
+                        options.ServiceId = "OrleansService";
+                    });
+            })
+            /*
+            .ConfigureLogging(logging =>
+            {
+                logging.AddConsole();
+                logging.SetMinimumLevel(LogLevel.Debug); // Set log level to Debug for more detailed logging
+            })*/
             .ConfigureWebHostDefaults(webBuilder =>
             {
                 webBuilder.UseStartup<Startup>();

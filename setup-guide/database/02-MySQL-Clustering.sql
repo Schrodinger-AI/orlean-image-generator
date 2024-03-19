@@ -29,8 +29,8 @@ CREATE TABLE OrleansMembershipTable
 
 INSERT INTO OrleansQuery(QueryKey, QueryText)
 VALUES
-(
-    'UpdateIAmAlivetimeKey','
+    (
+        'UpdateIAmAlivetimeKey','
     -- This is expected to never fail by Orleans, so return value
     -- is not needed nor is it checked.
     UPDATE OrleansMembershipTable
@@ -45,8 +45,8 @@ VALUES
 
 INSERT INTO OrleansQuery(QueryKey, QueryText)
 VALUES
-(
-    'InsertMembershipVersionKey','
+    (
+        'InsertMembershipVersionKey','
     INSERT INTO OrleansMembershipVersionTable
     (
         DeploymentId
@@ -66,11 +66,11 @@ VALUES
 
 INSERT INTO OrleansQuery(QueryKey, QueryText)
 VALUES
-(
-    'InsertMembershipKey','
+    (
+        'InsertMembershipKey','
     call InsertMembershipKey(@DeploymentId, @Address, @Port, @Generation,
     @Version, @SiloName, @HostName, @Status, @ProxyPort, @StartTime, @IAmAliveTime);'
-);
+    );
 
 DELIMITER $$
 
@@ -86,71 +86,71 @@ CREATE PROCEDURE InsertMembershipKey(
     in    _ProxyPort INT,
     in    _StartTime DATETIME,
     in    _IAmAliveTime DATETIME
-)
+        )
 BEGIN
     DECLARE _ROWCOUNT INT;
-    START TRANSACTION;
-    INSERT INTO OrleansMembershipTable
-    (
-        DeploymentId,
-        Address,
-        Port,
-        Generation,
-        SiloName,
-        HostName,
-        Status,
-        ProxyPort,
-        StartTime,
-        IAmAliveTime
-    )
-    SELECT * FROM ( SELECT
-        _DeploymentId,
-        _Address,
-        _Port,
-        _Generation,
-        _SiloName,
-        _HostName,
-        _Status,
-        _ProxyPort,
-        _StartTime,
-        _IAmAliveTime) AS TMP
-    WHERE NOT EXISTS
-    (
-    SELECT 1
-    FROM
-        OrleansMembershipTable
-    WHERE
-        DeploymentId = _DeploymentId AND _DeploymentId IS NOT NULL
-        AND Address = _Address AND _Address IS NOT NULL
-        AND Port = _Port AND _Port IS NOT NULL
-        AND Generation = _Generation AND _Generation IS NOT NULL
-    );
+START TRANSACTION;
+INSERT INTO OrleansMembershipTable
+(
+    DeploymentId,
+    Address,
+    Port,
+    Generation,
+    SiloName,
+    HostName,
+    Status,
+    ProxyPort,
+    StartTime,
+    IAmAliveTime
+)
+SELECT * FROM ( SELECT
+                    _DeploymentId,
+                    _Address,
+                    _Port,
+                    _Generation,
+                    _SiloName,
+                    _HostName,
+                    _Status,
+                    _ProxyPort,
+                    _StartTime,
+                    _IAmAliveTime) AS TMP
+WHERE NOT EXISTS
+          (
+              SELECT 1
+              FROM
+                  OrleansMembershipTable
+              WHERE
+                  DeploymentId = _DeploymentId AND _DeploymentId IS NOT NULL
+                AND Address = _Address AND _Address IS NOT NULL
+                AND Port = _Port AND _Port IS NOT NULL
+                AND Generation = _Generation AND _Generation IS NOT NULL
+          );
 
-    UPDATE OrleansMembershipVersionTable
-    SET
-        Version = Version + 1
-    WHERE
-        DeploymentId = _DeploymentId AND _DeploymentId IS NOT NULL
-        AND Version = _Version AND _Version IS NOT NULL
-        AND ROW_COUNT() > 0;
+UPDATE OrleansMembershipVersionTable
+SET
+    Version = Version + 1
+WHERE
+    DeploymentId = _DeploymentId AND _DeploymentId IS NOT NULL
+  AND Version = _Version AND _Version IS NOT NULL
+  AND ROW_COUNT() > 0;
 
-    SET _ROWCOUNT = ROW_COUNT();
+SET _ROWCOUNT = ROW_COUNT();
 
     IF _ROWCOUNT = 0
     THEN
         ROLLBACK;
-    ELSE
+ELSE
         COMMIT;
-    END IF;
-    SELECT _ROWCOUNT;
+END IF;
+SELECT _ROWCOUNT;
 END$$
 
 DELIMITER ;
 
 INSERT INTO OrleansQuery(QueryKey, QueryText)
 VALUES
-(
-    'UpdateMembershipKey','
+    (
+        'UpdateMembershipKey','
     START TRANSACTION;
 
     UPDATE OrleansMembershipVersionTable
@@ -178,8 +178,8 @@ VALUES
 
 INSERT INTO OrleansQuery(QueryKey, QueryText)
 VALUES
-(
-    'GatewaysQueryKey','
+    (
+        'GatewaysQueryKey','
     SELECT
         Address,
         ProxyPort,
@@ -194,8 +194,8 @@ VALUES
 
 INSERT INTO OrleansQuery(QueryKey, QueryText)
 VALUES
-(
-    'MembershipReadRowKey','
+    (
+        'MembershipReadRowKey','
     SELECT
         v.DeploymentId,
         m.Address,
@@ -222,8 +222,8 @@ VALUES
 
 INSERT INTO OrleansQuery(QueryKey, QueryText)
 VALUES
-(
-    'MembershipReadAllKey','
+    (
+        'MembershipReadAllKey','
     SELECT
         v.DeploymentId,
         m.Address,
@@ -246,8 +246,8 @@ VALUES
 
 INSERT INTO OrleansQuery(QueryKey, QueryText)
 VALUES
-(
-    'DeleteMembershipTableEntriesKey','
+    (
+        'DeleteMembershipTableEntriesKey','
     DELETE FROM OrleansMembershipTable
     WHERE DeploymentId = @DeploymentId AND @DeploymentId IS NOT NULL;
     DELETE FROM OrleansMembershipVersionTable

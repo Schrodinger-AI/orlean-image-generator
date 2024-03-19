@@ -6,15 +6,21 @@ public enum ApiKeyStatus
     OnHold
 }
     
+[GenerateSerializer]
 public class ApiKeyUsageInfo
 {
     public const long RATE_LIMIT_WAIT = 120; // 2 minutes
     public const long INVALID_API_KEY_WAIT = 86400; //1 day
-    
+
+    [Id(0)]
     public string ApiKey { get; set; }
+    [Id(1)]
     public long LastUsedTimestamp { get; set; }
+    [Id(2)]
     public long Attempts { get; set; }
+    [Id(3)]
     public ApiKeyStatus Status { get; set; }
+    [Id(4)]
     public DalleErrorCode? ErrorCode { get; set; }
     
     public long GetReactivationTimestamp()
