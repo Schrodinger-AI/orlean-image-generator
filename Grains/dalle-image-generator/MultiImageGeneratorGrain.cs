@@ -63,7 +63,7 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
             var IsSuccessful = true;
 
             // Extract trait names from the request
-            var prompt = await GeneratePromptAsync(traits);
+            var prompt = "I NEED to test how the tool works with extremely simple prompts. DO NOT add any detail, just use it AS-IS: A pixel art image of a cat standing like a human with both feet visible on the ground, facing directly at the viewer,. The main character is wearing Hoodie. The image should contain the full-body shot of the main character. The image should contain one and only one cat. The generated image should not contain any text or labels.";
 
             _logger.LogInformation($"For MultiImageRequest: {multiImageRequestId} Prompt generated: {prompt}");
 
