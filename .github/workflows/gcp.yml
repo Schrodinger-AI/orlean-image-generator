@@ -4,8 +4,8 @@ on:
   workflow_dispatch:
 
 env:
-  PROJECT_ID: {{ env.PROJECT_ID }}
-  PROJECT_NUMBER: {{ env.PROJECT_NUMBER }}
+  PROJECT_ID: ${{ vars.PROJECT_ID }}
+  PROJECT_NUMBER: ${{ vars.PROJECT_NUMBER }}
   REPOSITORY: orlean-image-generator
   REPOSITORY_REGION: us-central1
   DEPLOY_OWNER: Schrodinger-AI
