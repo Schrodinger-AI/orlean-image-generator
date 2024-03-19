@@ -1,7 +1,7 @@
 name: Debug GCP
 
 on:
-  push:
+  workflow_dispatch:
     branches: ['develop']
 
 env:
