@@ -2,11 +2,11 @@ using System.Net;
 using Azure;
 using Microsoft.Extensions.Logging;
 using Azure.AI.OpenAI;
-using Grains.Azure;
 using Shared;
+using Grains.ImageGenerator;
 using Newtonsoft.Json;
 
-namespace Grains;
+namespace Grains.AzureOpenAI;
 
 public class AzureOpenAIImageGenerator : IImageGenerator
 {
@@ -18,12 +18,32 @@ public class AzureOpenAIImageGenerator : IImageGenerator
         _logger = logger;
     }
 
-    public async Task<ImageGenerationResponse> RunImageGenerationAsync(string prompt, string apikey, int numberOfImages, string requestId)
+    public async Task<ImageGenerationResponse> RunImageGenerationAsync(string prompt, string apikey, int numberOfImages, ImageSettings imageSettings, string requestId)
     {
         AzureImageGenerationResponse azureImageGenerationResponse = null;
         Response<ImageGenerations> imageGenerations;
         Response rawResponse = null;
         int httpStatusCode = 0;
+        
+        //Image Settings contain width and height of the image
+        // lookup for those values and generate the ImageSize constant for the API call
+        ImageSize imageSize = ImageSize.Size512x512;
+        
+        if (imageSettings != null)
+        {
+            if (imageSettings.Width == 256 && imageSettings.Height == 256)
+            {
+                imageSize = ImageSize.Size256x256;
+            }
+            else if (imageSettings.Width == 512 && imageSettings.Height == 512)
+            {
+                imageSize = ImageSize.Size512x512;
+            }
+            else if (imageSettings.Width == 1024 && imageSettings.Height == 1024)
+            {
+                imageSize = ImageSize.Size1024x1024;
+            }
+        }
 
         try
         {
@@ -33,7 +53,7 @@ public class AzureOpenAIImageGenerator : IImageGenerator
                 new ImageGenerationOptions()
                 {
                     Prompt = prompt,
-                    Size = ImageSize.Size256x256,
+                    Size = imageSize,
                     ImageCount = numberOfImages
                 });
             
@@ -55,7 +75,7 @@ public class AzureOpenAIImageGenerator : IImageGenerator
         ImageGenerationResponse imageGenerationResponse = null;
         _logger.LogError($"AzureImageGenerator - ImageGeneration ResponseCode : {httpStatusCode}");
 
-        if (httpStatusCode != (int)HttpStatusCode.OK)
+        if (httpStatusCode == (int)HttpStatusCode.OK)
         {
             try
             {
@@ -63,7 +83,7 @@ public class AzureOpenAIImageGenerator : IImageGenerator
                 {
                     // get latest timestamp in seconds
                     Created =  (int)DateTimeOffset.Now.ToUnixTimeSeconds(),
-                    Data = azureImageGenerationResponse.Data.Select(data => new ImageGenerationOpenAIData
+                    Data = azureImageGenerationResponse.Data.Select(data => new ImageGenerationData
                     {
                         Url = data.Url,
                         RevisedPrompt = data.RevisedPrompt
@@ -105,7 +125,7 @@ public class AzureOpenAIImageGenerator : IImageGenerator
         //get http status code
         HttpStatusCode httpStatusCode = (HttpStatusCode)rawResponse.Status;
         
-        ImageGenerationErrorCode dalleErrorCodes;
+        ImageGenerationErrorCode imageGenerationErrorCode;
         
         var azureErrorWrapper = JsonConvert.DeserializeObject<AzureErrorWrapper>(responseJson);
         
@@ -115,44 +135,44 @@ public class AzureOpenAIImageGenerator : IImageGenerator
         switch (httpStatusCode)
         {
             case HttpStatusCode.Unauthorized:
-                dalleErrorCodes = ImageGenerationErrorCode.invalid_api_key;
+                imageGenerationErrorCode = ImageGenerationErrorCode.invalid_api_key;
                 break;
             case HttpStatusCode.TooManyRequests:
             { 
-                dalleErrorCodes = ImageGenerationErrorCode.rate_limit_reached;
+                imageGenerationErrorCode = ImageGenerationErrorCode.rate_limit_reached;
                 break;
             }
             case HttpStatusCode.ServiceUnavailable:
-                dalleErrorCodes = ImageGenerationErrorCode.engine_unavailable;
+                imageGenerationErrorCode = ImageGenerationErrorCode.engine_unavailable;
                 break;
             case HttpStatusCode.BadRequest:
             {
                 if (azureError?.Code == "billing_hard_limit_reached")
                 {
-                    dalleErrorCodes = ImageGenerationErrorCode.billing_quota_exceeded;
+                    imageGenerationErrorCode = ImageGenerationErrorCode.billing_quota_exceeded;
                 }
                 else if (azureError?.Code == "content_filter")
                 {
-                    dalleErrorCodes = ImageGenerationErrorCode.content_violation;
+                    imageGenerationErrorCode = ImageGenerationErrorCode.content_violation;
                 }
                 else
                 {
-                    dalleErrorCodes = ImageGenerationErrorCode.bad_request;
+                    imageGenerationErrorCode = ImageGenerationErrorCode.bad_request;
                 }
                 break;
             }
             case HttpStatusCode.InternalServerError:
-                dalleErrorCodes = ImageGenerationErrorCode.internal_error;
+                imageGenerationErrorCode = ImageGenerationErrorCode.internal_error;
                 break;
             default:
-                dalleErrorCodes = ImageGenerationErrorCode.internal_error;
+                imageGenerationErrorCode = ImageGenerationErrorCode.internal_error;
                 break;
         }
 
         ImageGenerationError dalleError = new ImageGenerationError
         {
             HttpStatusCode = httpStatusCode,
-            ImageGenerationErrorCode = dalleErrorCodes,
+            ImageGenerationErrorCode = imageGenerationErrorCode,
             Message = azureError!.Message
         };
 

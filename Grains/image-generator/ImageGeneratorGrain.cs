@@ -1,3 +1,6 @@
+using Grains.AzureOpenAI;
+using Grains.DalleOpenAI;
+using Grains.interfaces;
 using Orleans;
 using Orleans.Runtime;
 using SixLabors.ImageSharp.Processing;
@@ -211,12 +214,12 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
             if (_imageGenerationServiceProvider == ImageGenerationServiceProvider.DalleOpenAI)
             {
                 // Start the image data generation process
-                imageGenerationResponse = await _dalleOpenAiImageGenerator.RunImageGenerationAsync(prompt, _apiKey, 1, _imageGenerationState.State.RequestId);
+                imageGenerationResponse = await _dalleOpenAiImageGenerator.RunImageGenerationAsync(prompt, _apiKey, 1, _imageSettings, _imageGenerationState.State.RequestId);
             }
             else if (_imageGenerationServiceProvider == ImageGenerationServiceProvider.AzureOpenAI)
             {
                 // Start the image data generation process
-                imageGenerationResponse = await _azureOpenAiImageGenerator.RunImageGenerationAsync(prompt, _apiKey, 1, _imageGenerationState.State.RequestId);
+                imageGenerationResponse = await _azureOpenAiImageGenerator.RunImageGenerationAsync(prompt, _apiKey, 1, _imageSettings, _imageGenerationState.State.RequestId);
             }
             else
             {

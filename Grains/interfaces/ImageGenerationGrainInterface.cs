@@ -1,7 +1,9 @@
 using Grains;
 using Orleans;
+using Shared;
+using Attribute = Shared.Attribute;
 
-namespace Shared;
+namespace Grains.interfaces;
 
 public interface ISchrodingerGrain : IGrainWithGuidKey
 { }

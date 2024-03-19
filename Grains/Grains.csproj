@@ -38,4 +38,9 @@
     <Folder Include="dalle-prompt-builder\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Orleans_CodeGenInputs Remove="traits-config\ITraitConfigGrain.cs" />
+    <Orleans_CodeGenInputs Remove="traits-config\TraitConfigGrain.cs" />
+  </ItemGroup>
+
 </Project>

@@ -1,13 +1,39 @@
 using System.Text.Json.Serialization;
+namespace WebApi.ApiKey.Models;
 
-namespace Shared;
+
+public enum ImageGenerationServiceProvider
+{
+    DalleOpenAI,
+    AzureOpenAI,
+}
+
+public class ApiKey
+{
+    public string ApiKeyString { get; set; } = "";
+    public ImageGenerationServiceProvider ServiceProvider { get; set; } = ImageGenerationServiceProvider.DalleOpenAI;
+}
+
+public class ApiKeyModel
+{
+    public string ApiKeyString { get; set; } = "";
+    public string ServiceProvider { get; set; } = "";
+}
+
+public class ApiKeyEntry
+{
+    public ApiKeyModel ApiKey { get; set; }
+    public string Email { get; set; }
+    public int Tier { get; set; }
+    public int MaxQuota { get; set; }
+}
 
 public abstract class AddApiKeyAPIResponse { }
 
-public class AddApiKeyResponseOk(List<ApiKeyDto> apiKeys) : AddApiKeyAPIResponse
+public class AddApiKeyResponseOk(List<ApiKeyModel> apiKeys) : AddApiKeyAPIResponse
 {
     [JsonPropertyName("addedApiKey")]
-    public List<ApiKeyDto> AddedApiKey { get; set; } = apiKeys;
+    public List<ApiKeyModel> AddedApiKey { get; set; } = apiKeys;
 }
 
 public class AddApiKeyResponseFailed(string error) : AddApiKeyAPIResponse
@@ -18,28 +44,16 @@ public class AddApiKeyResponseFailed(string error) : AddApiKeyAPIResponse
 
 public abstract class RemoveApiKeyAPIResponse { }
 
-public class RemoveApiKeyResponseOk(List<ApiKeyDto> apiKeys) : RemoveApiKeyAPIResponse
+public class RemoveApiKeyResponseOk(List<ApiKeyModel> apiKeys) : RemoveApiKeyAPIResponse
 {
     [JsonPropertyName("removedApiKey")]
-    public List<ApiKeyDto> RemovedApiKey { get; set; } = apiKeys;
+    public List<ApiKeyModel> RemovedApiKey { get; set; } = apiKeys;
 }
 
 public class RemoveApiKeyResponseFailed(string error) : RemoveApiKeyAPIResponse
 {
     [JsonPropertyName("error")]
     public string Error { get; set; } = error;
-}
-
-public class RequestAccountUsageInfoDto
-{
-    public string RequestId { get; set; } = "";
-    public string RequestTimestamp { get; set; } = "";
-    public string StartedTimestamp { get; set; } = "";
-    public string FailedTimestamp { get; set; } = "";
-    public string CompletedTimestamp { get; set; } = "";
-    public int Attempts { get; set; } = 0;
-    public ApiKey? ApiKey { get; set; } = null;
-    public string ChildId { get; set; } = "";
 }
 
 public abstract class ImageGenerationStatesResponse { }
@@ -54,14 +68,6 @@ public class ImageGenerationStatesResponseFailed(string error) : ImageGeneration
 {
     [JsonPropertyName("error")]
     public string Error { get; set; } = error;
-}
-
-public class ApiKeyUsageInfoDto
-{
-    public ApiKey? ApiKey { get; set; } = null;
-    public string ReactivationTimestamp { get; set; } = "";
-    public string Status { get; set; } = "";
-    public string? ErrorCode { get; set; }
 }
 
 public abstract class ApiKeysUsageInfoResponse { }

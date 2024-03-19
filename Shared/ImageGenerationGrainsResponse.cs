@@ -11,6 +11,22 @@ namespace Shared
 
         ReScheduled
     }
+    
+    public class Attribute
+    {
+        public string TraitType { get; set; }
+
+        public string Value { get; set; }
+    }
+    
+    public class ImageDescription
+    {
+        public string? Image { get; set; } = null;
+
+        public List<Attribute> Attributes { get; set; } = [];
+
+        public string? ExtraData { get; set; } = null;
+    }
 
     public class ImageQueryGrainResponse
     {

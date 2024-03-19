@@ -1,11 +1,12 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
+using Grains.ImageGenerator;
 using Newtonsoft.Json;
 using Microsoft.Extensions.Logging;
 using Shared;
 
-namespace Grains;
+namespace Grains.DalleOpenAI;
 
 public class DalleOpenAIImageGenerator : IImageGenerator
 {
@@ -17,9 +18,9 @@ public class DalleOpenAIImageGenerator : IImageGenerator
         _logger = logger;
     }
 
-    public async Task<ImageGenerationResponse> RunImageGenerationAsync(string prompt, string apikey, int numberOfImages, string requestId)
+    public async Task<ImageGenerationResponse> RunImageGenerationAsync(string prompt, string apikey, int numberOfImages, ImageSettings imageSettings, string requestId)
     {
-        _logger.LogInformation($"ImageGeneratorGrain - generatorId: {requestId} , about to call Dalle API to generate image for prompt: {prompt}");
+        _logger.LogInformation($"DalleOpenAIImageGenerator - generatorId: {requestId} , about to call Dalle API to generate image for prompt: {prompt}");
         var response = new HttpResponseMessage();
         var jsonResponse = "";
         try
@@ -39,16 +40,16 @@ public class DalleOpenAIImageGenerator : IImageGenerator
             response = await client.PostAsync("https://api.openai.com/v1/images/generations", content);
 
             _logger.LogInformation(
-                $"ImageGeneratorGrain - generatorId: {requestId} , Dalle API response: {response} - responseCode: {response.StatusCode}");
+                $"ImageGeneratorGrain - generatorId: {requestId} , DalleOpenAI API response: {response} - responseCode: {response.StatusCode}");
 
             jsonResponse = await response.Content.ReadAsStringAsync();
         } catch (Exception e)
         {
-            _logger.LogError($"ImageGeneratorGrain - generatorId: {requestId} , Dalle API call failed with error: {e.Message}");
+            _logger.LogError($"DalleOpenAIImageGenerator - generatorId: {requestId} , DalleOpenAI API call failed with error: {e.Message}");
             throw new ImageGenerationException(ImageGenerationErrorCode.internal_error, e.Message);
         }
 
-        _logger.LogInformation($"ImageGeneratorGrain - generatorId: {requestId} , Dalle API call response Content string: {jsonResponse}");
+        _logger.LogInformation($"DalleOpenAIImageGenerator - generatorId: {requestId} , DalleOpenAI API call response Content string: {jsonResponse}");
 
         ImageGenerationError dalleError;
         
@@ -59,11 +60,11 @@ public class DalleOpenAIImageGenerator : IImageGenerator
                 dalleError = HandleImageGenerationError(response.StatusCode, jsonResponse);
             } catch (Exception e)
             {
-                _logger.LogError($"ImageGeneratorGrain - generatorId: {requestId} , Dalle API call failed with error: {e.Message}");
+                _logger.LogError($"DalleOpenAIImageGenerator - generatorId: {requestId} , DalleOpenAI API call failed with error: {e.Message}");
                 throw new ImageGenerationException(ImageGenerationErrorCode.internal_error, e.Message);
             }
             
-            _logger.LogError($"ImageGeneratorGrain - generatorId: {requestId} , Dalle API call failed with error: {dalleError.Message}");
+            _logger.LogError($"DalleOpenAIImageGenerator - generatorId: {requestId} , DalleOpenAI API call failed with error: {dalleError.Message}");
             
             throw new ImageGenerationException(dalleError.ImageGenerationErrorCode, dalleError.Message);
         }
@@ -75,71 +76,71 @@ public class DalleOpenAIImageGenerator : IImageGenerator
         }
         catch (Exception e)
         {
-            _logger.LogError($"ImageGeneratorGrain - generatorId: {requestId} , Dalle API call failed with error: {e.Message}");
+            _logger.LogError($"DalleOpenAIImageGenerator - generatorId: {requestId} , DalleOpenAI API call failed with error: {e.Message}");
             throw new ImageGenerationException(ImageGenerationErrorCode.api_call_failed, e.Message);
         }
         
-        _logger.LogError($"Dalle ImageGeneration ResponseCode : {response.StatusCode}");
+        _logger.LogError($"DalleOpenAIImageGenerator ImageGeneration ResponseCode : {response.StatusCode}");
         
         if(imageGenerationResponse.Error != null)
         {
-            _logger.LogError($"ImageGeneratorGrain - generatorId: {requestId} , Dalle API call failed with error code: {imageGenerationResponse.Error.Code}");
+            _logger.LogError($"DalleOpenAIImageGenerator - generatorId: {requestId} , DalleOpenAI API call failed with error code: {imageGenerationResponse.Error.Code}");
             throw new ImageGenerationException(ImageGenerationErrorCode.internal_error, imageGenerationResponse.Error.Message);
         }
 
-        _logger.LogInformation($"ImageGeneratorGrain - generatorId: {requestId} , Dalle API deserialized response: {imageGenerationResponse}");
+        _logger.LogInformation($"DalleOpenAIImageGenerator - generatorId: {requestId} , DalleOpenAI API deserialized response: {imageGenerationResponse}");
 
         return imageGenerationResponse;
     }
 
     public ImageGenerationError HandleImageGenerationError(HttpStatusCode httpStatusCode, string responseJson)
     {
-        ImageGenerationErrorCode dalleErrorCodes;
-        
-        var imageGenerationWrappedErrorObject = JsonConvert.DeserializeObject<ImageGenerationWrappedError>(responseJson);
-        var dalleErrorObject = imageGenerationWrappedErrorObject?.Error;
+        ImageGenerationErrorCode imageGenerationErrorCode;
+
+        var dalleOpenAiImageGenerationWrappedErrorObject = JsonConvert.DeserializeObject<DalleOpenAIImageGenerationWrappedError>(responseJson);
+        var dalleOpenAiImageGenerationError = dalleOpenAiImageGenerationWrappedErrorObject?.Error;
         
         switch (httpStatusCode)
         {
             case HttpStatusCode.Unauthorized:
-                dalleErrorCodes = ImageGenerationErrorCode.invalid_api_key;
+                imageGenerationErrorCode = ImageGenerationErrorCode.invalid_api_key;
                 break;
             case HttpStatusCode.TooManyRequests:
                 { 
-                    dalleErrorCodes = ImageGenerationErrorCode.rate_limit_reached;
+                    imageGenerationErrorCode = ImageGenerationErrorCode.rate_limit_reached;
                     break;
                 }
             case HttpStatusCode.ServiceUnavailable:
-                dalleErrorCodes = ImageGenerationErrorCode.engine_unavailable;
+                imageGenerationErrorCode = ImageGenerationErrorCode.engine_unavailable;
                 break;
             case HttpStatusCode.BadRequest:
             {
-                if (dalleErrorObject?.Code == "billing_hard_limit_reached")
+                if (dalleOpenAiImageGenerationError?.Code == "billing_hard_limit_reached")
                 {
-                    dalleErrorCodes = ImageGenerationErrorCode.billing_quota_exceeded;
+                    imageGenerationErrorCode = ImageGenerationErrorCode.billing_quota_exceeded;
                 }
                 else
                 {
-                    dalleErrorCodes = ImageGenerationErrorCode.bad_request;
+                    imageGenerationErrorCode = ImageGenerationErrorCode.bad_request;
                 }
                 break;
             }
             case HttpStatusCode.InternalServerError:
-                dalleErrorCodes = ImageGenerationErrorCode.internal_error;
+                imageGenerationErrorCode = ImageGenerationErrorCode.internal_error;
                 break;
             default:
-                dalleErrorCodes = ImageGenerationErrorCode.internal_error;
+                imageGenerationErrorCode = ImageGenerationErrorCode.internal_error;
                 break;
         }
 
-        ImageGenerationError dalleError = new ImageGenerationError
+        ImageGenerationError imageGenerationError = new ImageGenerationError
         {
             HttpStatusCode = httpStatusCode,
-            ImageGenerationErrorCode = dalleErrorCodes,
-            Message = dalleErrorObject!.Message
+            ImageGenerationErrorCode = imageGenerationErrorCode,
+            Message = dalleOpenAiImageGenerationError!.Message
         };
 
-        return dalleError;
+        return imageGenerationError;
     }
 
 }

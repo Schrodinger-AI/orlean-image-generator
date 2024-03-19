@@ -1,8 +1,11 @@
 using Grains;
 using Microsoft.AspNetCore.Mvc;
 using Orleans;
-using Shared;
 using UnitTests.Grains;
+using WebApi.Prompter.Models;
+using SharedAttribute = Shared.Attribute;
+using SharedPrompter = Shared.Prompter;
+using SharedPrompterConfig = Shared.PrompterConfig;
 
 namespace WebApi.Controllers
 {
@@ -19,7 +22,7 @@ namespace WebApi.Controllers
         }
 
         [HttpPost("set-config")]
-        public async Task<PrompterResponse> SetConfig(SetPromptConfigRequest setPromptConfigRequest)
+        public async Task<PrompterAPIResponse> SetConfig(SetPromptConfigRequest setPromptConfigRequest)
         {
             try
             {
@@ -32,7 +35,7 @@ namespace WebApi.Controllers
                 }
 
                 var prompterGrain = _client.GetGrain<IPrompterGrain>(setPromptConfigRequest.Identifier);
-                var res = await prompterGrain.SetConfigAsync(new PrompterConfig
+                var res = await prompterGrain.SetConfigAsync(new SharedPrompterConfig
                 {
                     ConfigText = setPromptConfigRequest.ConfigText,
                     ScriptContent = setPromptConfigRequest.ScriptContent,
@@ -54,7 +57,7 @@ namespace WebApi.Controllers
         }
 
         [HttpPost("get-config")]
-        public async Task<PrompterResponse> GetConfig(GetPromptConfigRequest getPromptConfigRequest)
+        public async Task<PrompterAPIResponse> GetConfig(GetPromptConfigRequest getPromptConfigRequest)
         {
             try
             {
@@ -69,14 +72,14 @@ namespace WebApi.Controllers
         }
 
         [HttpPost("generate")]
-        public async Task<PrompterResponse> Generate(PromptGenerationRequest promptGenerationRequest)
+        public async Task<PrompterAPIResponse> Generate(PromptGenerationAPIRequest promptGenerationAPIRequest)
         {
             try
             {
                 var configuratorGrain = _client.GetGrain<IConfiguratorGrain>(_configuratorIdentifier);
                 var currentConfigId = await configuratorGrain.GetCurrentConfigIdAsync();
                 var promptCreatorGrain = _client.GetGrain<IPrompterGrain>(currentConfigId);
-                var result = await promptCreatorGrain.GeneratePromptAsync(promptGenerationRequest);
+                var result = await promptCreatorGrain.GeneratePromptAsync(TransformToPromptGenerationRequest(promptGenerationAPIRequest));
                 if (!string.IsNullOrEmpty(result))
                 {
                     return new PrompterResponseOk { Result = result };
@@ -89,9 +92,32 @@ namespace WebApi.Controllers
                 return new PrompterResponseNotOk { Error = "generate prompt error, msg: " + e.Message };
             }
         }
-
+        
+        public static SharedPrompter.PromptGenerationRequest TransformToPromptGenerationRequest(PromptGenerationAPIRequest apiRequest)
+        {
+            return new SharedPrompter.PromptGenerationRequest
+            {
+                Identifier = apiRequest.Identifier,
+                NewAttributes = apiRequest.NewAttributes.Select(a => new SharedAttribute
+                {
+                    TraitType = a.TraitType,
+                    Value = a.Value
+                }).ToList(),
+                BaseImage = apiRequest.BaseImage == null ? null : new Shared.ImageDescription
+                {
+                    Image = apiRequest.BaseImage.Image,
+                    Attributes = apiRequest.BaseImage.Attributes.Select(a => new SharedAttribute
+                    {
+                        TraitType = a.TraitType,
+                        Value = a.Value
+                    }).ToList(),
+                    ExtraData = apiRequest.BaseImage.ExtraData
+                }
+            };
+        }
+        
         [HttpPost("switch-identifier")]
-        public async Task<PrompterResponse> SwitchIdentifier(SwitchIdentifierRequest switchIdentifierRequest)
+        public async Task<PrompterAPIResponse> SwitchIdentifier(SwitchIdentifierRequest switchIdentifierRequest)
         {
             var configuratorGrain = _client.GetGrain<IConfiguratorGrain>(_configuratorIdentifier);
             var allConfigIds = await configuratorGrain.GetAllConfigIdsAsync();
@@ -105,7 +131,7 @@ namespace WebApi.Controllers
         }
 
         [HttpPost("get-current-config")]
-        public async Task<PrompterResponse> GetCurrenConfig()
+        public async Task<PrompterAPIResponse> GetCurrenConfig()
         {
             try
             {
@@ -122,11 +148,11 @@ namespace WebApi.Controllers
         }
 
         [HttpPost("get-all-configs")]
-        public async Task<PrompterResponse> GetAllConfigs()
+        public async Task<PrompterAPIResponse> GetAllConfigs()
         {
             try
             {
-                List<PrompterConfig> result = new List<PrompterConfig>();
+                List<SharedPrompterConfig> result = new List<SharedPrompterConfig>();
                 var configuratorGrain = _client.GetGrain<IConfiguratorGrain>(_configuratorIdentifier);
                 var allConfigIds = await configuratorGrain.GetAllConfigIdsAsync();
                 foreach (var prompterGrain in allConfigIds.Select(

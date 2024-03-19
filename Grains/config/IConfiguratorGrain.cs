@@ -1,6 +1,6 @@
 using System.Collections.Immutable;
+using Grains.interfaces;
 using Orleans;
-using Shared;
 
 namespace UnitTests.Grains;
 

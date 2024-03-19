@@ -3,7 +3,16 @@ using Grains.types;
 using Grains.usage_tracker;
 using Microsoft.AspNetCore.Mvc;
 using Orleans;
-using Shared;
+using WebApi.ApiKey.Models;
+using ApiKeyEntryModel = WebApi.ApiKey.Models.ApiKeyEntry;
+using ApiKeyUsageInfoDto = Shared.ApiKeyUsageInfoDto;
+using SharedImageGenerationServiceProvider = Shared.ImageGenerationServiceProvider;
+using ImageGenerationStatesResponse = WebApi.ApiKey.Models.ImageGenerationStatesResponse;
+using ImageGenerationStatesResponseFailed = WebApi.ApiKey.Models.ImageGenerationStatesResponseFailed;
+using IsOverloadedResponse = WebApi.ApiKey.Models.IsOverloadedResponse;
+using IsOverloadedResponseFailed = WebApi.ApiKey.Models.IsOverloadedResponseFailed;
+using IsOverloadedResponseOk = WebApi.ApiKey.Models.IsOverloadedResponseOk;
+using RequestAccountUsageInfoDto = Shared.RequestAccountUsageInfoDto;
 
 namespace WebApi.Controllers;
 
@@ -23,13 +32,13 @@ public class SchedulerController : ControllerBase
     }
 
     [HttpPost("add")]
-    public async Task<AddApiKeyAPIResponse> AddApiKeys(List<ApiKeyEntry> apiKeyEntries)
+    public async Task<AddApiKeyAPIResponse> AddApiKeys(List<ApiKeyEntryModel> apiKeyEntries)
     {
         try
         {
             var apiAccountInfos = apiKeyEntries.Select(entry => new APIAccountInfo
             {
-                ApiKey = new ApiKey
+                ApiKey = new Shared.ApiKey
                 {
                     ApiKeyString = entry.ApiKey.ApiKeyString,
                     ServiceProvider = GetServiceProvider(entry.ApiKey.ServiceProvider)
@@ -41,7 +50,7 @@ public class SchedulerController : ControllerBase
 
             var grain = _client.GetGrain<ISchedulerGrain>("SchedulerGrain");
             var addedApiKeys = await grain.AddApiKeys(apiAccountInfos);
-            var ret = addedApiKeys.Select(apiKey => new ApiKeyDto { ApiKeyString = apiKey.ApiKeyString.Substring(0, apiKey.ApiKeyString.Length / 2), ServiceProvider = apiKey.ServiceProvider.ToString() }).ToList();
+            var ret = addedApiKeys.Select(apiKey => new ApiKeyModel { ApiKeyString = apiKey.ApiKeyString.Substring(0, apiKey.ApiKeyString.Length / 2), ServiceProvider = apiKey.ServiceProvider.ToString() }).ToList();
             return new AddApiKeyResponseOk(ret);
         }
         catch (Exception ex)
@@ -51,26 +60,26 @@ public class SchedulerController : ControllerBase
     }
     
     [HttpPost("remove")]
-    public async Task<RemoveApiKeyAPIResponse> RemoveApiKeys(List<ApiKeyDto> apiKeyDtos)
+    public async Task<RemoveApiKeyAPIResponse> RemoveApiKeys(List<ApiKeyModel> apiKeyModels)
     {
         try
         {
-            var apiKeys = apiKeyDtos.Select(dto => new ApiKey
+            var apiKeys = apiKeyModels.Select(model => new Shared.ApiKey
             {
-                ApiKeyString = dto.ApiKeyString,
-                ServiceProvider = GetServiceProvider(dto.ServiceProvider)
+                ApiKeyString = model.ApiKeyString,
+                ServiceProvider = GetServiceProvider(model.ServiceProvider)
             }).ToList() ?? throw new ArgumentNullException("apiKeyDtos.Select(dto =>\n            {\n                return new ApiKey\n                {\n                    ApiKeyString = dto.ApiKeyString,\n                    ServiceProvider = GetServiceProvider(dto.ServiceProvider)\n                };\n            }).ToList()");
 
             var grain = _client.GetGrain<ISchedulerGrain>("SchedulerGrain");
             var addedApiKeys = await grain.RemoveApiKeys(apiKeys);
             
-            apiKeyDtos.Clear();
-            apiKeyDtos.AddRange(addedApiKeys.Select(apiKey => new ApiKeyDto
+            apiKeyModels.Clear();
+            apiKeyModels.AddRange(addedApiKeys.Select(apiKey => new ApiKeyModel
             {
                 ApiKeyString = apiKey.ApiKeyString,
                 ServiceProvider = apiKey.ServiceProvider.ToString()
             }));
-            return new RemoveApiKeyResponseOk(apiKeyDtos);
+            return new RemoveApiKeyResponseOk(apiKeyModels);
         }
         catch (Exception ex)
         {
@@ -79,18 +88,18 @@ public class SchedulerController : ControllerBase
     }
     
     [HttpGet]
-    public async Task<ActionResult<ApiKeyEntry[]>> GetAllApiKeys()
+    public async Task<ActionResult<ApiKeyEntryModel[]>> GetAllApiKeys()
     {
         var grain = _client.GetGrain<ISchedulerGrain>("SchedulerGrain");
         var apiAccountInfos = await grain.GetAllApiKeys();
         
         //hack for when we do not have user protection
-        var ret = new List<ApiKeyEntry>();
+        var ret = new List<ApiKeyEntryModel>();
         foreach (var info in apiAccountInfos)
         {
-            var newInfo = new ApiKeyEntry
+            var newInfo = new ApiKeyEntryModel
             {
-                ApiKey = new ApiKeyDto
+                ApiKey = new ApiKeyModel
                 {
                     ApiKeyString = info.ApiKey.ApiKeyString.Substring(0, info.ApiKey.ApiKeyString.Length/2),
                     ServiceProvider = info.ApiKey.ServiceProvider.ToString()
@@ -201,12 +210,12 @@ public class SchedulerController : ControllerBase
         return ret;
     }
     
-    private static ImageGenerationServiceProvider GetServiceProvider(string serviceProvider)
+    private static SharedImageGenerationServiceProvider GetServiceProvider(string serviceProvider)
     {
         return serviceProvider switch
         {
-            "DalleOpenAI" => ImageGenerationServiceProvider.DalleOpenAI,
-            "AzureOpenAI" => ImageGenerationServiceProvider.AzureOpenAI,
+            "DalleOpenAI" => SharedImageGenerationServiceProvider.DalleOpenAI,
+            "AzureOpenAI" => SharedImageGenerationServiceProvider.AzureOpenAI,
             _ => throw new ArgumentOutOfRangeException(nameof(serviceProvider), serviceProvider, null)
         };
     }

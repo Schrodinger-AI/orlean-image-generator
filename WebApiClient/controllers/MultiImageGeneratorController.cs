@@ -1,8 +1,12 @@
 using Grains;
+using Grains.interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Orleans;
-using Shared;
-using Attribute = Shared.Attribute;
+using WebApi.ImageGeneration.Models;
+using ModelAttribute = WebApi.Models.Attribute;
+using SharedAttribute = Shared.Attribute;
+using SharedImageDescription = Shared.ImageDescription;
+using ModelImageDescription = WebApi.Models.ImageDescription;
 
 namespace WebApi.Controllers;
 
@@ -21,6 +25,15 @@ public class MultiImageGeneratorController : ControllerBase
         _logger = logger;
     }
 
+    
+    public static SharedAttribute ConvertToSharedAttribute(ModelAttribute modelAttribute)
+    {
+        return new SharedAttribute
+        {
+            TraitType = modelAttribute.TraitType,
+            Value = modelAttribute.Value
+        };
+    }
 
     [HttpPost("inspect")]
     public async Task<ImageGenerationState> Inspect(InspectGeneratorRequest request)
@@ -31,22 +44,24 @@ public class MultiImageGeneratorController : ControllerBase
     }
 
     [HttpPost("generate")]
-    public async Task<ImageGenerationResponse> GenerateImage(ImageGenerationRequest imageGenerationRequest)
+    public async Task<ImageGenerationAPIResponse> GenerateImage(ImageGenerationAPIRequest imageGenerationAPIRequest)
     {
-        List<Attribute> newTraits = imageGenerationRequest.NewTraits;
-        List<Attribute> baseTraits = imageGenerationRequest.BaseImage.Attributes;
+        List<ModelAttribute> newTraits = imageGenerationAPIRequest.NewTraits;
+        List<ModelAttribute> baseTraits = imageGenerationAPIRequest.BaseImage.Attributes;
 
         //collect the newTraits from the request and combine it with trats from the base image
-        IEnumerable<Attribute> traits = newTraits.Concat(baseTraits);
+        IEnumerable<ModelAttribute> traits = newTraits.Concat(baseTraits);
 
         //generate a new UUID with a prefix of "imageRequest"        
         string imageRequestId = "MultiImageRequest_" + Guid.NewGuid().ToString();
 
         var multiImageGeneratorGrain = _client.GetGrain<IMultiImageGeneratorGrain>(imageRequestId);
 
-        var response = await multiImageGeneratorGrain.GenerateMultipleImagesAsync(traits.ToList(),
-            imageGenerationRequest.NumberOfImages, imageRequestId);
+        List<SharedAttribute> sharedTraits = traits.Select(ConvertToSharedAttribute).ToList();
 
+        var response = await multiImageGeneratorGrain.GenerateMultipleImagesAsync(sharedTraits,
+            imageGenerationAPIRequest.NumberOfImages, imageRequestId);
+        
         if (response.IsSuccessful)
         {
             return new ImageGenerationResponseOk { RequestId = imageRequestId };
@@ -59,6 +74,27 @@ public class MultiImageGeneratorController : ControllerBase
         }
     }
 
+    
+    public static ModelImageDescription ConvertToModelImageDescription(SharedImageDescription sharedImageDescription)
+    {
+        return new ModelImageDescription
+        {
+            Image = sharedImageDescription.Image,
+            Attributes = sharedImageDescription.Attributes.Select(ConvertToModelAttribute).ToList(),
+            ExtraData = sharedImageDescription.ExtraData
+        };
+    }
+    
+    
+    public static ModelAttribute ConvertToModelAttribute(SharedAttribute sharedAttribute)
+    {
+        return new ModelAttribute
+        {
+            TraitType = sharedAttribute.TraitType,
+            Value = sharedAttribute.Value
+        };
+    }
+    
     [HttpPost("query")]
     public async Task<ObjectResult> QueryImage(ImageQueryRequest imageQueryRequest)
     {
@@ -72,9 +108,11 @@ public class MultiImageGeneratorController : ControllerBase
         if (imageQueryResponse.Uninitialized)
             return StatusCode(404, new ImageQueryResponseNotOk { Error = "Request not found" });
 
-        if (imageQueryResponse.Status != ImageGenerationStatus.SuccessfulCompletion)
+        if (imageQueryResponse.Status != Shared.ImageGenerationStatus.SuccessfulCompletion)
             return StatusCode(202, new ImageQueryResponseNotOk { Error = "The result is not ready." });
         var images = imageQueryResponse.Images ?? [];
-        return StatusCode(200, new ImageQueryResponseOk { Images = images });
+        List<Shared.ImageDescription> sharedImages = imageQueryResponse.Images ?? new List<Shared.ImageDescription>();
+        List<ModelImageDescription> modelImages = sharedImages.Select(ConvertToModelImageDescription).ToList();
+        return StatusCode(200, new ImageQueryResponseOk { Images = modelImages });
     }
 }

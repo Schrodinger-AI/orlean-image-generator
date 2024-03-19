@@ -1,8 +1,10 @@
+using Grains.interfaces;
 using Grains.usage_tracker;
 using Microsoft.Extensions.Logging;
 using Orleans;
 using Orleans.Runtime;
 using Shared;
+using Shared.Prompter;
 using UnitTests.Grains;
 using Attribute = Shared.Attribute;
 
@@ -129,21 +131,6 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
                 Errors = _multiImageGenerationState.State.Errors
             };
         }
-    }
-
-    public async Task<Dictionary<string, TraitEntry>> lookupTraitDefinitions(List<Attribute> requestTraits)
-    {
-        _logger.LogInformation($"lookupTraitDefinitions called with requestTraits: {requestTraits}");
-        // Extract trait names from the request
-        var traitNames = requestTraits.Select(t => t.TraitType).ToList();
-
-        // Get a reference to the TraitConfigGrain
-        var traitConfigGrain = GrainFactory.GetGrain<ITraitConfigGrain>("traitConfigGrain");
-
-        // Retrieve the trait definitions from the TraitConfigGrain
-        var response = await traitConfigGrain.GetTraitsMap(traitNames);
-
-        return response;
     }
 
     private ImageGenerationStatus GetCurrentImageGenerationStatus()

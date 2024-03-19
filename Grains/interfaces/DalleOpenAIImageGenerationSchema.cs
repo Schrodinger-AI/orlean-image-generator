@@ -1,9 +1,9 @@
 using System.Net;
 using System.Text.Json.Serialization;
-using Newtonsoft.Json;
 using Shared;
 
-namespace Grains;
+namespace Grains.DalleOpenAI;
+
 public class Message
 {
     [JsonPropertyName("role")]
@@ -43,25 +43,13 @@ public class Result
     public List<Choice> Choices { get; set; }
 }
 
-public class ImageGenerationResponse
-{
-    [JsonPropertyName("created")]
-    public long Created { get; set; }
-
-    [JsonPropertyName("data")]
-    public List<ImageGenerationOpenAIData> Data { get; set; }
-    
-    [JsonPropertyName("error")]
-    public ImageGenerationError Error { get; set; }
-}
-
-public class ImageGenerationWrappedError
+public class DalleOpenAIImageGenerationWrappedError
 {
     [JsonPropertyName("error")]
-    public ImageGenerationError Error { get; set; }
+    public DalleOpenAIImageGenerationError Error { get; set; }
 }
 
-public class ImageGenerationError
+public class DalleOpenAIImageGenerationError
 {
     [JsonPropertyName("httpStatusCode")]
     public HttpStatusCode HttpStatusCode { get; set; }
@@ -82,11 +70,4 @@ public class ImageGenerationError
     public string Type { get; set; }
 }
 
-public class ImageGenerationOpenAIData
-{
-    [JsonPropertyName("revised_prompt")]
-    public string RevisedPrompt { get; set; }
 
-    [JsonPropertyName("url")]
-    public string Url { get; set; }
-}
