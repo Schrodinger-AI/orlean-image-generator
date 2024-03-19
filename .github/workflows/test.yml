@@ -26,15 +26,25 @@ jobs:
       - name: Run SiloHost
         run: |
           cd SiloHost
-          dotnet run
+          nohup dotnet run & echo $! > pid.txt
 
       - name: Run WebApiClient
         run: |
           cd WebApiClient
-          dotnet run
+          nohup dotnet run & echo $! > pid.txt
 
       - name: Initialize Service
         run: |
           bash scripts/set-config.sh
           bash scripts/add-api-key.sh
           bash scripts/generate-image.sh
+
+      - name: Kill SiloHost
+        run: |
+          cd SiloHost
+          kill $(cat pid.txt)
+
+      - name: Kill WebApiClient
+        run: |
+          cd WebApiClient
+          kill $(cat pid.txt)
