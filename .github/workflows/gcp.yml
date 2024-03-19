@@ -70,14 +70,17 @@ jobs:
       #
       # Build the Docker image and push it to Artifact Registry
       #
+      
       - name: Create image tag
-        run: echo "IMAGE_TAG=${{ env.REPOSITORY_REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ matrix.servicename }}:$GITHUB_SHA" >> $GITHUB_ENV
-
-      - name: Make lowercase
-        run: echo "IMAGE_TAG=${{ IMAGE_TAG@L }}" >> $GITHUB_ENV
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REPOSITORY_REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ matrix.servicename }}
+          tags: |
+            type=sha
 
       - name: Build Docker image
-        run: docker build --tag "${{ env.IMAGE_TAG }}" ${{ matrix.servicename }}
+        run: docker build --tag "${{ steps.meta.outputs.tags }}" ${{ matrix.servicename }}
 
       - name: Publish Docker image to Google Artifact Registry
-        run: docker push "${{ env.IMAGE_TAG }}"
+        run: docker push "${{ steps.meta.outputs.tags }}"
