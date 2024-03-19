@@ -79,6 +79,11 @@ namespace SiloHost
                                 options.Invariant = "MySql.Data.MySqlClient";
                                 options.ConnectionString = connectionString;
                             }))
+                        .UseAdoNetReminderService(options =>
+                        {
+                            options.ConnectionString = connectionString;
+                            options.Invariant = "MySql.Data.MySqlClient";
+                        })
                         .ConfigureLogging(logging => logging.AddSerilog())
                         .AddStartupTask<SchedulerGrainStartupTask>();
                     //.UseDashboard(options => { })
