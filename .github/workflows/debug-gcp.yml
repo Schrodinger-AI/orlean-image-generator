@@ -20,8 +20,6 @@ jobs:
     permissions:
       id-token: write
       contents: read
-    outputs:
-      image: ${{ steps.tag.outputs.tag }}
     steps:
       #
       # Authenticate to Google Cloud using workload identity federation
@@ -30,7 +28,8 @@ jobs:
         name: 'Obtain access token by using workload identity federation'
         uses: 'google-github-actions/auth@v2'
         with:
-          credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}'
+          workload_identity_provider: projects/${{ env.PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-actions/providers/github-actions-oidc
+          service_account: github-actions-workflow@${{ env.PROJECT_ID }}.iam.gserviceaccount.com
 
       - name: 'Set up Cloud SDK'
         uses: 'google-github-actions/setup-gcloud@v2'
