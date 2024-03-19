@@ -15,22 +15,20 @@ env:
 jobs:
   build-dotnet:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        servicename: [SiloHost, WebApiClient]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0'
-      - run: dotnet publish
+      - run: dotnet publish ${{ matrix.servicename }}/${{ matrix.servicename }}.csproj
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: SiloHost
-          path: SiloHost/bin/Release/net8.0/publish
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: WebApiClient
-          path: WebApiClient/bin/Release/net8.0/publish
+          name: ${{ matrix.servicename }}
+          path: ${{ matrix.servicename }}/bin/Release/net8.0/publish
       
   build-and-push-image:
     needs: build-dotnet
