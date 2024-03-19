@@ -135,7 +135,7 @@ public class DalleOpenAIImageGenerator : IImageGenerator
 
         ImageGenerationError imageGenerationError = new ImageGenerationError
         {
-            HttpStatusCode = httpStatusCode,
+            HttpStatusCode = (int)httpStatusCode,
             ImageGenerationErrorCode = imageGenerationErrorCode,
             Message = dalleOpenAiImageGenerationError!.Message
         };
