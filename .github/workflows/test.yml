@@ -27,7 +27,7 @@ jobs:
         run: |
           cd SiloHost
           dotnet run &
-          cd WebApiClient
+          cd ../WebApiClient
           dotnet run &
           sleep 10
           bash scripts/set-config.sh
