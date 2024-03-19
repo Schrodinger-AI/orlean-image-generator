@@ -79,7 +79,7 @@ jobs:
       - id: tag
         run: echo "tag=${{ env.IMAGE_TAG }}" >> "$GITHUB_OUTPUT"
 
-  build-and-push-image:
+  trigger:
     needs: build-and-push-image
     runs-on: ubuntu-latest
     jobs:
