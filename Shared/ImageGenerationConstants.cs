@@ -1,17 +1,19 @@
 namespace Shared;
 
-public class ImageGenerationConstants {
-    public const string DALLE_BASE_PROMPT = "Rephrase the following to create a logical sentence: A simple pixel art image of a cat ";
-};
-
-public enum DalleErrorCode
+public enum ImageGenerationErrorCode
 {
-        api_call_failed,
-        invalid_api_key,
-        dalle_internal_error,
-        rate_limit_reached,
-        dalle_engine_unavailable,
-        bad_request,
-        dalle_billing_quota_exceeded,
-        content_policy_violation
+    api_call_failed,
+    invalid_api_key,
+    internal_error,
+    rate_limit_reached,
+    engine_unavailable,
+    bad_request,
+    billing_quota_exceeded,
+    content_violation,
+}
+
+public enum ImageGenerationServiceProvider
+{
+    DalleOpenAI,
+    AzureOpenAI,
 }

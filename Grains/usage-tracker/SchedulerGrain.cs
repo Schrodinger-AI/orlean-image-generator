@@ -367,7 +367,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         }
     }
     
-    private void HandleErrorCode(string apiKey, long lastUsedTimestamp, DalleErrorCode? errorCode)
+    private void HandleErrorCode(string apiKey, long lastUsedTimestamp, ImageGenerationErrorCode? errorCode)
     {
         if(errorCode == null)
             return;
@@ -387,7 +387,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
             _apiKeyStatus.Add(apiKey, usageInfo);
         }
 
-        usageInfo.Attempts = errorCode is DalleErrorCode.rate_limit_reached or DalleErrorCode.invalid_api_key ? 1 : usageInfo.Attempts + 1;
+        usageInfo.Attempts = errorCode is ImageGenerationErrorCode.rate_limit_reached or ImageGenerationErrorCode.invalid_api_key ? 1 : usageInfo.Attempts + 1;
         usageInfo.LastUsedTimestamp = lastUsedTimestamp;
         usageInfo.Status = ApiKeyStatus.OnHold;
         usageInfo.ErrorCode = errorCode;

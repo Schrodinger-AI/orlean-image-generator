@@ -1,9 +1,9 @@
 using System.Net;
 using System.Text.Json.Serialization;
-using Newtonsoft.Json;
 using Shared;
 
-namespace Grains;
+namespace Grains.DalleOpenAI;
+
 public class Message
 {
     [JsonPropertyName("role")]
@@ -43,25 +43,13 @@ public class Result
     public List<Choice> Choices { get; set; }
 }
 
-public class DalleResponse
-{
-    [JsonPropertyName("created")]
-    public long Created { get; set; }
-
-    [JsonPropertyName("data")]
-    public List<DalleData> Data { get; set; }
-    
-    [JsonPropertyName("error")]
-    public DalleError Error { get; set; }
-}
-
-public class DalleWrappedError
+public class DalleOpenAIImageGenerationWrappedError
 {
     [JsonPropertyName("error")]
-    public DalleError Error { get; set; }
+    public DalleOpenAIImageGenerationError Error { get; set; }
 }
 
-public class DalleError
+public class DalleOpenAIImageGenerationError
 {
     [JsonPropertyName("httpStatusCode")]
     public HttpStatusCode HttpStatusCode { get; set; }
@@ -69,8 +57,8 @@ public class DalleError
     [JsonPropertyName("code")] 
     public string Code { get; set; }
     
-    [JsonPropertyName("dalleErrorCode")]
-    public DalleErrorCode DalleErrorCode { get; set; }
+    [JsonPropertyName("imageGenerationErrorCode")]
+    public ImageGenerationErrorCode ImageGenerationErrorCode { get; set; }
 
     [JsonPropertyName("message")] 
     public string Message { get; set; }
@@ -82,11 +70,4 @@ public class DalleError
     public string Type { get; set; }
 }
 
-public class DalleData
-{
-    [JsonPropertyName("revised_prompt")]
-    public string RevisedPrompt { get; set; }
 
-    [JsonPropertyName("url")]
-    public string Url { get; set; }
-}
