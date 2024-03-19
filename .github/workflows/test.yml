@@ -48,13 +48,13 @@ jobs:
           cat WebApiClient/log.txt
 
       - name: Upload SiloHost log
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: log
           path: SiloHost/log.txt
 
       - name: Upload WebApiClient log
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: log
           path: WebApiClient/log.txt
