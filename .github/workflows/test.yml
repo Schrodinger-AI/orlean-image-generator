@@ -26,9 +26,9 @@ jobs:
       - name: Test
         run: |
           cd SiloHost
-          dotnet run &
+          dotnet run > silo.log 2>&1 &
           cd ../WebApiClient
-          dotnet run &
+          dotnet run > webapi.log 2>&1 &
           sleep 10
           bash scripts/set-config.sh
           bash scripts/add-api-key.sh
