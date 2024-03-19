@@ -29,7 +29,7 @@ public class ImageGenerationData
 public class ImageGenerationError
 {
     [JsonPropertyName("httpStatusCode")]
-    public HttpStatusCode HttpStatusCode { get; set; }
+    public int HttpStatusCode { get; set; }
     
     [JsonPropertyName("code")] 
     public string Code { get; set; }

@@ -22,7 +22,7 @@ public class AzureOpenAIImageGenerator : IImageGenerator
     {
         Response<ImageGenerations> imageGenerationsResponse;
         Response rawResponse;
-        int httpStatusCode;
+        int httpStatusCode = 0;
         
         //Image Settings contain width and height of the image
         // lookup for those values and generate the ImageSize constant for the API call
@@ -48,7 +48,8 @@ public class AzureOpenAIImageGenerator : IImageGenerator
 
         try
         {
-            OpenAIClient client = new(new Uri("https://schrodinger-east-us.openai.azure.com/"), new AzureKeyCredential(apikey));
+            OpenAIClient client = new(new Uri("https://schrodinger-east-us.openai.azure.com/"),
+                new AzureKeyCredential(apikey));
 
             imageGenerationsResponse = await client.GetImageGenerationsAsync(
                 new ImageGenerationOptions()
@@ -57,16 +58,32 @@ public class AzureOpenAIImageGenerator : IImageGenerator
                     Size = imageSize,
                     ImageCount = numberOfImages
                 });
-            
+
             rawResponse = imageGenerationsResponse.GetRawResponse();
             httpStatusCode = (int)rawResponse.Status;
-            
+
             if (httpStatusCode >= 200 && httpStatusCode < 300)
             {
                 imageGenerations = imageGenerationsResponse.Value;
             }
         }
-        catch (Exception e)
+        catch (RequestFailedException reqExc)
+        {
+            ImageGenerationError dalleError;
+            try
+            {
+                dalleError = HandleAzureRequestFailedException(reqExc);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError($"AzureImageGenerator - generatorId: {requestId} , Dalle API call failed with error: {e.Message}");
+                throw new ImageGenerationException(ImageGenerationErrorCode.internal_error, e.Message);
+            }
+            
+            _logger.LogError($"AzureImageGenerator - generatorId: {requestId} , Dalle API call failed with error: {dalleError.Message}");
+            
+            throw new ImageGenerationException(dalleError.ImageGenerationErrorCode, dalleError.Message);
+        } catch (Exception e)
         {
             _logger.LogError($"AzureImageGenerator - generatorId: {requestId} , Azure-Dalle API call failed with error: {e.Message}");
             throw new ImageGenerationException(ImageGenerationErrorCode.internal_error, e.Message);
@@ -115,6 +132,30 @@ public class AzureOpenAIImageGenerator : IImageGenerator
         _logger.LogInformation($"AzureImageGenerator - generatorId: {requestId} , Dalle API deserialized response: {imageGenerationResponse}");
 
         return imageGenerationResponse;
+    }
+
+    public ImageGenerationError HandleAzureRequestFailedException(Azure.RequestFailedException requestFailedException)
+    {
+        ImageGenerationErrorCode imageGenerationErrorCode;
+
+        if (requestFailedException.ErrorCode == "content_filter")
+        {
+            imageGenerationErrorCode = ImageGenerationErrorCode.content_violation;
+        }
+        else
+        {
+            imageGenerationErrorCode = ImageGenerationErrorCode.bad_request;
+        }
+
+        ImageGenerationError dalleError = new ImageGenerationError
+        {
+            HttpStatusCode = requestFailedException.Status,
+            ImageGenerationErrorCode = imageGenerationErrorCode,
+            Message = requestFailedException!.Message
+        };
+
+        return dalleError;
+
     }
 
     public ImageGenerationError HandleImageGenerationError(Response rawResponse)
@@ -171,7 +212,7 @@ public class AzureOpenAIImageGenerator : IImageGenerator
 
         ImageGenerationError dalleError = new ImageGenerationError
         {
-            HttpStatusCode = httpStatusCode,
+            HttpStatusCode = rawResponse.Status,
             ImageGenerationErrorCode = imageGenerationErrorCode,
             Message = azureError!.Message
         };
