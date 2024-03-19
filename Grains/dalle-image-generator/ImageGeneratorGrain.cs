@@ -172,7 +172,13 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
                 ErrorCode = imageGenerationResponse.ErrorCode
             };
 
-            await schedulerGrain.ReportFailedImageGenerationRequestAsync(requestStatus);
+            if (imageGenerationResponse.ErrorCode == DalleErrorCode.content_policy_violation)
+            {
+                await schedulerGrain.ReportBlockedImageGenerationRequestAsync(requestStatus);
+            } else
+            {
+                await schedulerGrain.ReportFailedImageGenerationRequestAsync(requestStatus);
+            }
         }
 
         // set apiKey to null
@@ -364,14 +370,12 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
                 break;
             case HttpStatusCode.BadRequest:
             {
-                if (dalleErrorObject?.Code == "billing_hard_limit_reached")
+                dalleErrorCodes = dalleErrorObject?.Code switch
                 {
-                    dalleErrorCodes = DalleErrorCode.dalle_billing_quota_exceeded;
-                }
-                else
-                {
-                    dalleErrorCodes = DalleErrorCode.bad_request;
-                }
+                    "billing_hard_limit_reached" => DalleErrorCode.dalle_billing_quota_exceeded,
+                    "content_policy_violation" => DalleErrorCode.content_policy_violation,
+                    _ => DalleErrorCode.bad_request,
+                };
                 break;
             }
             case HttpStatusCode.InternalServerError:
