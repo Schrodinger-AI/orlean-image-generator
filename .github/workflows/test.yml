@@ -30,6 +30,7 @@ jobs:
           cd ../WebApiClient
           dotnet run > webapi.log 2>&1 &
           sleep 10
+          cd ..
           bash scripts/set-config.sh
           bash scripts/add-api-key.sh
           bash scripts/generate-image.sh
