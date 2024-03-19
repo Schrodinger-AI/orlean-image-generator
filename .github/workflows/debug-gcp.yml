@@ -32,21 +32,16 @@ jobs:
         with:
           credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}'
 
-      - name: Connect to Artifact Registry
+      - name: 'Set up Cloud SDK'
+        uses: 'google-github-actions/setup-gcloud@v2'
+        with:
+          version: '>= 363.0.0'
+
+      - name: 'Docker auth'
         run: |-
-          echo ${{ steps.auth.outputs.access_token }} | docker login -u oauth2accesstoken --password-stdin https://${{ env.REPOSITORY_REGION }}-docker.pkg.dev
+          gcloud auth configure-docker ${{ env.REPOSITORY_REGION }}-docker.pkg.dev
 
       - name: Create image tag
         run: echo "IMAGE_TAG=${{ env.REPOSITORY_REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE }}:$GITHUB_SHA" >> $GITHUB_ENV
 
-      - id: tag
-        run: echo "tag=${{ env.IMAGE_TAG }}" >> "$GITHUB_OUTPUT"
-
-  trigger:
-    needs: try-auth
-    runs-on: ubuntu-latest
-    steps:
-      - env:
-          OUTPUT: ${{needs.build-and-push-image.outputs}}
-        run: echo "$OUTPUT"
       
