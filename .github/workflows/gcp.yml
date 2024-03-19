@@ -33,6 +33,7 @@ jobs:
   build-and-push-image:
     needs: build-dotnet
     runs-on: ubuntu-latest
+    environment: development
     strategy:
       matrix:
         servicename: [SiloHost, WebApiClient]
