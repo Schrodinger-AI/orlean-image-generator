@@ -49,7 +49,8 @@ namespace SiloHost
                     if (environment == "Development")
                     {
                         siloBuilder.UseLocalhostClustering();
-                        siloBuilder.AddMemoryGrainStorage("definitions")
+                        siloBuilder
+                            .AddMemoryGrainStorage(Constants.MySqlSchrodingerImageStore)
                             .ConfigureEndpoints(siloPort: siloPort, gatewayPort: gatewayPort,
                                 listenOnAnyHostAddress: true);
                     }
