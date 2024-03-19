@@ -1,5 +1,6 @@
 using Grains.AzureOpenAI;
 using Grains.DalleOpenAI;
+using Grains.ImageGenerator;
 using Grains.interfaces;
 using Orleans;
 using Orleans.Runtime;
@@ -22,9 +23,9 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
 
     private readonly ImageSettings _imageSettings;
 
-    private readonly DalleOpenAIImageGenerator _dalleOpenAiImageGenerator;
+    private readonly IImageGenerator _dalleOpenAiImageGenerator;
     
-    private readonly AzureOpenAIImageGenerator _azureOpenAiImageGenerator;
+    private readonly IImageGenerator _azureOpenAiImageGenerator;
 
     private readonly ILogger<ImageGeneratorGrain> _logger;
 
@@ -32,15 +33,23 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
         [PersistentState("imageGenerationState", "MySqlSchrodingerImageStore")]
         IPersistentState<ImageGenerationState> imageGeneratorState,
         IOptions<ImageSettings> imageSettingsOptions,
-        DalleOpenAIImageGenerator dalleOpenAiImageGenerator,
-        AzureOpenAIImageGenerator azureOpenAiImageGenerator,
+        IEnumerable<IImageGenerator> imageGenerators,
         ILogger<ImageGeneratorGrain> logger)
     {
         _imageGenerationState = imageGeneratorState;
         _logger = logger;
         _imageSettings = imageSettingsOptions.Value;
-        _dalleOpenAiImageGenerator = dalleOpenAiImageGenerator;
-        _azureOpenAiImageGenerator = azureOpenAiImageGenerator;
+        foreach (var imageGenerator in imageGenerators)
+        {
+            if (imageGenerator is DalleOpenAIImageGenerator)
+            {
+                _dalleOpenAiImageGenerator = imageGenerator;
+            }
+            else if (imageGenerator is AzureOpenAIImageGenerator)
+            {
+                _azureOpenAiImageGenerator = imageGenerator;
+            }
+        }
         var imgS = Newtonsoft.Json.JsonConvert.SerializeObject(_imageSettings);
         _logger.LogInformation($"ImageGeneratorGrain Constructor : _imageSettings are: ${imgS}");
     }
