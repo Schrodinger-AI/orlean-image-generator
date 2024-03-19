@@ -20,10 +20,9 @@ public class AzureOpenAIImageGenerator : IImageGenerator
 
     public async Task<ImageGenerationResponse> RunImageGenerationAsync(string prompt, string apikey, int numberOfImages, ImageSettings imageSettings, string requestId)
     {
-        AzureImageGenerationResponse azureImageGenerationResponse = null;
-        Response<ImageGenerations> imageGenerations;
-        Response rawResponse = null;
-        int httpStatusCode = 0;
+        Response<ImageGenerations> imageGenerationsResponse;
+        Response rawResponse;
+        int httpStatusCode;
         
         //Image Settings contain width and height of the image
         // lookup for those values and generate the ImageSize constant for the API call
@@ -44,12 +43,14 @@ public class AzureOpenAIImageGenerator : IImageGenerator
                 imageSize = ImageSize.Size1024x1024;
             }
         }
+        
+        ImageGenerations imageGenerations = null;
 
         try
         {
             OpenAIClient client = new(new Uri("https://schrodinger-east-us.openai.azure.com/"), new AzureKeyCredential(apikey));
 
-            imageGenerations = await client.GetImageGenerationsAsync(
+            imageGenerationsResponse = await client.GetImageGenerationsAsync(
                 new ImageGenerationOptions()
                 {
                     Prompt = prompt,
@@ -57,13 +58,12 @@ public class AzureOpenAIImageGenerator : IImageGenerator
                     ImageCount = numberOfImages
                 });
             
-            rawResponse = imageGenerations.GetRawResponse();
+            rawResponse = imageGenerationsResponse.GetRawResponse();
             httpStatusCode = (int)rawResponse.Status;
             
             if (httpStatusCode >= 200 && httpStatusCode < 300)
             {
-                // The request was successful
-                azureImageGenerationResponse = JsonConvert.DeserializeObject<AzureImageGenerationResponse>(imageGenerations.Value.ToString());
+                imageGenerations = imageGenerationsResponse.Value;
             }
         }
         catch (Exception e)
@@ -72,7 +72,7 @@ public class AzureOpenAIImageGenerator : IImageGenerator
             throw new ImageGenerationException(ImageGenerationErrorCode.internal_error, e.Message);
         }
 
-        ImageGenerationResponse imageGenerationResponse = null;
+        ImageGenerationResponse imageGenerationResponse;
         _logger.LogError($"AzureImageGenerator - ImageGeneration ResponseCode : {httpStatusCode}");
 
         if (httpStatusCode == (int)HttpStatusCode.OK)
@@ -83,10 +83,10 @@ public class AzureOpenAIImageGenerator : IImageGenerator
                 {
                     // get latest timestamp in seconds
                     Created =  (int)DateTimeOffset.Now.ToUnixTimeSeconds(),
-                    Data = azureImageGenerationResponse.Data.Select(data => new ImageGenerationData
+                    Data = imageGenerations.Data.Select(data => new ImageGenerationData
                     {
-                        Url = data.Url,
-                        RevisedPrompt = data.RevisedPrompt
+                        Url = data.Url.AbsoluteUri,
+                        RevisedPrompt = prompt
                     }).ToList()
                 };
             }
