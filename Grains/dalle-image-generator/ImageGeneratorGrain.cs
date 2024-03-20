@@ -297,10 +297,16 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
             _logger.LogInformation(
                 $"ImageGeneratorGrain - generatorId: {_imageGenerationState.State.RequestId} , Dalle API response: {response} - responseCode: {response.StatusCode}");
 
+            _logger.LogInformation(
+                "ImageGeneratorGrain - generatorId: {generatorId} , Dalle API - responseStatusCode: {responseStatusCode} - responseReasonPhrase: {responseReasonPhrase} - response: {response}", _imageGenerationState.State.RequestId, response.StatusCode, response.ReasonPhrase, response);
+            
             jsonResponse = await response.Content.ReadAsStringAsync();
         } catch (Exception e)
         {
-            _logger.LogError($"ImageGeneratorGrain - generatorId: {_imageGenerationState.State.RequestId} , Dalle API call failed with error: {e.Message}");
+            _logger.LogError(
+                $"ImageGeneratorGrain - generatorId: {_imageGenerationState.State.RequestId} , Dalle API call failed with error: {e.Message}");
+            _logger.LogError(
+                "ImageGeneratorGrain - generatorId: {generatorId} , Dalle API - responseStatusCode: {responseStatusCode} - responseReasonPhrase: {responseReasonPhrase} - response: {response}", _imageGenerationState.State.RequestId, response.StatusCode, response.ReasonPhrase, response);
             throw new DalleException(DalleErrorCode.dalle_internal_error, e.Message);
         }
 
