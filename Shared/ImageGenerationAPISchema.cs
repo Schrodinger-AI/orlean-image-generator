@@ -131,7 +131,7 @@ namespace Shared
         public string RequestId { get; set; }
     }
     
-    public class ImageUpdateRequest
+    public class PromptUpdateRequest
     {
         [JsonPropertyName("multiImageRequestId")]
         public string MultiImageRequestId { get; set; }
