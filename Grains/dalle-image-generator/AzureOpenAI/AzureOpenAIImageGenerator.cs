@@ -192,7 +192,7 @@ public class AzureOpenAIImageGenerator : IImageGenerator
                 {
                     imageGenerationErrorCode = ImageGenerationErrorCode.billing_quota_exceeded;
                 }
-                else if (azureError?.Code == "content_filter")
+                else if (azureError?.Code == "content_filter" || azureError?.Code == "contentFilter")
                 {
                     imageGenerationErrorCode = ImageGenerationErrorCode.content_violation;
                 }
