@@ -30,6 +30,6 @@ public class ImageUpdateController : ControllerBase
         
         //update ImageGeneratorGrain state - Image and prompt
         var grain = _client.GetGrain<IImageGeneratorGrain>(imageUpdateRequest.RequestId);
-        await grain.UpdateImageAsync(imageUpdateRequest.Prompt);
+        await grain.UpdatePromptAsync(imageUpdateRequest.Prompt);
     }
 }

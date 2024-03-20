@@ -16,7 +16,7 @@ public interface IImageGeneratorGrain : ISchrodingerGrain, IGrainWithStringKey
     Task<ImageQueryGrainResponse> QueryImageAsync();
     Task<ImageGenerationState> GetStateAsync();
     
-    Task UpdateImageAsync(string prompt);
+    Task UpdatePromptAsync(string prompt);
     
     Task TriggerImageGenerationAsync();
 }

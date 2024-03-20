@@ -89,7 +89,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
         }
     }
 
-    public async Task UpdateImageAsync(string prompt)
+    public async Task UpdatePromptAsync(string prompt)
     {
         _logger.LogInformation($"ImageGeneratorGrain - UpdateImageAsync for generatorId: {_imageGenerationState.State.RequestId} with prompt: {prompt}");
         _imageGenerationState.State.Prompt = prompt;
