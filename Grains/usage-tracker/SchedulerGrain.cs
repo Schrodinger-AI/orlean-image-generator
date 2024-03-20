@@ -292,12 +292,12 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
     public Task<bool> ForceRequestExecution(string childId)
     {
         RequestAccountUsageInfo? requestInfo = null;
-        if (!_masterTrackerState.State.PendingImageGenerationRequests.ContainsKey(childId))
+        if (_masterTrackerState.State.PendingImageGenerationRequests.ContainsKey(childId))
         {
             requestInfo = _masterTrackerState.State.PendingImageGenerationRequests[childId];
             _masterTrackerState.State.PendingImageGenerationRequests.Remove(childId);
         }
-        else if (!_masterTrackerState.State.BlockedImageGenerationRequests.ContainsKey(childId))
+        else if (_masterTrackerState.State.BlockedImageGenerationRequests.ContainsKey(childId))
         {
             requestInfo = _masterTrackerState.State.BlockedImageGenerationRequests[childId].RequestAccountUsageInfo;
             _masterTrackerState.State.BlockedImageGenerationRequests.Remove(childId);
