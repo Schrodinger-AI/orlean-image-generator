@@ -27,7 +27,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
     private IDisposable? _timer;
     private IDisposable? _flushTimer;
     
-    private Dictionary<ApiKey, ApiKeyUsageInfo> _apiKeyStatus = new();
+    private Dictionary<string, ApiKeyUsageInfo> _apiKeyStatus = new();
 
     public SchedulerGrain(
         [PersistentState("masterTrackerState", "MySqlSchrodingerImageStore")]
@@ -200,11 +200,12 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         
         _masterTrackerState.State.ApiAccountInfoList.RemoveAll(apiInfo =>
         {
-            if (apiKey.Contains(apiInfo.ApiKey))
+            if (apiKey.Any(key => key.GetConcatApiKeyString() == apiInfo.ApiKey.GetConcatApiKeyString()))
             {
                 removedApiKeys.Add(apiInfo.ApiKey);
                 return true;
             }
+
             return false;
         });
         
@@ -225,7 +226,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         return Task.FromResult(_masterTrackerState.State);
     }
     
-    public Task<Dictionary<ApiKey, ApiKeyUsageInfo>> GetApiKeysUsageInfo()
+    public Task<Dictionary<string, ApiKeyUsageInfo>> GetApiKeysUsageInfo()
     {
         return Task.FromResult(_apiKeyStatus);
     }
@@ -308,7 +309,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         }
     }
     
-    private Dictionary<ApiKey, int> GetRemainingQuotaByApiKeys()
+    private Dictionary<string, int> GetRemainingQuotaByApiKeys()
     {
         var now = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
         
@@ -322,11 +323,11 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         var usedQuota = allRequests
             .Where(i=> i.Value.StartedTimestamp > cutoff)
             .GroupBy(
-                x=>x.Value.ApiKey,
+                x=>x.Value.ApiKey?.GetConcatApiKeyString(),
                 x=>x
             ).ToDictionary(x=>x.Key, x=>x.Count());
         var remainingQuotaByApiKey = _masterTrackerState.State.ApiAccountInfoList
-            .ToDictionary(i=>i.ApiKey, i=> i.MaxQuota - usedQuota.GetValueOrDefault(i.ApiKey, 0));
+            .ToDictionary(i=>i.ApiKey.GetConcatApiKeyString(), i=> i.MaxQuota - usedQuota.GetValueOrDefault(i.ApiKey.GetConcatApiKeyString(), 0));
 
         //remove on hold api keys
         var apiKeysOnHold = _apiKeyStatus
@@ -340,7 +341,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
     
     private void ResetApiUsageInfo(ApiKey apiKey)
     {
-        if(_apiKeyStatus.TryGetValue(apiKey, out var usageInfo))
+        if(_apiKeyStatus.TryGetValue(apiKey.GetConcatApiKeyString(), out var usageInfo))
         {
             usageInfo.Attempts = 0;
             usageInfo.LastUsedTimestamp = 0;
@@ -369,17 +370,17 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         
         _logger.LogError($"[SchedulerGrain] Error code: {errorCode.ToString()} for API key: {apiKey.ApiKeyString}");
         
-        var apiInfo = _masterTrackerState.State.ApiAccountInfoList.Find(info => info.ApiKey == apiKey);
+        var apiInfo = _masterTrackerState.State.ApiAccountInfoList.Find(info => info.ApiKey.GetConcatApiKeyString() == apiKey.GetConcatApiKeyString());
         if (apiInfo == null)
         {
             _logger.LogError($"[SchedulerGrain] API key: {apiKey} not found in the list");
             return;
         }
         
-        if (!_apiKeyStatus.TryGetValue(apiKey, out var usageInfo))
+        if (!_apiKeyStatus.TryGetValue(apiKey.GetConcatApiKeyString(), out var usageInfo))
         {
             usageInfo = new ApiKeyUsageInfo { ApiKey = apiKey };
-            _apiKeyStatus.Add(apiKey, usageInfo);
+            _apiKeyStatus.Add(apiKey.GetConcatApiKeyString(), usageInfo);
         }
 
         usageInfo.Attempts = errorCode is ImageGenerationErrorCode.rate_limit_reached or ImageGenerationErrorCode.invalid_api_key ? 1 : usageInfo.Attempts + 1;
@@ -422,7 +423,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         }
     }
     
-    private async Task<List<string>> ProcessRequest(IEnumerable<RequestAccountUsageInfo> sortedRequests, IDictionary<ApiKey, int> apiQuota)
+    private async Task<List<string>> ProcessRequest(IEnumerable<RequestAccountUsageInfo> sortedRequests, IDictionary<string, int> apiQuota)
     {
         List<string> requestIdToRemove = new();
         foreach (var info in sortedRequests)
@@ -478,7 +479,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         return validRequests;
     }
     
-    private void AlarmWhenLowOnQuota(IDictionary<ApiKey, int> apiQuota)
+    private void AlarmWhenLowOnQuota(IDictionary<string, int> apiQuota)
     {
         var remainingQuota = apiQuota.Sum(pair => pair.Value);
         var totalQuota = GetTotalApiKeyQuota();
@@ -507,16 +508,16 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         return totalQuota;
     }
 
-    private static ApiKey? GetApiKey(IDictionary<ApiKey, int> apiQuota)
+    private static ApiKey? GetApiKey(IDictionary<string, int> apiQuota)
     {
         var (apiKey, quota)= apiQuota.MaxBy(pair => pair.Value);
-        if (apiKey == null || string.IsNullOrEmpty(apiKey.ApiKeyString) || quota <= 0)
+        if (string.IsNullOrEmpty(apiKey) || quota <= 0)
         {
             return null;
         }
         
         apiQuota[apiKey] -= 1;
-        return apiKey;
+        return new ApiKey(apiKey);
     }
 
     private RequestAccountUsageInfo PopFromPending(string requestId)

@@ -29,11 +29,7 @@ public class SchedulerController : ControllerBase
         {
             var apiAccountInfos = apiKeyEntries.Select(entry => new APIAccountInfo
             {
-                ApiKey = new ApiKey
-                {
-                    ApiKeyString = entry.ApiKey.ApiKeyString,
-                    ServiceProvider = GetServiceProvider(entry.ApiKey.ServiceProvider)
-                },
+                ApiKey = new ApiKey(entry.ApiKey.ApiKeyString, entry.ApiKey.ServiceProvider),
                 Email = entry.Email,
                 Tier = entry.Tier,
                 MaxQuota = entry.MaxQuota
@@ -55,11 +51,7 @@ public class SchedulerController : ControllerBase
     {
         try
         {
-            var apiKeys = apiKeyDtos.Select(dto => new ApiKey
-            {
-                ApiKeyString = dto.ApiKeyString,
-                ServiceProvider = GetServiceProvider(dto.ServiceProvider)
-            }).ToList() ?? throw new ArgumentNullException("apiKeyDtos.Select(dto =>\n            {\n                return new ApiKey\n                {\n                    ApiKeyString = dto.ApiKeyString,\n                    ServiceProvider = GetServiceProvider(dto.ServiceProvider)\n                };\n            }).ToList()");
+            var apiKeys = apiKeyDtos.Select(dto => new ApiKey(dto.ApiKeyString, dto.ServiceProvider)).ToList();
 
             var grain = _client.GetGrain<ISchedulerGrain>("SchedulerGrain");
             var addedApiKeys = await grain.RemoveApiKeys(apiKeys);
@@ -115,7 +107,7 @@ public class SchedulerController : ControllerBase
 
             var apiKeyUsageInfoDtos = usageInfo.Select(i => new ApiKeyUsageInfoDto
             {
-                ApiKey = i.Key,
+                ApiKey = i.Value.ApiKey,
                 ReactivationTimestamp = UnixTimeStampInSecondsToDateTime(i.Value.GetReactivationTimestamp()).ToString(CultureInfo.InvariantCulture),
                 Status = i.Value.Status.ToString(),
                 ErrorCode = i.Value.ErrorCode?.ToString()
@@ -233,15 +225,5 @@ public class SchedulerController : ControllerBase
             ChildId = i.ChildId
         });
         return ret;
-    }
-    
-    private static ImageGenerationServiceProvider GetServiceProvider(string serviceProvider)
-    {
-        return serviceProvider switch
-        {
-            "DalleOpenAI" => ImageGenerationServiceProvider.DalleOpenAI,
-            "AzureOpenAI" => ImageGenerationServiceProvider.AzureOpenAI,
-            _ => throw new ArgumentOutOfRangeException(nameof(serviceProvider), serviceProvider, null)
-        };
     }
 }
