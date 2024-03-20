@@ -299,7 +299,7 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
         }
     }
 
-    public async Task UpdatePrompt(string prompt, List<Attribute> attributes)
+    public async Task UpdatePromptAndAttributes(string prompt, List<Attribute> attributes)
     {
         _multiImageGenerationState.State.Prompt = prompt; 
         _multiImageGenerationState.State.Traits = attributes;

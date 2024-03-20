@@ -26,7 +26,7 @@ public class ImageUpdateController : ControllerBase
     {
         //Update the MultiImageGeneratorGrain state - prompt
         var multiImageGeneratorGrain = _client.GetGrain<IMultiImageGeneratorGrain>(imageUpdateRequest.MultiImageRequestId);
-        await multiImageGeneratorGrain.UpdatePrompt(imageUpdateRequest.Prompt, imageUpdateRequest.Attributes);
+        await multiImageGeneratorGrain.UpdatePromptAndAttributes(imageUpdateRequest.Prompt, imageUpdateRequest.Attributes);
         
         //update ImageGeneratorGrain state - Image and prompt
         var grain = _client.GetGrain<IImageGeneratorGrain>(imageUpdateRequest.RequestId);

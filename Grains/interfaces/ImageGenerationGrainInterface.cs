@@ -29,5 +29,5 @@ public interface IMultiImageGeneratorGrain : ISchrodingerGrain, IGrainWithString
 
     Task<MultiImageQueryGrainResponse> QueryMultipleImagesAsync();
     
-    Task UpdatePrompt(string prompt, List<Attribute> attributes);
+    Task UpdatePromptAndAttributes(string prompt, List<Attribute> attributes);
 }
