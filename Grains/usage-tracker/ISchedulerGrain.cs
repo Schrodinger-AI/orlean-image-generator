@@ -18,4 +18,5 @@ public interface ISchedulerGrain : ISchrodingerGrain, Orleans.IGrainWithStringKe
     Task<bool> IsOverloaded();
     Task FlushAsync();
     Task TickAsync();
+    Task<bool> ForceRequestExecution(string childId);
 }

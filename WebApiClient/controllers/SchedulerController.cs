@@ -143,6 +143,21 @@ public class SchedulerController : ControllerBase
         }
     }
     
+    [HttpGet("forceRequestExecution")]
+    public async Task<ForceRequestExecutionResponse> ForceRequestExecution(string childId)
+    {
+        try
+        {
+            var grain = _client.GetGrain<ISchedulerGrain>("SchedulerGrain");
+            var success = await grain.ForceRequestExecution(childId);
+            return new ForceRequestExecutionResponseOk(success);
+        }
+        catch (Exception ex)
+        {
+            return new ForceRequestExecutionResponseFailed(ex.Message);
+        }
+    }
+    
     [HttpGet("states")]
     public async Task<ImageGenerationStatesResponse> GetImageGenerationStates()
     {
