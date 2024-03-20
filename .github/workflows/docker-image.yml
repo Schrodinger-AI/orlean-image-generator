@@ -57,6 +57,7 @@ jobs:
             type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'develop') }}
             type=ref,event=tag
             type=ref,event=pr
+            type=sha
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
