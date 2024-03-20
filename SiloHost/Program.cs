@@ -77,13 +77,17 @@ namespace SiloHost
                             options.ClusterId = "dev";
                             options.ServiceId = "OrleansImageGeneratorService";
                         })
-                        .AddAdoNetGrainStorage(Constants.MySqlSchrodingerImageStore, (Action<AdoNetGrainStorageOptions>) (options =>
+                        .AddAdoNetGrainStorage(Constants.MySqlSchrodingerImageStore,
+                            (Action<AdoNetGrainStorageOptions>)(options =>
+                            {
+                                options.Invariant = "MySql.Data.MySqlClient";
+                                options.ConnectionString = connectionString;
+                            }))
+                        .ConfigureLogging(logging => logging.AddSerilog())
+                        .UseDashboard(options =>
                         {
-                            options.Invariant = "MySql.Data.MySqlClient";
-                            options.ConnectionString = connectionString;
-                        }))
-                        .ConfigureLogging(logging => logging.AddSerilog());
-                    //.UseDashboard(options => { })
+                            options.CounterUpdateIntervalMs = 10000;
+                        });
                 })
                 .Build();
 
