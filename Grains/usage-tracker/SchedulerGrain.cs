@@ -15,6 +15,7 @@ namespace Grains.usage_tracker;
 /// </summary>
 public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
 {
+    private const long FOUR_DAYS_IN_SECONDS = 345600; // 4 days
     private const long RATE_LIMIT_DURATION = 63; // 1 minute and 3 seconds, 3 seconds for the buffer
     private const long CLEANUP_INTERVAL = 180; // 3 minutes
     private const int MAX_ATTEMPTS = 99999;
@@ -70,6 +71,8 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
             _masterTrackerState.State.PendingImageGenerationRequests = new Dictionary<string, RequestAccountUsageInfo>();
         if(_masterTrackerState.State.StartedImageGenerationRequests == null)
             _masterTrackerState.State.StartedImageGenerationRequests = new Dictionary<string, RequestAccountUsageInfo>();
+        
+        ResetPendingToStarted();
         
         return base.OnActivateAsync();
     }
@@ -265,6 +268,20 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
 
     #region Private Methods
 
+    private void ResetPendingToStarted()
+    {
+        var now = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
+        var cutoff = now - FOUR_DAYS_IN_SECONDS;
+        var pendingRequests = _masterTrackerState.State.PendingImageGenerationRequests
+            .Where(i => i.Value.StartedTimestamp > cutoff)
+            .ToList();
+        foreach (var (requestId, info) in pendingRequests)
+        {
+            _masterTrackerState.State.PendingImageGenerationRequests.Remove(requestId);
+            _masterTrackerState.State.StartedImageGenerationRequests.Add(requestId, info);
+        }
+    }
+    
     private Dictionary<string, int> GetRemainingQuotaByApiKeys()
     {
         var now = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
