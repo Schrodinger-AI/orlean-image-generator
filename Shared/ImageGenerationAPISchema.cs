@@ -120,10 +120,10 @@ namespace Shared
         public int NumberOfImages { get; set; } = 1;
     }
 
-    public abstract class ImageGenerationResponse { }
+    public abstract class ImageGenerationAPIResponse { }
 
     [GenerateSerializer]
-    public class ImageGenerationResponseOk : ImageGenerationResponse
+    public class ImageGenerationResponseOk : ImageGenerationAPIResponse
     {
         [JsonPropertyName("requestId")]
         [Id(0)]
@@ -131,7 +131,7 @@ namespace Shared
     }
 
     [GenerateSerializer]
-    public class ImageGenerationResponseNotOk : ImageGenerationResponse
+    public class ImageGenerationResponseNotOk : ImageGenerationAPIResponse
     {
         [JsonPropertyName("error")]
         [Id(0)]

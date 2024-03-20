@@ -4,10 +4,10 @@ namespace Shared;
 
 public abstract class AddApiKeyAPIResponse { }
 
-public class AddApiKeyResponseOk(List<string> apiKeys) : AddApiKeyAPIResponse
+public class AddApiKeyResponseOk(List<ApiKeyDto> apiKeys) : AddApiKeyAPIResponse
 {
     [JsonPropertyName("addedApiKey")]
-    public List<string> AddedApiKey { get; set; } = apiKeys;
+    public List<ApiKeyDto> AddedApiKey { get; set; } = apiKeys;
 }
 
 public class AddApiKeyResponseFailed(string error) : AddApiKeyAPIResponse
@@ -18,10 +18,10 @@ public class AddApiKeyResponseFailed(string error) : AddApiKeyAPIResponse
 
 public abstract class RemoveApiKeyAPIResponse { }
 
-public class RemoveApiKeyResponseOk(List<string> apiKeys) : RemoveApiKeyAPIResponse
+public class RemoveApiKeyResponseOk(List<ApiKeyDto> apiKeys) : RemoveApiKeyAPIResponse
 {
     [JsonPropertyName("removedApiKey")]
-    public List<string> RemovedApiKey { get; set; } = apiKeys;
+    public List<ApiKeyDto> RemovedApiKey { get; set; } = apiKeys;
 }
 
 public class RemoveApiKeyResponseFailed(string error) : RemoveApiKeyAPIResponse
@@ -38,7 +38,7 @@ public class RequestAccountUsageInfoDto
     public string FailedTimestamp { get; set; } = "";
     public string CompletedTimestamp { get; set; } = "";
     public int Attempts { get; set; } = 0;
-    public string ApiKey { get; set; } = "";
+    public ApiKey? ApiKey { get; set; } = null;
     public string ChildId { get; set; } = "";
 }
 
@@ -58,7 +58,7 @@ public class ImageGenerationStatesResponseFailed(string error) : ImageGeneration
 
 public class ApiKeyUsageInfoDto
 {
-    public string ApiKey { get; set; } = "";
+    public ApiKey? ApiKey { get; set; } = null;
     public string ReactivationTimestamp { get; set; } = "";
     public string Status { get; set; } = "";
     public string? ErrorCode { get; set; }

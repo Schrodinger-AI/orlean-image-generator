@@ -1,6 +1,9 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
+using Grains.AzureOpenAI;
+using Grains.DalleOpenAI;
+using Grains.ImageGenerator;
 using Newtonsoft.Json;
 using Orleans;
 using Orleans.Runtime;
@@ -16,11 +19,18 @@ namespace Grains;
 public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
 {
     private string _apiKey;
+    
+    private ImageGenerationServiceProvider _imageGenerationServiceProvider;
+
     private IDisposable _timer;
 
     private readonly IPersistentState<ImageGenerationState> _imageGenerationState;
 
     private readonly ImageSettings _imageSettings;
+    
+    private readonly IImageGenerator _dalleOpenAiImageGenerator;
+    
+    private readonly IImageGenerator _azureOpenAiImageGenerator;
 
     private readonly ILogger<ImageGeneratorGrain> _logger;
 
@@ -28,11 +38,23 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
         [PersistentState("imageGenerationState", "MySqlSchrodingerImageStore")]
         IPersistentState<ImageGenerationState> imageGeneratorState,
         IOptions<ImageSettings> imageSettingsOptions,
+        IEnumerable<IImageGenerator> imageGenerators,
         ILogger<ImageGeneratorGrain> logger)
     {
         _imageGenerationState = imageGeneratorState;
         _logger = logger;
         _imageSettings = imageSettingsOptions.Value;
+        foreach (var imageGenerator in imageGenerators)
+        {
+            if (imageGenerator is DalleOpenAIImageGenerator)
+            {
+                _dalleOpenAiImageGenerator = imageGenerator;
+            }
+            else if (imageGenerator is AzureOpenAIImageGenerator)
+            {
+                _azureOpenAiImageGenerator = imageGenerator;
+            }
+        }
         var imgS = Newtonsoft.Json.JsonConvert.SerializeObject(_imageSettings);
         _logger.LogInformation($"ImageGeneratorGrain Constructor : _imageSettings are: ${imgS}");
     }
@@ -53,11 +75,12 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
         _imageGenerationState.State.Prompt = prompt;
         await _imageGenerationState.WriteStateAsync();
     }
-
-    public async Task SetApiKey(string key)
+    
+    public async Task SetImageGenerationServiceProvider(string apiKey, ImageGenerationServiceProvider serviceProvider)
     {
-        _logger.LogInformation($"ImageGeneratorGrain - Setting ApiKey: {key} for imageGeneratorId: {_imageGenerationState.State.RequestId}");
-        _apiKey = key;
+        _logger.LogInformation($"ImageGeneratorGrain - Setting ImageGenerationServiceProvider: {serviceProvider} for imageGeneratorId: {_imageGenerationState.State.RequestId}");
+        _apiKey = apiKey;
+        _imageGenerationServiceProvider = serviceProvider;
         await Task.CompletedTask;
     }
 
@@ -118,6 +141,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
         }
 
         _imageGenerationState.State.Status = ImageGenerationStatus.InProgress;
+        _imageGenerationState.State.ServiceProvider = _imageGenerationServiceProvider;
         await _imageGenerationState.WriteStateAsync();
 
         // Call GenerateImageFromPromptAsync with its arguments taken from the state and the API key taken from memory
@@ -149,7 +173,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
             {
                 RequestId = _imageGenerationState.State.RequestId,
                 Status = RequestStatusEnum.Completed,
-                RequestTimestamp = imageGenerationResponse.DalleRequestTimestamp
+                RequestTimestamp = imageGenerationResponse.ImageGenerationRequestTimestamp
             };
 
             await schedulerGrain.ReportCompletedImageGenerationRequestAsync(requestStatus);
@@ -168,17 +192,11 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
                 RequestId = _imageGenerationState.State.RequestId,
                 Status = RequestStatusEnum.Failed,
                 Message = imageGenerationResponse.Error,
-                RequestTimestamp = imageGenerationResponse.DalleRequestTimestamp,
+                RequestTimestamp = imageGenerationResponse.ImageGenerationRequestTimestamp,
                 ErrorCode = imageGenerationResponse.ErrorCode
             };
 
-            if (imageGenerationResponse.ErrorCode == DalleErrorCode.content_policy_violation)
-            {
-                await schedulerGrain.ReportBlockedImageGenerationRequestAsync(requestStatus);
-            } else
-            {
-                await schedulerGrain.ReportFailedImageGenerationRequestAsync(requestStatus);
-            }
+            await schedulerGrain.ReportFailedImageGenerationRequestAsync(requestStatus);
         }
 
         // set apiKey to null
@@ -198,24 +216,38 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
     {
         _logger.LogInformation(
             $"ImageGeneratorGrain - generatorId: {imageRequestId} , GenerateImageFromPromptAsync invoked with prompt: {prompt}");
-        var dalleRequestTimestamp = GetCurrentUTCTimeInSeconds();
+        var imageGenerationRequestTimestamp = GetCurrentUTCTimeInSeconds();
         try
         {
             _imageGenerationState.State.ParentRequestId = parentRequestId;
             _imageGenerationState.State.RequestId = imageRequestId;
-            _imageGenerationState.State.Prompt = "I NEED to test how the tool works with extremely simple prompts. DO NOT add any detail, just use it AS-IS: A medium resolution pixel art image of a Somali cat in an upright, bipedal stance, facing directly at the viewer, with Flower Crown, Cap Toe Shoes, Palazzo Jumpsuit, Fuzzy Paw, Shimmering, Teal Feather Wings,and Saddle Stitch Belt.";
-            
-            // Start the image data generation process
-            var dalleResponse = await RunDalleAsync( _imageGenerationState.State.Prompt);
+            _imageGenerationState.State.Prompt = prompt;
 
-            _logger.LogInformation($"ImageGeneratorGrain - generatorId: {imageRequestId} , dalleResponse: {dalleResponse}");
+            ImageGenerationResponse imageGenerationResponse;
+            
+            if (_imageGenerationServiceProvider == ImageGenerationServiceProvider.DalleOpenAI)
+            {
+                // Start the image data generation process
+                imageGenerationResponse = await _dalleOpenAiImageGenerator.RunImageGenerationAsync(prompt, _apiKey, 1, _imageSettings, _imageGenerationState.State.RequestId);
+            }
+            else if (_imageGenerationServiceProvider == ImageGenerationServiceProvider.AzureOpenAI)
+            {
+                // Start the image data generation process
+                imageGenerationResponse = await _azureOpenAiImageGenerator.RunImageGenerationAsync(prompt, _apiKey, 1, _imageSettings, _imageGenerationState.State.RequestId);
+            }
+            else
+            {
+                throw new Exception("Invalid ImageGenerationServiceProvider");
+            }
+
+            _logger.LogInformation($"ImageGeneratorGrain - generatorId: {imageRequestId} , imageGenerationResponse: {imageGenerationResponse}");
 
             _logger.LogInformation(
-                $"ImageGeneratorGrain - generatorId: {imageRequestId} , dalleResponse: {dalleResponse}");
+                $"ImageGeneratorGrain - generatorId: {imageRequestId} , imageGenerationResponse: {imageGenerationResponse}");
 
-            _logger.LogDebug(dalleResponse.ToString());
+            _logger.LogDebug(imageGenerationResponse.ToString());
             // Extract the URL from the result
-            var imageUrl = dalleResponse.Data[0].Url;
+            var imageUrl = imageGenerationResponse.Data[0].Url;
 
             // Convert the image URL to base64
             var base64Image = await ConvertImageUrlToBase64(imageUrl);
@@ -230,6 +262,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
             // Store the image in the state
             _imageGenerationState.State.Image = image;
             _imageGenerationState.State.Status = ImageGenerationStatus.SuccessfulCompletion;
+            _imageGenerationState.State.ImageGenerationTimestamp = imageGenerationRequestTimestamp;
 
             // Store the task in a non-persistent dictionary
             await _imageGenerationState.WriteStateAsync();
@@ -239,7 +272,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
                 RequestId = imageRequestId,
                 IsSuccessful = true,
                 Error = null,
-                DalleRequestTimestamp = dalleRequestTimestamp,
+                ImageGenerationRequestTimestamp = imageGenerationRequestTimestamp,
                 ErrorCode = null
             };
         }
@@ -255,11 +288,11 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
             var parentGeneratorGrain = GrainFactory.GetGrain<IMultiImageGeneratorGrain>(_imageGenerationState.State.ParentRequestId);
             await parentGeneratorGrain.NotifyImageGenerationStatus(_imageGenerationState.State.RequestId, ImageGenerationStatus.FailedCompletion, e.Message);
 
-            DalleErrorCode? dalleErrorCode = null;
-            var dalleException = e as DalleException;
-            if (dalleException != null)
+            ImageGenerationErrorCode? imageGenerationErrorCode = null;
+            var imageGenerationException = e as ImageGenerationException;
+            if (imageGenerationException != null)
             {
-                dalleErrorCode = dalleException.ErrorCode;
+                imageGenerationErrorCode = imageGenerationException.ErrorCode;
             }
             
             return new ImageGenerationGrainResponse
@@ -267,135 +300,12 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
                 RequestId = imageRequestId,
                 IsSuccessful = false,
                 Error = e.Message,
-                DalleRequestTimestamp = dalleRequestTimestamp,
-                ErrorCode = dalleErrorCode
+                ImageGenerationRequestTimestamp = imageGenerationRequestTimestamp,
+                ErrorCode = imageGenerationErrorCode
             };
         }
     }
-
-    private async Task<DalleResponse> RunDalleAsync(string prompt)
-    {
-        _logger.LogInformation($"ImageGeneratorGrain - generatorId: {_imageGenerationState.State.RequestId} , about to call Dalle API to generate image for prompt: {prompt}");
-        var response = new HttpResponseMessage();
-        var jsonResponse = "";
-        try
-        {
-            using var client = new HttpClient();
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);
-            client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-
-            var content = new StringContent(JsonConvert.SerializeObject(new
-            {
-                model = "dall-e-3",
-                prompt = prompt,
-                quality = "standard",
-                n = 1
-            }), Encoding.UTF8, "application/json");
-
-            response = await client.PostAsync("https://api.openai.com/v1/images/generations", content);
-
-            _logger.LogInformation(
-                $"ImageGeneratorGrain - generatorId: {_imageGenerationState.State.RequestId} , Dalle API response: {response} - responseCode: {response.StatusCode}");
-
-            jsonResponse = await response.Content.ReadAsStringAsync();
-        } catch (Exception e)
-        {
-            _logger.LogError($"ImageGeneratorGrain - generatorId: {_imageGenerationState.State.RequestId} , Dalle API call failed with error: {e.Message}");
-            throw new DalleException(DalleErrorCode.dalle_internal_error, e.Message);
-        }
-
-        _logger.LogInformation($"ImageGeneratorGrain - generatorId: {_imageGenerationState.State.RequestId} , Dalle API call response Content string: {jsonResponse}");
-
-        DalleError dalleError;
-        
-        if (response.StatusCode != HttpStatusCode.OK)
-        {
-            try
-            {
-                dalleError = HandleDalleError(response.StatusCode, jsonResponse);
-            } catch (Exception e)
-            {
-                _logger.LogError($"ImageGeneratorGrain - generatorId: {_imageGenerationState.State.RequestId} , Dalle API call failed with error: {e.Message}");
-                throw new DalleException(DalleErrorCode.dalle_internal_error, e.Message);
-            }
-            
-            _logger.LogError($"ImageGeneratorGrain - generatorId: {_imageGenerationState.State.RequestId} , Dalle API call failed with error: {dalleError.Message}");
-            
-            throw new DalleException(dalleError.DalleErrorCode, dalleError.Message);
-        }
-        
-        DalleResponse dalleResponse;
-        try
-        {
-            dalleResponse = JsonConvert.DeserializeObject<DalleResponse>(jsonResponse);
-        }
-        catch (Exception e)
-        {
-            _logger.LogError($"ImageGeneratorGrain - generatorId: {_imageGenerationState.State.RequestId} , Dalle API call failed with error: {e.Message}");
-            throw new DalleException(DalleErrorCode.api_call_failed, e.Message);
-        }
-        
-        _logger.LogInformation($"Dalle ImageGeneration ResponseCode : {response.StatusCode}");
-        
-        if(dalleResponse.Error != null)
-        {
-            _logger.LogError($"ImageGeneratorGrain - generatorId: {_imageGenerationState.State.RequestId} , Dalle API call failed with error code: {dalleResponse.Error.Code}");
-            throw new DalleException(DalleErrorCode.dalle_internal_error, dalleResponse.Error.Message);
-        }
-
-        _logger.LogInformation($"ImageGeneratorGrain - generatorId: {_imageGenerationState.State.RequestId} , Dalle API deserialized response: {dalleResponse}");
-
-        return dalleResponse;
-    }
-
-    private DalleError HandleDalleError(HttpStatusCode httpStatusCode, string responseJson)
-    {
-        DalleErrorCode dalleErrorCodes;
-        
-        var dalleWrappedErrorObject = JsonConvert.DeserializeObject<DalleWrappedError>(responseJson);
-        var dalleErrorObject = dalleWrappedErrorObject?.Error;
-        
-        switch (httpStatusCode)
-        {
-            case HttpStatusCode.Unauthorized:
-                dalleErrorCodes = DalleErrorCode.invalid_api_key;
-                break;
-            case HttpStatusCode.TooManyRequests:
-                { 
-                    dalleErrorCodes = DalleErrorCode.rate_limit_reached;
-                    break;
-                }
-            case HttpStatusCode.ServiceUnavailable:
-                dalleErrorCodes = DalleErrorCode.dalle_engine_unavailable;
-                break;
-            case HttpStatusCode.BadRequest:
-            {
-                dalleErrorCodes = dalleErrorObject?.Code switch
-                {
-                    "billing_hard_limit_reached" => DalleErrorCode.dalle_billing_quota_exceeded,
-                    "content_policy_violation" => DalleErrorCode.content_policy_violation,
-                    _ => DalleErrorCode.bad_request,
-                };
-                break;
-            }
-            case HttpStatusCode.InternalServerError:
-                dalleErrorCodes = DalleErrorCode.dalle_internal_error;
-                break;
-            default:
-                dalleErrorCodes = DalleErrorCode.dalle_internal_error;
-                break;
-        }
-
-        DalleError dalleError = new DalleError
-        {
-            HttpStatusCode = httpStatusCode,
-            DalleErrorCode = dalleErrorCodes,
-            Message = dalleErrorObject!.Message
-        };
-
-        return dalleError;
-    }
-
+    
     public async Task<ImageQueryGrainResponse> QueryImageAsync()
     {
         return _imageGenerationState.State.Status switch

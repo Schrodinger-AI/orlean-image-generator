@@ -31,7 +31,7 @@ public class MultiImageGeneratorController : ControllerBase
     }
 
     [HttpPost("generate")]
-    public async Task<ImageGenerationResponse> GenerateImage(ImageGenerationRequest imageGenerationRequest)
+    public async Task<ImageGenerationAPIResponse> GenerateImage(ImageGenerationRequest imageGenerationRequest)
     {
         List<Attribute> newTraits = imageGenerationRequest.NewTraits;
         List<Attribute> baseTraits = imageGenerationRequest.BaseImage.Attributes;

@@ -1,3 +1,5 @@
+using Shared;
+
 namespace Grains.types;
 
 [GenerateSerializer]
@@ -8,7 +10,7 @@ public class APIAccountInfo
     [Id(1)]
     public string Email { get; set; } = "";
     [Id(2)]
-    public string ApiKey { get; set; } = "";
+    public ApiKey ApiKey { get; set; } = null;
     [Id(3)]
     public int Tier { get; set; } = 0;
     [Id(4)]

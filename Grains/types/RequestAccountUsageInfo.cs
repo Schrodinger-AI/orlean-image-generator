@@ -1,3 +1,5 @@
+using Shared;
+
 namespace Grains.types;
 
 [GenerateSerializer]
@@ -16,7 +18,7 @@ public class RequestAccountUsageInfo
     [Id(5)]
     public int Attempts { get; set; } = 0;
     [Id(6)]
-    public string ApiKey { get; set; } = "";
+    public ApiKey? ApiKey { get; set; } = null;
     [Id(7)]
     public string ChildId { get; set; } = "";
 }
