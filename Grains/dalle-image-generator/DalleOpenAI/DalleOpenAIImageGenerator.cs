@@ -40,12 +40,12 @@ public class DalleOpenAIImageGenerator : IImageGenerator
             response = await client.PostAsync("https://api.openai.com/v1/images/generations", content);
 
             _logger.LogInformation(
-                $"ImageGeneratorGrain - generatorId: {requestId} , DalleOpenAI API response: {response} - responseCode: {response.StatusCode}");
-
+                "ImageGeneratorGrain - generatorId: {requestId} , DalleOpenAI API - responseStatusCode: {responseStatusCode} - responseReasonPhrase: {responseReasonPhrase} - response: {response}", requestId, response.StatusCode, response.ReasonPhrase, response);
+            
             jsonResponse = await response.Content.ReadAsStringAsync();
         } catch (Exception e)
         {
-            _logger.LogError($"DalleOpenAIImageGenerator - generatorId: {requestId} , DalleOpenAI API call failed with error: {e.Message}");
+            _logger.LogError("DalleOpenAIImageGenerator - generatorId: {requestId} , DalleOpenAI API call failed with error: {errorMessage}", requestId, e.Message);
             throw new ImageGenerationException(ImageGenerationErrorCode.internal_error, e.Message);
         }
 
