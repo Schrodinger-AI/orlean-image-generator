@@ -10,7 +10,7 @@ public class APIAccountInfo
     [Id(1)]
     public string Email { get; set; } = "";
     [Id(2)]
-    public ApiKey ApiKey { get; set; } = new ApiKey();
+    public ApiKey ApiKey { get; set; } = null;
     [Id(3)]
     public int Tier { get; set; } = 0;
     [Id(4)]
