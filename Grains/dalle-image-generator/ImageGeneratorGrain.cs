@@ -41,7 +41,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
     {
         _logger.LogInformation("ImageGeneratorGrain - OnActivateAsync");
         _timer = RegisterTimer(asyncCallback: _ => this.AsReference<IImageGeneratorGrain>().TriggerImageGenerationAsync(), null, TimeSpan.Zero, TimeSpan.FromSeconds(1));
-        await CheckAndReportForInvalidStates();
+        //await CheckAndReportForInvalidStates();
         _logger.LogInformation($"ImageGeneratorGrain - OnActivateAsync - ImageSettings are: {_imageSettings}");
         await base.OnActivateAsync();
     }
@@ -61,7 +61,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
         await Task.CompletedTask;
     }
 
-    private async Task CheckAndReportForInvalidStates()
+    public async Task CheckAndReportForInvalidStates()
     {
         if (string.IsNullOrEmpty(_apiKey) && _imageGenerationState.State.Status == ImageGenerationStatus.InProgress)
         {
@@ -72,21 +72,43 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
             _imageGenerationState.State.Error = "ImageGeneration is in invalidState - resetting to FailedCompletion";
             await _imageGenerationState.WriteStateAsync();
 
+            await InformParentGrainAndSchedulerAboutFailedCompletion();
+        }
+        else if(_imageGenerationState.State.Status == ImageGenerationStatus.SuccessfulCompletion)
+        {
             var parentGeneratorGrain = GrainFactory.GetGrain<IMultiImageGeneratorGrain>(_imageGenerationState.State.ParentRequestId);
             var schedulerGrain = GrainFactory.GetGrain<IImageGenerationRequestStatusReceiver>("SchedulerGrain");
-
-            // notify about failed completion to parentGrain
-            await parentGeneratorGrain.NotifyImageGenerationStatus(_imageGenerationState.State.RequestId, ImageGenerationStatus.FailedCompletion, _imageGenerationState.State.Error);
-            // notify the scheduler grain about the failed completion
+            // notify about completion to parentGrain
+            await parentGeneratorGrain.NotifyImageGenerationStatus(_imageGenerationState.State.RequestId, ImageGenerationStatus.SuccessfulCompletion, null);
+            // notify the scheduler grain about the completion
             var requestStatus = new RequestStatus
             {
                 RequestId = _imageGenerationState.State.RequestId,
-                Status = RequestStatusEnum.Failed,
-                Message = _imageGenerationState.State.Error
+                Status = RequestStatusEnum.Completed,
+                RequestTimestamp = GetCurrentUTCTimeInSeconds()
             };
-            await schedulerGrain.ReportFailedImageGenerationRequestAsync(requestStatus);
-            return;
+            await schedulerGrain.ReportCompletedImageGenerationRequestAsync(requestStatus);
         }
+        else if (_imageGenerationState.State.Status == ImageGenerationStatus.FailedCompletion)
+        {
+            await InformParentGrainAndSchedulerAboutFailedCompletion();
+        }
+    }
+    
+    private async Task InformParentGrainAndSchedulerAboutFailedCompletion()
+    {
+        var parentGeneratorGrain = GrainFactory.GetGrain<IMultiImageGeneratorGrain>(_imageGenerationState.State.ParentRequestId);
+        var schedulerGrain = GrainFactory.GetGrain<IImageGenerationRequestStatusReceiver>("SchedulerGrain");
+        // notify about failed completion to parentGrain
+        await parentGeneratorGrain.NotifyImageGenerationStatus(_imageGenerationState.State.RequestId, ImageGenerationStatus.FailedCompletion, _imageGenerationState.State.Error);
+        // notify the scheduler grain about the failed completion
+        var requestStatus = new RequestStatus
+        {
+            RequestId = _imageGenerationState.State.RequestId,
+            Status = RequestStatusEnum.Failed,
+            Message = _imageGenerationState.State.Error
+        };
+        await schedulerGrain.ReportFailedImageGenerationRequestAsync(requestStatus);
     }
 
     public async Task UpdatePromptAsync(string prompt)

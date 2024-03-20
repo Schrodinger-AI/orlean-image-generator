@@ -19,6 +19,8 @@ public interface IImageGeneratorGrain : ISchrodingerGrain, IGrainWithStringKey
     Task UpdatePromptAsync(string prompt);
     
     Task TriggerImageGenerationAsync();
+    
+    Task CheckAndReportForInvalidStates();
 }
 
 public interface IMultiImageGeneratorGrain : ISchrodingerGrain, IGrainWithStringKey

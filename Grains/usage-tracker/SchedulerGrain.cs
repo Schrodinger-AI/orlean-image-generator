@@ -30,6 +30,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
     private IDisposable? _flushTimer;
     
     private Dictionary<string, ApiKeyUsageInfo> _apiKeyStatus = new();
+    private bool _init = false;
 
     public SchedulerGrain(
         [PersistentState("masterTrackerState", "MySqlSchrodingerImageStore")]
@@ -55,14 +56,6 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
     
     public override Task OnActivateAsync()
     {
-        _timer = RegisterTimer(asyncCallback: _ => this.AsReference<ISchedulerGrain>().TickAsync(),null,
-            dueTime: TimeSpan.Zero,
-            period: TimeSpan.FromSeconds(1));
-        
-        _flushTimer = RegisterTimer(asyncCallback: _ => FlushTimerAsync(), null,
-            dueTime: TimeSpan.Zero,
-            period: TimeSpan.FromSeconds(1));
-        
         if(_masterTrackerState.State.CompletedImageGenerationRequests == null)
             _masterTrackerState.State.CompletedImageGenerationRequests = new Dictionary<string, RequestAccountUsageInfo>();
         if(_masterTrackerState.State.FailedImageGenerationRequests == null)
@@ -71,8 +64,24 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
             _masterTrackerState.State.PendingImageGenerationRequests = new Dictionary<string, RequestAccountUsageInfo>();
         if(_masterTrackerState.State.StartedImageGenerationRequests == null)
             _masterTrackerState.State.StartedImageGenerationRequests = new Dictionary<string, RequestAccountUsageInfo>();
+
+        // for each pending request, get image generator grain and CheckAndReportForInvalidStates
+        _masterTrackerState.State.PendingImageGenerationRequests
+            .Select(pair => pair.Value.ChildId)
+            .ToList()
+            .ForEach(childId =>
+            {
+                var imageGenerationGrain = GrainFactory.GetGrain<IImageGeneratorGrain>(childId);
+                imageGenerationGrain.CheckAndReportForInvalidStates().Wait();
+            });
         
-        ResetPendingToStarted();
+        _timer = RegisterTimer(asyncCallback: _ => this.AsReference<ISchedulerGrain>().TickAsync(),null,
+            dueTime: TimeSpan.Zero,
+            period: TimeSpan.FromSeconds(1));
+        
+        _flushTimer = RegisterTimer(asyncCallback: _ => FlushTimerAsync(), null,
+            dueTime: TimeSpan.Zero,
+            period: TimeSpan.FromSeconds(1));
         
         return base.OnActivateAsync();
     }
@@ -222,6 +231,8 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         // 4. For all pending tasks, find the account with the most remaining quota
         // 5. Schedule the task, update the account usage info
         
+        ResetPendingToStarted();
+        
         UpdateApiUsageStatus();
 
         if (_masterTrackerState.State.ApiAccountInfoList == null)
@@ -270,6 +281,11 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
 
     private void ResetPendingToStarted()
     {
+        if (_init)
+        {
+            return;
+        }
+
         var now = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
         var cutoff = now - FOUR_DAYS_IN_SECONDS;
         var pendingRequests = _masterTrackerState.State.PendingImageGenerationRequests
@@ -280,6 +296,8 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
             _masterTrackerState.State.PendingImageGenerationRequests.Remove(requestId);
             _masterTrackerState.State.StartedImageGenerationRequests.Add(requestId, info);
         }
+        
+        _init = true;
     }
     
     private Dictionary<string, int> GetRemainingQuotaByApiKeys()
