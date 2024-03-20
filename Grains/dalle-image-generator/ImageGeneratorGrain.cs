@@ -89,6 +89,25 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
         }
     }
 
+    public async Task UpdatePromptAsync(string prompt)
+    {
+        _logger.LogInformation($"ImageGeneratorGrain - UpdateImageAsync for generatorId: {_imageGenerationState.State.RequestId} with prompt: {prompt}");
+        _imageGenerationState.State.Prompt = prompt;
+        //notify schedulerGrain for adhoc image generation
+        var schedulerGrain = GrainFactory.GetGrain<IImageGenerationRequestStatusReceiver>("SchedulerGrain");
+        // notify the scheduler grain about the failed completion
+        var requestStatus = new RequestStatus
+        {
+            RequestId = _imageGenerationState.State.RequestId,
+            Status = RequestStatusEnum.Failed,
+            RequestTimestamp = GetCurrentUTCTimeInSeconds(),
+            Message = "force execute",
+            ErrorCode = null
+        };
+        await schedulerGrain.ReportFailedImageGenerationRequestAsync(requestStatus);
+        await _imageGenerationState.WriteStateAsync();
+    }
+
     public async Task TriggerImageGenerationAsync()
     {
         _logger.LogInformation($"ImageGeneratorGrain - TriggerImageGenerationAsync with ApiKey: {_apiKey}");
@@ -142,8 +161,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
             // notify about successful completion to parentGrain
             await parentGeneratorGrain.NotifyImageGenerationStatus(_imageGenerationState.State.RequestId,
                 ImageGenerationStatus.SuccessfulCompletion, null);
-
-
+            
             //notify the scheduler grain about the successful completion
             var requestStatus = new RequestStatus
             {

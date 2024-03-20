@@ -130,6 +130,20 @@ namespace Shared
         [JsonPropertyName("requestId")]
         public string RequestId { get; set; }
     }
-
+    
+    public class PromptUpdateRequest
+    {
+        [JsonPropertyName("multiImageRequestId")]
+        public string MultiImageRequestId { get; set; }
+        
+        [JsonPropertyName("requestId")]
+        public string RequestId { get; set; } = "";
+        
+        [JsonPropertyName("prompt")]
+        public string? Prompt { get; set; } = null;
+        
+        [JsonPropertyName("attributes")]
+        public List<Attribute> Attributes { get; set; } = [];
+    }
     
 }
