@@ -62,7 +62,7 @@ public class MultiImageGeneratorController : ControllerBase
     [HttpPost("query")]
     public async Task<ObjectResult> QueryImage(ImageQueryRequest imageQueryRequest)
     {
-        _logger.LogInformation("MultiImageGeneratorController - Querying image with request id: " + imageQueryRequest.RequestId);
+        _logger.LogInformation("MultiImageGeneratorController - Querying image with request id: {requestId} ", imageQueryRequest.RequestId);
 
         var multiImageGeneratorGrain = _client.GetGrain<IMultiImageGeneratorGrain>(imageQueryRequest.RequestId);
         var imageQueryResponse = await multiImageGeneratorGrain.QueryMultipleImagesAsync();
