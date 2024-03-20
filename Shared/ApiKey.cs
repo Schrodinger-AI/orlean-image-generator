@@ -10,6 +10,10 @@ public class ApiKey
     [Id(1)]
     public ImageGenerationServiceProvider ServiceProvider { get; set; } = ImageGenerationServiceProvider.DalleOpenAI;
 
+    public ApiKey()
+    {
+    }
+    
     public ApiKey(string concatApiKeyString)
     {
         var strings = concatApiKeyString.Split('_');
