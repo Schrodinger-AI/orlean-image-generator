@@ -18,14 +18,17 @@ public class MultiImageGenerationState
     [Id(3)]
     public bool IsSuccessful { get; set; }
 
-
     [Id(4)]
-    public List<string>? Errors { get; set; }
-
-    [Id(5)]
     public List<string> ImageGenerationRequestIds = [];
-    [Id(6)]
+    
+    [Id(5)]
     public Dictionary<string, ImageGenerationTracker> imageGenerationTrackers = [];
+    
+    [Id(6)]
+    public ImageGenerationStatus ImageGenerationStatus { get; set; }
+    
+    [Id(7)]
+    public ImageGenerationErrorCode? ErrorCode { get; set; }
 }
 
 [GenerateSerializer]
@@ -39,4 +42,7 @@ public class ImageGenerationTracker
 
     [Id(2)]
     public string? Error { get; set; }
+    
+    [Id(3)]
+    public ImageGenerationErrorCode? ErrorCode { get; set; }
 }

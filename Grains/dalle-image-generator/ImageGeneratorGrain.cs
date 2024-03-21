@@ -99,7 +99,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
             var schedulerGrain = GrainFactory.GetGrain<IImageGenerationRequestStatusReceiver>("SchedulerGrain");
 
             // notify about failed completion to parentGrain
-            await parentGeneratorGrain.NotifyImageGenerationStatus(_imageGenerationState.State.RequestId, ImageGenerationStatus.FailedCompletion, _imageGenerationState.State.Error);
+            await parentGeneratorGrain.NotifyImageGenerationStatus(_imageGenerationState.State.RequestId, ImageGenerationStatus.FailedCompletion, _imageGenerationState.State.Error, ImageGenerationErrorCode.invalid_api_key);
             // notify the scheduler grain about the failed completion
             var requestStatus = new RequestStatus
             {
@@ -165,7 +165,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
 
             // notify about successful completion to parentGrain
             await parentGeneratorGrain.NotifyImageGenerationStatus(_imageGenerationState.State.RequestId,
-                ImageGenerationStatus.SuccessfulCompletion, null);
+                ImageGenerationStatus.SuccessfulCompletion, null, null);
 
 
             //notify the scheduler grain about the successful completion
@@ -184,7 +184,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
 
             // notify about failed completion to parentGrain
             await parentGeneratorGrain.NotifyImageGenerationStatus(_imageGenerationState.State.RequestId,
-                ImageGenerationStatus.FailedCompletion, imageGenerationResponse.Error);
+                ImageGenerationStatus.FailedCompletion, imageGenerationResponse.Error, imageGenerationResponse.ErrorCode);
 
             // notify the scheduler grain about the failed completion
             var requestStatus = new RequestStatus
@@ -296,22 +296,28 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
                 RequestTimestamp = imageGenerationRequestTimestamp,
             };
 
-            if (e is ImageGenerationException && ((ImageGenerationException) e).ErrorCode == ImageGenerationErrorCode.content_violation)
+            if (e is ImageGenerationException)
             {
-                requestStatus.ErrorCode = ImageGenerationErrorCode.content_violation;
-                await schedulerGrain.ReportBlockedImageGenerationRequestAsync(requestStatus);
+                if (((ImageGenerationException)e).ErrorCode == ImageGenerationErrorCode.content_violation)
+                {
+                    _imageGenerationState.State.ErrorCode = ImageGenerationErrorCode.content_violation;
+                    requestStatus.ErrorCode = ImageGenerationErrorCode.content_violation;
+                    await schedulerGrain.ReportBlockedImageGenerationRequestAsync(requestStatus);
+                }
+                else
+                {
+                    _imageGenerationState.State.ErrorCode = ((ImageGenerationException)e).ErrorCode;
+                    requestStatus.ErrorCode = ((ImageGenerationException)e).ErrorCode;
+                    await schedulerGrain.ReportFailedImageGenerationRequestAsync(requestStatus);
+                }
             }
             else
             {
+                _imageGenerationState.State.ErrorCode = ImageGenerationErrorCode.internal_error;
                 await schedulerGrain.ReportFailedImageGenerationRequestAsync(requestStatus);
             }
-
-            ImageGenerationErrorCode? imageGenerationErrorCode = null;
-            var imageGenerationException = e as ImageGenerationException;
-            if (imageGenerationException != null)
-            {
-                imageGenerationErrorCode = imageGenerationException.ErrorCode;
-            }
+            
+            await _imageGenerationState.WriteStateAsync();
 
             imageGenerationGrainResponse = new ImageGenerationGrainResponse
             {
@@ -319,7 +325,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
                 IsSuccessful = false,
                 Error = e.Message,
                 ImageGenerationRequestTimestamp = imageGenerationRequestTimestamp,
-                ErrorCode = imageGenerationErrorCode
+                ErrorCode = _imageGenerationState.State.ErrorCode
             };
         }
         return imageGenerationGrainResponse;
