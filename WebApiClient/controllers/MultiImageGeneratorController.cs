@@ -77,4 +77,55 @@ public class MultiImageGeneratorController : ControllerBase
         var images = imageQueryResponse.Images ?? [];
         return StatusCode(200, new ImageQueryResponseOk { Images = images });
     }
+    
+    [HttpPost("generations/{requestId}")]
+    public async Task<ImageGenerationResponse> ImageGenerations(ImageGenerationRequest imageGenerationRequest, string requestId)
+    {
+        List<Attribute> newTraits = imageGenerationRequest.NewTraits;
+        List<Attribute> baseTraits = imageGenerationRequest.BaseImage.Attributes;
+
+        //collect the newTraits from the request and combine it with trats from the base image
+        IEnumerable<Attribute> traits = newTraits.Concat(baseTraits);
+
+        var multiImageGeneratorGrain = _client.GetGrain<IMultiImageGeneratorGrain>(requestId);
+        var isAlreadySubmitted = await multiImageGeneratorGrain.IsAlreadySubmitted();
+        if (isAlreadySubmitted)
+        {
+            return new ImageGenerationResponseNotOk { Error = "Duplicate request" };
+        }
+
+        var response = await multiImageGeneratorGrain.GenerateMultipleImagesAsync(traits.ToList(),
+            imageGenerationRequest.NumberOfImages, requestId);
+
+        if (response.IsSuccessful)
+        {
+            return new ImageGenerationResponseOk { RequestId = requestId };
+        }
+        else
+        {
+            List<string> errorMessages = response.Errors ?? new List<string>();
+            string errorMessage = string.Join(", ", errorMessages);
+            return new ImageGenerationResponseNotOk { Error = errorMessage };
+        }
+    }
+
+    [HttpGet("generations/{requestId}")]
+    public async Task<ObjectResult> ImageGenerationsQuery(string requestId)
+    {
+        _logger.LogInformation("MultiImageGeneratorController - Querying image with request id: " + requestId);
+
+        var multiImageGeneratorGrain = _client.GetGrain<IMultiImageGeneratorGrain>(requestId);
+        var imageQueryResponse = await multiImageGeneratorGrain.QueryMultipleImagesAsync();
+
+        _logger.LogInformation("$MultiImageGeneratorController - Querying image with request id: " + requestId + " - Response: " + imageQueryResponse.Status);
+        
+        if (imageQueryResponse.Uninitialized)
+            return StatusCode(404, new ImageQueryResponseNotOk { Error = "Request not found" });
+
+        if (imageQueryResponse.Status != ImageGenerationStatus.SuccessfulCompletion)
+            return StatusCode(202, new ImageQueryResponseNotOk { Error = "The result is not ready." });
+        var images = imageQueryResponse.Images ?? [];
+        return StatusCode(200, new ImageQueryResponseOk { Images = images });
+    }
+    
 }
