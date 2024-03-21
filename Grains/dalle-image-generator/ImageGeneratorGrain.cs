@@ -217,6 +217,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
         _logger.LogInformation(
             $"ImageGeneratorGrain - generatorId: {imageRequestId} , GenerateImageFromPromptAsync invoked with prompt: {prompt}");
         var imageGenerationRequestTimestamp = GetCurrentUTCTimeInSeconds();
+        ImageGenerationGrainResponse imageGenerationGrainResponse = null;
         try
         {
             _imageGenerationState.State.ParentRequestId = parentRequestId;
@@ -224,23 +225,23 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
             _imageGenerationState.State.Prompt = prompt;
 
             ImageGenerationResponse imageGenerationResponse;
-            
+
             if (_imageGenerationServiceProvider == ImageGenerationServiceProvider.DalleOpenAI)
             {
                 // Start the image data generation process
-                imageGenerationResponse = await _dalleOpenAiImageGenerator.RunImageGenerationAsync(prompt, _apiKey, 1, _imageSettings, _imageGenerationState.State.RequestId);
+                imageGenerationResponse = await _dalleOpenAiImageGenerator.RunImageGenerationAsync(prompt, _apiKey, 1,
+                    _imageSettings, _imageGenerationState.State.RequestId);
             }
             else if (_imageGenerationServiceProvider == ImageGenerationServiceProvider.AzureOpenAI)
             {
                 // Start the image data generation process
-                imageGenerationResponse = await _azureOpenAiImageGenerator.RunImageGenerationAsync(prompt, _apiKey, 1, _imageSettings, _imageGenerationState.State.RequestId);
+                imageGenerationResponse = await _azureOpenAiImageGenerator.RunImageGenerationAsync(prompt, _apiKey, 1,
+                    _imageSettings, _imageGenerationState.State.RequestId);
             }
             else
             {
                 throw new Exception("Invalid ImageGenerationServiceProvider");
             }
-
-            _logger.LogInformation($"ImageGeneratorGrain - generatorId: {imageRequestId} , imageGenerationResponse: {imageGenerationResponse}");
 
             _logger.LogInformation(
                 $"ImageGeneratorGrain - generatorId: {imageRequestId} , imageGenerationResponse: {imageGenerationResponse}");
@@ -267,7 +268,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
             // Store the task in a non-persistent dictionary
             await _imageGenerationState.WriteStateAsync();
 
-            return new ImageGenerationGrainResponse
+            imageGenerationGrainResponse = new ImageGenerationGrainResponse
             {
                 RequestId = imageRequestId,
                 IsSuccessful = true,
@@ -275,18 +276,35 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
                 ImageGenerationRequestTimestamp = imageGenerationRequestTimestamp,
                 ErrorCode = null
             };
-        }
-        catch (Exception e)
-        {
+        } catch (Exception e) {
             _logger.LogError(
                 $"ImageGeneratorGrain - generatorId: {imageRequestId} , GenerateImageFromPromptAsync failed with Error: {e.Message}");
             _imageGenerationState.State.Status = ImageGenerationStatus.FailedCompletion;
             _imageGenerationState.State.Error = e.Message;
             await _imageGenerationState.WriteStateAsync();
-            
-            //load the scheduler Grain and update with 
+
+            //load the Parent Grain and update with status
             var parentGeneratorGrain = GrainFactory.GetGrain<IMultiImageGeneratorGrain>(_imageGenerationState.State.ParentRequestId);
             await parentGeneratorGrain.NotifyImageGenerationStatus(_imageGenerationState.State.RequestId, ImageGenerationStatus.FailedCompletion, e.Message);
+
+            var schedulerGrain = GrainFactory.GetGrain<IImageGenerationRequestStatusReceiver>("SchedulerGrain");
+            var requestStatus = new RequestStatus
+            {
+                RequestId = _imageGenerationState.State.RequestId,
+                Status = RequestStatusEnum.Failed,
+                Message = e.Message,
+                RequestTimestamp = imageGenerationRequestTimestamp,
+            };
+
+            if (e is ImageGenerationException)
+            {
+                requestStatus.ErrorCode = ((ImageGenerationException) e).ErrorCode;
+                await schedulerGrain.ReportBlockedImageGenerationRequestAsync(requestStatus);
+            }
+            else
+            {
+                await schedulerGrain.ReportFailedImageGenerationRequestAsync(requestStatus);
+            }
 
             ImageGenerationErrorCode? imageGenerationErrorCode = null;
             var imageGenerationException = e as ImageGenerationException;
@@ -294,8 +312,8 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
             {
                 imageGenerationErrorCode = imageGenerationException.ErrorCode;
             }
-            
-            return new ImageGenerationGrainResponse
+
+            imageGenerationGrainResponse = new ImageGenerationGrainResponse
             {
                 RequestId = imageRequestId,
                 IsSuccessful = false,
@@ -304,6 +322,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
                 ErrorCode = imageGenerationErrorCode
             };
         }
+        return imageGenerationGrainResponse;
     }
     
     public async Task UpdatePromptAsync(string prompt)
