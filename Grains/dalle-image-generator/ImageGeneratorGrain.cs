@@ -285,7 +285,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
 
             //load the Parent Grain and update with status
             var parentGeneratorGrain = GrainFactory.GetGrain<IMultiImageGeneratorGrain>(_imageGenerationState.State.ParentRequestId);
-            await parentGeneratorGrain.NotifyImageGenerationStatus(_imageGenerationState.State.RequestId, ImageGenerationStatus.FailedCompletion, e.Message);
+            await parentGeneratorGrain.NotifyImageGenerationStatus(_imageGenerationState.State.RequestId, ImageGenerationStatus.FailedCompletion, e.Message, ImageGenerationErrorCode.internal_error);
 
             var schedulerGrain = GrainFactory.GetGrain<IImageGenerationRequestStatusReceiver>("SchedulerGrain");
             var requestStatus = new RequestStatus
