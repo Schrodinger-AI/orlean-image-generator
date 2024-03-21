@@ -296,9 +296,9 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
                 RequestTimestamp = imageGenerationRequestTimestamp,
             };
 
-            if (e is ImageGenerationException)
+            if (e is ImageGenerationException && ((ImageGenerationException) e).ErrorCode == ImageGenerationErrorCode.content_violation)
             {
-                requestStatus.ErrorCode = ((ImageGenerationException) e).ErrorCode;
+                requestStatus.ErrorCode = ImageGenerationErrorCode.content_violation;
                 await schedulerGrain.ReportBlockedImageGenerationRequestAsync(requestStatus);
             }
             else
