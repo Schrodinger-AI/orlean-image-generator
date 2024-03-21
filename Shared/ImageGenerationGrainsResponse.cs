@@ -3,13 +3,10 @@ namespace Shared
     public enum ImageGenerationStatus
     {
         Dormant,
-
         InProgress,
         FailedCompletion,
-
         SuccessfulCompletion,
-
-        ReScheduled
+        Blocked,
     }
 
     [GenerateSerializer]
