@@ -124,37 +124,28 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
 
         return Task.CompletedTask;
     }
-
-    public Task<IReadOnlyDictionary<string, RequestAccountUsageInfo>> GetFailedImageGenerationRequestsAsync()
+    
+    public Task<List<RequestAccountUsageInfoDto>> GetFailedImageGenerationRequestsAsync()
     {
-        return Task.FromResult<IReadOnlyDictionary<string, RequestAccountUsageInfo>>(
-            _masterTrackerState.State.FailedImageGenerationRequests);
+        var ret = GetRequestAccountUsageInfoDtoList(_masterTrackerState.State.FailedImageGenerationRequests);
+        return Task.FromResult(ret.ToList());
     }
 
-    public Task<IReadOnlyDictionary<string, RequestAccountUsageInfo>> GetStartedImageGenerationRequestsAsync()
+    public Task<List<RequestAccountUsageInfoDto>> GetStartedImageGenerationRequestsAsync()
     {
-        return Task.FromResult<IReadOnlyDictionary<string, RequestAccountUsageInfo>>(_masterTrackerState.State
-            .StartedImageGenerationRequests);
+        var ret = GetRequestAccountUsageInfoDtoList(_masterTrackerState.State.StartedImageGenerationRequests);
+        return Task.FromResult(ret.ToList());
     }
 
-    public Task<IReadOnlyDictionary<string, RequestAccountUsageInfo>> GetPendingImageGenerationRequestsAsync()
+    public Task<List<RequestAccountUsageInfoDto>> GetPendingImageGenerationRequestsAsync()
     {
-        return Task.FromResult<IReadOnlyDictionary<string, RequestAccountUsageInfo>>(_masterTrackerState.State
-            .PendingImageGenerationRequests);
+        var ret = GetRequestAccountUsageInfoDtoList(_masterTrackerState.State.PendingImageGenerationRequests);
+        return Task.FromResult(ret.ToList());
     }
 
-    public Task<IEnumerable<BlockedRequestInfoDto>> GetBlockedImageGenerationRequestsAsync()
+    public Task<List<BlockedRequestInfoDto>> GetBlockedImageGenerationRequestsAsync()
     {
         var requestList = new List<BlockedRequestInfo>(_masterTrackerState.State.BlockedImageGenerationRequests.Values);
-        requestList.ForEach(item =>
-        {
-            if (item.RequestAccountUsageInfo.ApiKey != null)
-            {
-                item.RequestAccountUsageInfo.ApiKey.ApiKeyString =
-                    item.RequestAccountUsageInfo.ApiKey.ApiKeyString[
-                        ..(item.RequestAccountUsageInfo.ApiKey.ApiKeyString.Length / 2)];
-            }
-        });
         var result = requestList.Select(i => new BlockedRequestInfoDto
         {
             BlockedReason = i.BlockedReason?.ToString(),
@@ -166,12 +157,17 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
                 FailedTimestamp = UnixTimeStampInSecondsToDateTime(i.RequestAccountUsageInfo.FailedTimestamp).ToString(CultureInfo.InvariantCulture),
                 CompletedTimestamp = UnixTimeStampInSecondsToDateTime(i.RequestAccountUsageInfo.CompletedTimestamp).ToString(CultureInfo.InvariantCulture),
                 Attempts = i.RequestAccountUsageInfo.Attempts,
-                ApiKey = i.RequestAccountUsageInfo.ApiKey,
+                ApiKey = i.RequestAccountUsageInfo.ApiKey == null? null: new ApiKeyDto
+                {
+                    ApiKeyString = i.RequestAccountUsageInfo.ApiKey.ApiKeyString[..(i.RequestAccountUsageInfo.ApiKey.ApiKeyString.Length / 2)],
+                    ServiceProvider = i.RequestAccountUsageInfo.ApiKey.ServiceProvider.ToString(),
+                    Url = i.RequestAccountUsageInfo.ApiKey.Url
+                },
                 ChildId = i.RequestAccountUsageInfo.ChildId,
             }
         });
         
-        return Task.FromResult(result);
+        return Task.FromResult(result.ToList());
     }
 
     public Task AddImageGenerationRequest(string requestId, string childId, long requestTimestamp)
@@ -254,19 +250,19 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         return Task.FromResult<IReadOnlyList<ApiKeyEntryDto>>(ret);
     }
 
-    public Task<Dictionary<string, IEnumerable<RequestAccountUsageInfoDto>>> GetImageGenerationStates()
+    public Task<Dictionary<string, List<RequestAccountUsageInfoDto>>> GetImageGenerationStates()
     {
         var startedImageGenerationRequests = GetRequestAccountUsageInfoDtoList(_masterTrackerState.State.StartedImageGenerationRequests);
         var pendingImageGenerationRequests = GetRequestAccountUsageInfoDtoList(_masterTrackerState.State.PendingImageGenerationRequests);
         var completedImageGenerationRequests = GetRequestAccountUsageInfoDtoList(_masterTrackerState.State.CompletedImageGenerationRequests);
         var failedImageGenerationRequests = GetRequestAccountUsageInfoDtoList(_masterTrackerState.State.FailedImageGenerationRequests);
             
-        var imageGenerationRequests = new Dictionary<string, IEnumerable<RequestAccountUsageInfoDto>>()
+        var imageGenerationRequests = new Dictionary<string, List<RequestAccountUsageInfoDto>>()
         {
-            {"startedRequests", startedImageGenerationRequests},
-            {"pendingRequests", pendingImageGenerationRequests},
-            {"completedRequests", completedImageGenerationRequests},
-            {"failedRequests", failedImageGenerationRequests}
+            {"startedRequests", startedImageGenerationRequests.ToList()},
+            {"pendingRequests", pendingImageGenerationRequests.ToList()},
+            {"completedRequests", completedImageGenerationRequests.ToList()},
+            {"failedRequests", failedImageGenerationRequests.ToList()}
         };
         
         return Task.FromResult(imageGenerationRequests);
@@ -617,11 +613,6 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
     private static IEnumerable<RequestAccountUsageInfoDto> GetRequestAccountUsageInfoDtoList(Dictionary<string, RequestAccountUsageInfo> requests)
     {
         var imageGenerationRequests = new List<RequestAccountUsageInfo>(requests.Values);
-        imageGenerationRequests.ForEach(item =>
-        {
-            if (item.ApiKey != null)
-                item.ApiKey.ApiKeyString = item.ApiKey.ApiKeyString[..(item.ApiKey.ApiKeyString.Length / 2)];
-        });
         var ret = imageGenerationRequests.Select(i => new RequestAccountUsageInfoDto
         {
             RequestId = i.RequestId,
@@ -630,7 +621,12 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
             FailedTimestamp = UnixTimeStampInSecondsToDateTime(i.FailedTimestamp).ToString(CultureInfo.InvariantCulture),
             CompletedTimestamp = UnixTimeStampInSecondsToDateTime(i.CompletedTimestamp).ToString(CultureInfo.InvariantCulture),
             Attempts = i.Attempts,
-            ApiKey = i.ApiKey,
+            ApiKey = i.ApiKey == null? null: new ApiKeyDto
+            {
+                ApiKeyString = i.ApiKey.ApiKeyString[..(i.ApiKey.ApiKeyString.Length / 2)],
+                ServiceProvider = i.ApiKey.ServiceProvider.ToString(),
+                Url = i.ApiKey.Url
+            },
             ChildId = i.ChildId
         });
         return ret;

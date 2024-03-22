@@ -1,19 +1,6 @@
 namespace Shared;
 
 [GenerateSerializer]
-public class RequestStatesDto
-{
-    [Id(0)]
-    public Dictionary<string, RequestAccountUsageInfoDto> PendingImageGenerationRequests { get; set; } = new();
-    [Id(1)]
-    public Dictionary<string, RequestAccountUsageInfoDto> StartedImageGenerationRequests { get; set; } = new();
-    [Id(2)]
-    public Dictionary<string, RequestAccountUsageInfoDto> FailedImageGenerationRequests { get; set; } = new();
-    [Id(3)]
-    public Dictionary<string, RequestAccountUsageInfoDto> CompletedImageGenerationRequests { get; set; } = new();
-}
-
-[GenerateSerializer]
 public class RequestAccountUsageInfoDto
 {
     [Id(0)]
@@ -29,7 +16,7 @@ public class RequestAccountUsageInfoDto
     [Id(5)]
     public int Attempts { get; set; } = 0;
     [Id(6)]
-    public ApiKey? ApiKey { get; set; } = null;
+    public ApiKeyDto? ApiKey { get; set; } = null;
     [Id(7)]
     public string ChildId { get; set; } = "";
 }

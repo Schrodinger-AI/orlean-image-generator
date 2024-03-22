@@ -140,7 +140,7 @@ public class SchedulerController : ControllerBase
             var grain = _client.GetGrain<ISchedulerGrain>("SchedulerGrain");
             var states = await grain.GetImageGenerationStates();
             
-            return new ImageGenerationStatesResponseOk<Dictionary<string, IEnumerable<RequestAccountUsageInfoDto>>>(states);
+            return new ImageGenerationStatesResponseOk<Dictionary<string, List<RequestAccountUsageInfoDto>>>(states);
         }
         catch (Exception ex)
         {
@@ -156,7 +156,7 @@ public class SchedulerController : ControllerBase
             var grain = _client.GetGrain<ISchedulerGrain>("SchedulerGrain");
             var blockedRequests = await grain.GetBlockedImageGenerationRequestsAsync();
             
-            return new BlockedRequestResponseOk<IEnumerable<BlockedRequestInfoDto>>(blockedRequests);
+            return new BlockedRequestResponseOk<List<BlockedRequestInfoDto>>(blockedRequests);
         }
         catch (Exception ex)
         {
