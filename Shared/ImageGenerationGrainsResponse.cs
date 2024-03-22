@@ -3,13 +3,10 @@ namespace Shared
     public enum ImageGenerationStatus
     {
         Dormant,
-
         InProgress,
         FailedCompletion,
-
         SuccessfulCompletion,
-
-        ReScheduled
+        Blocked,
     }
 
     [GenerateSerializer]
@@ -37,6 +34,8 @@ namespace Shared
 
         [Id(3)]
         public List<string>? Errors { get; set; }
+
+        [Id(4)] public string? ErrorCode { get; set; } = "";
     }
 
     [GenerateSerializer]

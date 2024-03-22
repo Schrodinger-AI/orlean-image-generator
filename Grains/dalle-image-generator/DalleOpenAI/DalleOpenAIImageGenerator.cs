@@ -119,6 +119,10 @@ public class DalleOpenAIImageGenerator : IImageGenerator
                 {
                     imageGenerationErrorCode = ImageGenerationErrorCode.billing_quota_exceeded;
                 }
+                else if (dalleOpenAiImageGenerationError?.Code is "content_policy" or "content_policy_violation")
+                {
+                    imageGenerationErrorCode = ImageGenerationErrorCode.content_violation;
+                }
                 else
                 {
                     imageGenerationErrorCode = ImageGenerationErrorCode.bad_request;
