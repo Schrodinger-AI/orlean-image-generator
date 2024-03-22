@@ -7,6 +7,8 @@ public class ApiKeyDto
     public string ApiKeyString { get; set; } = "";
     [Id(1)]
     public string ServiceProvider { get; set; } = "";
+    [Id(2)]
+    public string Url { get; set; } = "";
 }
 
 [GenerateSerializer]

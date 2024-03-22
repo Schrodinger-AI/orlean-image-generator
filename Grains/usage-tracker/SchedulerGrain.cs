@@ -475,7 +475,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
             
             info.StartedTimestamp = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
             // Get child gen grain to process failed request again with the new api key
-            await imageGenerationGrain.SetImageGenerationServiceProvider(info.ApiKey.ApiKeyString, info.ApiKey.ServiceProvider);
+            await imageGenerationGrain.SetImageGenerationServiceProvider(info.ApiKey);
             
             // remove from list to add to pending
             _logger.LogWarning($"[SchedulerGrain] Request {requestId} is pending");
@@ -532,16 +532,22 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         return totalQuota;
     }
 
-    private static ApiKey? GetApiKey(IDictionary<string, int> apiQuota)
+    private ApiKey? GetApiKey(IDictionary<string, int> apiQuota)
     {
         var (apiKey, quota)= apiQuota.MaxBy(pair => pair.Value);
         if (string.IsNullOrEmpty(apiKey) || quota <= 0)
         {
             return null;
         }
+
+        var apiAccountInfo = _masterTrackerState.State.ApiAccountInfoList.Find(info => info.ApiKey.GetConcatApiKeyString() == apiKey);
+        if (apiAccountInfo == null)
+        {
+            return null;
+        }
         
         apiQuota[apiKey] -= 1;
-        return new ApiKey(apiKey);
+        return apiAccountInfo.ApiKey;
     }
 
     private RequestAccountUsageInfo PopFromPending(string requestId)

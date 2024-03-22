@@ -29,7 +29,7 @@ public class SchedulerController : ControllerBase
         {
             var apiAccountInfos = apiKeyEntries.Select(entry => new APIAccountInfo
             {
-                ApiKey = new ApiKey(entry.ApiKey.ApiKeyString, entry.ApiKey.ServiceProvider),
+                ApiKey = new ApiKey(entry.ApiKey.ApiKeyString, entry.ApiKey.ServiceProvider, entry.ApiKey.Url),
                 Email = entry.Email,
                 Tier = entry.Tier,
                 MaxQuota = entry.MaxQuota
@@ -37,7 +37,7 @@ public class SchedulerController : ControllerBase
 
             var grain = _client.GetGrain<ISchedulerGrain>("SchedulerGrain");
             var addedApiKeys = await grain.AddApiKeys(apiAccountInfos);
-            var ret = addedApiKeys.Select(apiKey => new ApiKeyDto { ApiKeyString = apiKey.ApiKeyString.Substring(0, apiKey.ApiKeyString.Length / 2), ServiceProvider = apiKey.ServiceProvider.ToString() }).ToList();
+            var ret = addedApiKeys.Select(apiKey => new ApiKeyDto { ApiKeyString = apiKey.ApiKeyString.Substring(0, apiKey.ApiKeyString.Length / 2), ServiceProvider = apiKey.ServiceProvider.ToString(), Url = apiKey.Url}).ToList();
             return new AddApiKeyResponseOk(ret);
         }
         catch (Exception ex)
@@ -51,7 +51,7 @@ public class SchedulerController : ControllerBase
     {
         try
         {
-            var apiKeys = apiKeyDtos.Select(dto => new ApiKey(dto.ApiKeyString, dto.ServiceProvider)).ToList();
+            var apiKeys = apiKeyDtos.Select(dto => new ApiKey(dto.ApiKeyString, dto.ServiceProvider, dto.Url)).ToList();
 
             var grain = _client.GetGrain<ISchedulerGrain>("SchedulerGrain");
             var addedApiKeys = await grain.RemoveApiKeys(apiKeys);
