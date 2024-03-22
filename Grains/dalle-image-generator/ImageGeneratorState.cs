@@ -33,4 +33,7 @@ public class ImageGenerationState
     // Now it's nullable and not set by default
     [Id(8)]
     public long? ImageGenerationTimestamp { get; set; }
+    
+    [Id(9)]
+    public ImageGenerationErrorCode? ErrorCode { get; set; }
 }

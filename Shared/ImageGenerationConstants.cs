@@ -2,6 +2,7 @@ namespace Shared;
 
 public enum ImageGenerationErrorCode
 {
+    None,
     api_call_failed,
     invalid_api_key,
     internal_error,

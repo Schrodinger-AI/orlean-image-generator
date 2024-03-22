@@ -162,6 +162,10 @@ namespace Shared
         [JsonPropertyName("error")]
         [Id(0)]
         public string Error { get; set; }
+        
+        [JsonPropertyName("errorCode")]
+        [Id(1)]
+        public string ErrorCode { get; set; }
     }
 
     [GenerateSerializer]

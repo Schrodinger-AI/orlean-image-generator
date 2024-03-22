@@ -138,7 +138,7 @@ public class AzureOpenAIImageGenerator : IImageGenerator
     {
         ImageGenerationErrorCode imageGenerationErrorCode;
 
-        if (requestFailedException.ErrorCode == "content_filter")
+        if (requestFailedException.ErrorCode is "content_filter" or "contentFilter")
         {
             imageGenerationErrorCode = ImageGenerationErrorCode.content_violation;
         }
