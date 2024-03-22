@@ -12,7 +12,7 @@ public class ApiKeyDto
 }
 
 [GenerateSerializer]
-public class ApiKeyEntry
+public class ApiKeyEntryDto
 {
     [Id(0)]
     public ApiKeyDto ApiKey { get; set; }

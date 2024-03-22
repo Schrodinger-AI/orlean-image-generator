@@ -23,20 +23,12 @@ public class SchedulerController : ControllerBase
     }
 
     [HttpPost("add")]
-    public async Task<AddApiKeyAPIResponse> AddApiKeys(List<ApiKeyEntry> apiKeyEntries)
+    public async Task<AddApiKeyAPIResponse> AddApiKeys(List<ApiKeyEntryDto> apiKeyEntries)
     {
         try
         {
-            var apiAccountInfos = apiKeyEntries.Select(entry => new APIAccountInfo
-            {
-                ApiKey = new ApiKey(entry.ApiKey.ApiKeyString, entry.ApiKey.ServiceProvider, entry.ApiKey.Url),
-                Email = entry.Email,
-                Tier = entry.Tier,
-                MaxQuota = entry.MaxQuota
-            }).ToList();
-
             var grain = _client.GetGrain<ISchedulerGrain>("SchedulerGrain");
-            var addedApiKeys = await grain.AddApiKeys(apiAccountInfos);
+            var addedApiKeys = await grain.AddApiKeys(apiKeyEntries);
             var ret = addedApiKeys.Select(apiKey => new ApiKeyDto { ApiKeyString = apiKey.ApiKeyString.Substring(0, apiKey.ApiKeyString.Length / 2), ServiceProvider = apiKey.ServiceProvider.ToString(), Url = apiKey.Url}).ToList();
             return new AddApiKeyResponseOk(ret);
         }
@@ -71,30 +63,12 @@ public class SchedulerController : ControllerBase
     }
     
     [HttpGet]
-    public async Task<ActionResult<ApiKeyEntry[]>> GetAllApiKeys()
+    public async Task<ActionResult<ApiKeyEntryDto[]>> GetAllApiKeys()
     {
         var grain = _client.GetGrain<ISchedulerGrain>("SchedulerGrain");
         var apiAccountInfos = await grain.GetAllApiKeys();
         
-        //hack for when we do not have user protection
-        var ret = new List<ApiKeyEntry>();
-        foreach (var info in apiAccountInfos)
-        {
-            var newInfo = new ApiKeyEntry
-            {
-                ApiKey = new ApiKeyDto
-                {
-                    ApiKeyString = info.ApiKey.ApiKeyString.Substring(0, info.ApiKey.ApiKeyString.Length/2),
-                    ServiceProvider = info.ApiKey.ServiceProvider.ToString()
-                },
-                Email = info.Email,
-                MaxQuota = info.MaxQuota,
-                Tier = info.Tier
-            };
-            ret.Add(newInfo);
-        }
-        
-        return Ok(ret.ToArray());
+        return Ok(apiAccountInfos.ToArray());
     }
     
     [HttpGet("apiKeysUsageInfo")]

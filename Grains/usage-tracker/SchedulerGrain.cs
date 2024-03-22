@@ -27,7 +27,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
     private IDisposable? _timer;
     private IDisposable? _flushTimer;
     
-    private Dictionary<string, ApiKeyUsageInfo> _apiKeyStatus = new();
+    private readonly Dictionary<string, ApiKeyUsageInfo> _apiKeyStatus = new();
 
     public SchedulerGrain(
         [PersistentState("masterTrackerState", "MySqlSchrodingerImageStore")]
@@ -60,17 +60,6 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         _flushTimer = RegisterTimer(asyncCallback: _ => FlushTimerAsync(), null,
             dueTime: TimeSpan.Zero,
             period: TimeSpan.FromSeconds(1));
-        
-        if(_masterTrackerState.State.CompletedImageGenerationRequests == null)
-            _masterTrackerState.State.CompletedImageGenerationRequests = new Dictionary<string, RequestAccountUsageInfo>();
-        if(_masterTrackerState.State.FailedImageGenerationRequests == null)
-            _masterTrackerState.State.FailedImageGenerationRequests = new Dictionary<string, RequestAccountUsageInfo>();
-        if(_masterTrackerState.State.PendingImageGenerationRequests == null)
-            _masterTrackerState.State.PendingImageGenerationRequests = new Dictionary<string, RequestAccountUsageInfo>();
-        if(_masterTrackerState.State.StartedImageGenerationRequests == null)
-            _masterTrackerState.State.StartedImageGenerationRequests = new Dictionary<string, RequestAccountUsageInfo>();
-        if(_masterTrackerState.State.BlockedImageGenerationRequests == null)
-            _masterTrackerState.State.BlockedImageGenerationRequests = new Dictionary<string, BlockedRequestInfo>();
         
         return base.OnActivateAsync(cancellationToken);
     }
@@ -173,17 +162,22 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         return Task.CompletedTask;
     }
 
-    public async Task<List<ApiKey>> AddApiKeys(List<APIAccountInfo> apiKeyEntries)
+    public async Task<List<ApiKey>> AddApiKeys(List<ApiKeyEntryDto> apiKeyEntries)
     {
+        var apiAccountInfos = apiKeyEntries.Select(entry => new APIAccountInfo
+        {
+            ApiKey = new ApiKey(entry.ApiKey.ApiKeyString, entry.ApiKey.ServiceProvider, entry.ApiKey.Url),
+            Email = entry.Email,
+            Tier = entry.Tier,
+            MaxQuota = entry.MaxQuota
+        }).ToList();
+        
         List<ApiKey> addedApiKeys = new();
         
-        if(_masterTrackerState.State.ApiAccountInfoList == null)
-            _masterTrackerState.State.ApiAccountInfoList = new List<APIAccountInfo>();
-        
-        foreach (var apiKeyEntry in apiKeyEntries)
+        foreach (var apiAccountInfo in apiAccountInfos)
         {
-            _masterTrackerState.State.ApiAccountInfoList.Add(apiKeyEntry);
-            addedApiKeys.Add(apiKeyEntry.ApiKey);
+            _masterTrackerState.State.ApiAccountInfoList.Add(apiAccountInfo);
+            addedApiKeys.Add(apiAccountInfo.ApiKey);
         }
         await _masterTrackerState.WriteStateAsync();
 
@@ -193,10 +187,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
     //returns a list of apikeys that were removed
     public async Task<List<ApiKey>> RemoveApiKeys(List<ApiKey> apiKey)
     {
-        List<ApiKey> removedApiKeys = new();
-        
-        if(_masterTrackerState.State.ApiAccountInfoList == null)
-            return removedApiKeys;
+        List<ApiKey> removedApiKeys = [];
         
         _masterTrackerState.State.ApiAccountInfoList.RemoveAll(apiInfo =>
         {
@@ -214,11 +205,26 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         return removedApiKeys;
     }
 
-    public Task<IReadOnlyList<APIAccountInfo>> GetAllApiKeys()
+    public Task<IReadOnlyList<ApiKeyEntryDto>> GetAllApiKeys()
     {
-        if(_masterTrackerState.State.ApiAccountInfoList == null)
-            return Task.FromResult<IReadOnlyList<APIAccountInfo>>(new List<APIAccountInfo>());
-        return Task.FromResult<IReadOnlyList<APIAccountInfo>>(_masterTrackerState.State.ApiAccountInfoList);
+        var ret = new List<ApiKeyEntryDto>();
+        foreach (var info in _masterTrackerState.State.ApiAccountInfoList)
+        {
+            var newInfo = new ApiKeyEntryDto
+            {
+                ApiKey = new ApiKeyDto
+                {
+                    ApiKeyString = info.ApiKey.ApiKeyString.Substring(0, info.ApiKey.ApiKeyString.Length/2),
+                    ServiceProvider = info.ApiKey.ServiceProvider.ToString()
+                },
+                Email = info.Email,
+                MaxQuota = info.MaxQuota,
+                Tier = info.Tier
+            };
+            ret.Add(newInfo);
+        }
+        
+        return Task.FromResult<IReadOnlyList<ApiKeyEntryDto>>(ret);
     }
 
     public Task<SchedulerState> GetImageGenerationStates()
@@ -247,7 +253,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         UpdateApiUsageStatus();
         UpdateExpiredPendingRequestsToBlocked();
 
-        if (_masterTrackerState.State.ApiAccountInfoList == null)
+        if (_masterTrackerState.State.ApiAccountInfoList.Count == 0)
         {
             return;
         }
@@ -550,7 +556,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         return apiAccountInfo.ApiKey;
     }
 
-    private RequestAccountUsageInfo PopFromPending(string requestId)
+    private RequestAccountUsageInfo? PopFromPending(string requestId)
     {
         if (!_masterTrackerState.State.PendingImageGenerationRequests.ContainsKey(requestId))
         {
