@@ -34,6 +34,8 @@ namespace Shared
 
         [Id(3)]
         public List<string>? Errors { get; set; }
+
+        [Id(4)] public string? ErrorCode { get; set; } = "";
     }
 
     [GenerateSerializer]

@@ -222,7 +222,8 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
             return new MultiImageQueryGrainResponse
             {
                 Status = ImageGenerationStatus.FailedCompletion,
-                Errors = errors
+                Errors = errors,
+                ErrorCode = _multiImageGenerationState.State.ErrorCode.ToString()
             };
         }
 
