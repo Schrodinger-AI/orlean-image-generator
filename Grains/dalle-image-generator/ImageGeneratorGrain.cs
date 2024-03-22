@@ -86,7 +86,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
 
     private async Task CheckAndReportForInvalidStates()
     {
-        if (string.IsNullOrEmpty(_apiKey) && _imageGenerationState.State.Status == ImageGenerationStatus.InProgress)
+        if (_imageGenerationState.State.Status == ImageGenerationStatus.InProgress)
         {
             _logger.LogInformation($"ImageGeneratorGrain - generatorId: {_imageGenerationState.State.RequestId} : ApiKey is null");
 
@@ -110,6 +110,37 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
             await schedulerGrain.ReportFailedImageGenerationRequestAsync(requestStatus);
             return;
         }
+        else if (_imageGenerationState.State.Status == ImageGenerationStatus.SuccessfulCompletion)
+        {
+            await OnSuccessfulCompletion();
+        }
+    }
+
+    private async Task OnSuccessfulCompletion()
+    {
+        var parentGeneratorGrain =
+            GrainFactory.GetGrain<IMultiImageGeneratorGrain>(_imageGenerationState.State.ParentRequestId);
+        var schedulerGrain = GrainFactory.GetGrain<IImageGenerationRequestStatusReceiver>("SchedulerGrain");
+        
+        // Handle the case where the image generation is successful
+        _timer.Dispose();
+
+        _logger.LogInformation($"ImageGeneratorGrain - generatorId: {_imageGenerationState.State.RequestId} , image generation is successful");
+
+        // notify about successful completion to parentGrain
+        await parentGeneratorGrain.NotifyImageGenerationStatus(_imageGenerationState.State.RequestId,
+            ImageGenerationStatus.SuccessfulCompletion, null);
+
+
+        //notify the scheduler grain about the successful completion
+        var requestStatus = new RequestStatus
+        {
+            RequestId = _imageGenerationState.State.RequestId,
+            Status = RequestStatusEnum.Completed,
+            RequestTimestamp = _imageGenerationState.State.ImageGenerationTimestamp ?? 0
+        };
+
+        await schedulerGrain.ReportCompletedImageGenerationRequestAsync(requestStatus);
     }
 
     public async Task TriggerImageGenerationAsync()

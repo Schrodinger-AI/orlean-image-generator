@@ -60,6 +60,8 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         _flushTimer = RegisterTimer(asyncCallback: _ => FlushTimerAsync(), null,
             dueTime: TimeSpan.Zero,
             period: TimeSpan.FromSeconds(1));
+
+        CleanUpPendingRequests();
         
         if(_masterTrackerState.State.CompletedImageGenerationRequests == null)
             _masterTrackerState.State.CompletedImageGenerationRequests = new Dictionary<string, RequestAccountUsageInfo>();
@@ -73,6 +75,19 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
             _masterTrackerState.State.BlockedImageGenerationRequests = new Dictionary<string, BlockedRequestInfo>();
         
         return base.OnActivateAsync(cancellationToken);
+    }
+
+    private void CleanUpPendingRequests()
+    {
+        _masterTrackerState.State.PendingImageGenerationRequests.ToList().ForEach(ActivateImageGeneratorGrain);
+        
+        return;
+
+        async void ActivateImageGeneratorGrain(KeyValuePair<string, RequestAccountUsageInfo> request)
+        {
+            var imageGenerationGrain = GrainFactory.GetGrain<IImageGeneratorGrain>(request.Value.ChildId);
+            await imageGenerationGrain.Activate();
+        }
     }
 
     public Task ReportFailedImageGenerationRequestAsync(RequestStatus requestStatus)
