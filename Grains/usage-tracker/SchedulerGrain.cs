@@ -241,7 +241,8 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
                 ApiKey = new ApiKeyDto
                 {
                     ApiKeyString = info.ApiKey.ApiKeyString.Substring(0, info.ApiKey.ApiKeyString.Length/2),
-                    ServiceProvider = info.ApiKey.ServiceProvider.ToString()
+                    ServiceProvider = info.ApiKey.ServiceProvider.ToString(),
+                    Url = info.ApiKey.Url
                 },
                 Email = info.Email,
                 MaxQuota = info.MaxQuota,
