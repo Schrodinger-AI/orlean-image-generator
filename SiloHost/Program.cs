@@ -16,7 +16,7 @@ namespace SiloHost
         {
             Log.Logger = new LoggerConfiguration()
                 .WriteTo.Console(new JsonFormatter())
-                .WriteTo.File(new JsonFormatter(), "logs/SiloHostLog-.log", rollingInterval: RollingInterval.Hour)
+                .WriteTo.File(new JsonFormatter(), "logs/SiloHostLog.log")
                 .CreateLogger();
 
             var builder = new ConfigurationBuilder()

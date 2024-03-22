@@ -7,7 +7,7 @@ public class Program
     {
         Log.Logger = new LoggerConfiguration()
          .WriteTo.Console(new JsonFormatter())
-         .WriteTo.File(new JsonFormatter(), "logs/WebApiLog-.log", rollingInterval: RollingInterval.Hour)
+         .WriteTo.File(new JsonFormatter(), "logs/WebApiLog.log")
          .CreateLogger();
 
         try
