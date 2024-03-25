@@ -347,7 +347,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
             throw new DalleException(DalleErrorCode.api_call_failed, e.Message);
         }
         
-        _logger.LogError($"Dalle ImageGeneration ResponseCode : {response.StatusCode}");
+        _logger.LogInformation($"Dalle ImageGeneration ResponseCode : {response.StatusCode}");
         
         if(dalleResponse.Error != null)
         {
