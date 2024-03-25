@@ -563,7 +563,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
     {
         if (!_masterTrackerState.State.PendingImageGenerationRequests.ContainsKey(requestId))
         {
-            _logger.LogError($"[SchedulerGrain] Request {requestId} not found in pending list");
+            _logger.LogWarning($"[SchedulerGrain] Request {requestId} not found in pending list");
             return null;
         }
         var info = _masterTrackerState.State.PendingImageGenerationRequests[requestId];
