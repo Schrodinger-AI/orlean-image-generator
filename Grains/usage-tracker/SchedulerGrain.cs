@@ -77,19 +77,6 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         return base.OnActivateAsync(cancellationToken);
     }
 
-    private void CleanUpPendingRequests()
-    {
-        _masterTrackerState.State.PendingImageGenerationRequests.ToList().ForEach(ActivateImageGeneratorGrain);
-        
-        return;
-
-        async void ActivateImageGeneratorGrain(KeyValuePair<string, RequestAccountUsageInfo> request)
-        {
-            var imageGenerationGrain = GrainFactory.GetGrain<IImageGeneratorGrain>(request.Value.ChildId);
-            await imageGenerationGrain.Activate();
-        }
-    }
-
     public Task ReportFailedImageGenerationRequestAsync(RequestStatus requestStatus)
     {
         _logger.LogError($"[SchedulerGrain] Image generation failed with message: {requestStatus.Message}");
@@ -330,6 +317,19 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
 
     #region Private Methods
 
+    private void CleanUpPendingRequests()
+    {
+        _masterTrackerState.State.PendingImageGenerationRequests.ToList().ForEach(ActivateImageGeneratorGrain);
+        
+        return;
+
+        async void ActivateImageGeneratorGrain(KeyValuePair<string, RequestAccountUsageInfo> request)
+        {
+            var imageGenerationGrain = GrainFactory.GetGrain<IImageGeneratorGrain>(request.Value.ChildId);
+            await imageGenerationGrain.Activate();
+        }
+    }
+    
     private void UpdateExpiredPendingRequestsToBlocked()
     {
         var now = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
