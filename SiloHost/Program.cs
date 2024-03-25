@@ -7,6 +7,8 @@ using Serilog;
 using Serilog.Formatting.Json;
 using Shared;
 using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json;
+using Orleans.Providers.MongoDB.Configuration;
 
 namespace SiloHost
 {
@@ -47,12 +49,30 @@ namespace SiloHost
             }
 
             var host = new SiloHostBuilder()
-                .UseAdoNetClustering(options =>
-                {
-                    options.Invariant = "MySql.Data.MySqlClient";
-                    options.ConnectionString = connectionString;
-                })
                 .ConfigureEndpoints(siloPort: siloPort, gatewayPort: gatewayPort)
+                .UseMongoDBClient(configuration.GetValue<string>("MongoDBClient"))
+                .UseMongoDBClustering(options =>
+                {
+                    options.DatabaseName = configuration.GetValue<string>("MongoDataBase");;
+                    options.Strategy = MongoDBMembershipStrategy.SingleDocument;
+                })
+                .AddMongoDBGrainStorage("MySqlSchrodingerImageStore",(MongoDBGrainStorageOptions op) =>
+                {
+                    op.CollectionPrefix = "GrainStorage";
+                    op.DatabaseName = configuration.GetValue<string>("MongoDataBase");
+                    op.ConfigureJsonSerializerSettings = jsonSettings =>
+                    {
+                        // jsonSettings.ContractResolver = new PrivateSetterContractResolver();
+                        jsonSettings.NullValueHandling = NullValueHandling.Include;
+                        jsonSettings.DefaultValueHandling = DefaultValueHandling.Populate;
+                        jsonSettings.ObjectCreationHandling = ObjectCreationHandling.Replace;
+                    };
+                })
+                .UseMongoDBReminders(options =>
+                {
+                    options.DatabaseName = configuration.GetValue<string>("MongoDataBase");
+                    options.CreateShardKeyForCosmos = false;
+                })
                 .ConfigureServices((hostContext, services) =>
                 {
                     services.Configure<ImageSettings>(configuration.GetSection("ImageSettings"));
@@ -61,17 +81,6 @@ namespace SiloHost
                 {
                     options.ClusterId = "dev";
                     options.ServiceId = "OrleansImageGeneratorService";
-                })
-                .UseAdoNetClustering(options =>
-                {
-                    options.Invariant = "MySql.Data.MySqlClient";
-                    options.ConnectionString = connectionString;
-                })
-                .AddAdoNetGrainStorage(Grains.Constants.MySqlSchrodingerImageStore, options =>
-                {
-                    options.Invariant = "MySql.Data.MySqlClient";
-                    options.ConnectionString = connectionString;
-                    options.UseJsonFormat = false;
                 })
                 .ConfigureApplicationParts(parts => parts.AddApplicationPart(typeof(ImageGeneratorGrain).Assembly).WithReferences())
                 .ConfigureLogging(logging => logging.AddSerilog())

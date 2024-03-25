@@ -4,6 +4,7 @@ using Orleans.Configuration;
 using Grains;
 using Microsoft.OpenApi.Models;
 using System.Net;
+using Orleans.Providers.MongoDB.Configuration;
 
 public class Startup
 {
@@ -26,10 +27,11 @@ public class Startup
         services.AddSingleton<IClusterClient>(serviceProvider =>
         {
             var client = new ClientBuilder()
-                 .UseAdoNetClustering(options =>
+                .UseMongoDBClient(configuration.GetValue<string>("MongoDBClient"))
+                .UseMongoDBClustering(options =>
                 {
-                    options.Invariant = "MySql.Data.MySqlClient";
-                    options.ConnectionString = connectionString;
+                    options.DatabaseName = configuration.GetValue<string>("MongoDataBase");;
+                    options.Strategy = MongoDBMembershipStrategy.SingleDocument;
                 })
                 .Configure<ClusterOptions>(options =>
                 {
