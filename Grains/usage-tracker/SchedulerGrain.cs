@@ -61,6 +61,8 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         _flushTimer = RegisterTimer(asyncCallback: _ => FlushTimerAsync(), null,
             dueTime: TimeSpan.Zero,
             period: TimeSpan.FromSeconds(1));
+
+        CleanUpPendingRequests();
         
         return base.OnActivateAsync(cancellationToken);
     }
@@ -357,6 +359,19 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
 
     #region Private Methods
 
+    private void CleanUpPendingRequests()
+    {
+        _masterTrackerState.State.PendingImageGenerationRequests.ToList().ForEach(ActivateImageGeneratorGrain);
+        
+        return;
+
+        async void ActivateImageGeneratorGrain(KeyValuePair<string, RequestAccountUsageInfo> request)
+        {
+            var imageGenerationGrain = GrainFactory.GetGrain<IImageGeneratorGrain>(request.Value.ChildId);
+            await imageGenerationGrain.Activate();
+        }
+    }
+    
     private void UpdateExpiredPendingRequestsToBlocked()
     {
         var now = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
@@ -596,7 +611,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
     {
         if (!_masterTrackerState.State.PendingImageGenerationRequests.ContainsKey(requestId))
         {
-            _logger.LogError($"[SchedulerGrain] Request {requestId} not found in pending list");
+            _logger.LogWarning($"[SchedulerGrain] Request {requestId} not found in pending list");
             return null;
         }
         var info = _masterTrackerState.State.PendingImageGenerationRequests[requestId];

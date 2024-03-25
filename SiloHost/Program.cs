@@ -89,6 +89,7 @@ namespace SiloHost
                             options.CounterUpdateIntervalMs = 10000;
                         });
                 })
+                .UseConsoleLifetime()
                 .Build();
 
             await host.StartAsync();
