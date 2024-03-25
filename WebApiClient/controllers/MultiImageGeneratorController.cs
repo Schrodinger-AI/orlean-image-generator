@@ -31,7 +31,7 @@ public class MultiImageGeneratorController : ControllerBase
     }
 
     [HttpPost("generate")]
-    public async Task<ImageGenerationResponse> GenerateImage(ImageGenerationRequest imageGenerationRequest)
+    public async Task<ImageGenerationAPIResponse> GenerateImage(ImageGenerationRequest imageGenerationRequest)
     {
         List<Attribute> newTraits = imageGenerationRequest.NewTraits;
         List<Attribute> baseTraits = imageGenerationRequest.BaseImage.Attributes;
@@ -72,8 +72,12 @@ public class MultiImageGeneratorController : ControllerBase
         if (imageQueryResponse.Uninitialized)
             return StatusCode(404, new ImageQueryResponseNotOk { Error = "Request not found" });
 
+        if (imageQueryResponse.Status == ImageGenerationStatus.FailedCompletion && imageQueryResponse.ErrorCode == ImageGenerationErrorCode.content_violation.ToString())
+            return StatusCode(202, new ImageQueryResponseNotOk { Error = "Image Generation Failed With Content Violation Error", ErrorCode = imageQueryResponse.ErrorCode });
+        
         if (imageQueryResponse.Status != ImageGenerationStatus.SuccessfulCompletion)
             return StatusCode(202, new ImageQueryResponseNotOk { Error = "The result is not ready." });
+        
         var images = imageQueryResponse.Images ?? [];
         return StatusCode(200, new ImageQueryResponseOk { Images = images });
     }

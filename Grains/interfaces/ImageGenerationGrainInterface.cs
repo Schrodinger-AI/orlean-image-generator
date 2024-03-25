@@ -8,11 +8,14 @@ public interface ISchrodingerGrain : IGrainWithGuidKey
 
 public interface IImageGeneratorGrain : ISchrodingerGrain, IGrainWithStringKey
 {
-    Task SetApiKey(string key);
-    
+
+    Task SetImageGenerationServiceProvider(ApiKey apiKey);
     Task<ImageGenerationGrainResponse> GenerateImageFromPromptAsync(string prompt, string imageRequestId, string parentRequestId);
 
     Task SetImageGenerationRequestData(string prompt, string imageRequestId, string parentRequestId);
+    
+    Task UpdatePromptAsync(string prompt);
+
     Task<ImageQueryGrainResponse> QueryImageAsync();
     Task<ImageGenerationState> GetStateAsync();
     
@@ -23,7 +26,10 @@ public interface IMultiImageGeneratorGrain : ISchrodingerGrain, IGrainWithString
 {
     Task<MultiImageGenerationGrainResponse> GenerateMultipleImagesAsync(List<Attribute> traits, int NumberOfImages, string multiImageRequestId);
 
-    Task NotifyImageGenerationStatus(string imageRequestId, ImageGenerationStatus status, string? error);
+    Task UpdatePromptAndAttributes(string prompt, List<Attribute> attributes);
+
+    Task NotifyImageGenerationStatus(string imageRequestId, ImageGenerationStatus status, string? error, ImageGenerationErrorCode? errorCode);
 
     Task<MultiImageQueryGrainResponse> QueryMultipleImagesAsync();
+    
 }

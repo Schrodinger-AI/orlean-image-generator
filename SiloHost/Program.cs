@@ -1,4 +1,7 @@
 ﻿using Grains;
+using Grains.AzureOpenAI;
+using Grains.DalleOpenAI;
+using Grains.ImageGenerator;
 using Orleans;
 using Orleans.Configuration;
 using Orleans.Hosting;
@@ -60,6 +63,8 @@ namespace SiloHost
                         .ConfigureServices(services =>
                         {
                             services.Configure<ImageSettings>(configuration.GetSection("ImageSettings"));
+                            services.AddTransient<IImageGenerator, DalleOpenAIImageGenerator>();
+                            services.AddTransient<IImageGenerator, AzureOpenAIImageGenerator>();
                             services.AddSerializer(serializerBuilder =>
                             {
                                 serializerBuilder.AddNewtonsoftJsonSerializer(
@@ -79,14 +84,17 @@ namespace SiloHost
                                 options.Invariant = "MySql.Data.MySqlClient";
                                 options.ConnectionString = connectionString;
                             }))
+                        .ConfigureLogging(logging => logging.AddSerilog())
+                        .UseDashboard(options =>
+                        {
+                            options.CounterUpdateIntervalMs = 10000;
+                        })
                         .UseAdoNetReminderService(options =>
                         {
                             options.ConnectionString = connectionString;
                             options.Invariant = "MySql.Data.MySqlClient";
                         })
-                        .ConfigureLogging(logging => logging.AddSerilog())
                         .AddStartupTask<SchedulerGrainStartupTask>();
-                    //.UseDashboard(options => { })
                 })
                 .Build();
 

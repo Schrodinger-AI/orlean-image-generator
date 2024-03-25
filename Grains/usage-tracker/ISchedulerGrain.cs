@@ -5,17 +5,18 @@ namespace Grains.usage_tracker;
 
 public interface ISchedulerGrain : ISchrodingerGrain, Orleans.IGrainWithStringKey, IImageGenerationRequestStatusReceiver
 {
-    Task<IReadOnlyDictionary<string, RequestAccountUsageInfo>> GetFailedImageGenerationRequestsAsync();
-    Task<IReadOnlyDictionary<string, RequestAccountUsageInfo>> GetStartedImageGenerationRequestsAsync();
-    Task<IReadOnlyDictionary<string, RequestAccountUsageInfo>> GetPendingImageGenerationRequestsAsync();
-    Task<IReadOnlyDictionary<string, BlockedRequestInfo>> GetBlockedImageGenerationRequestsAsync();
+    Task<List<RequestAccountUsageInfoDto>> GetFailedImageGenerationRequestsAsync();
+    Task<List<RequestAccountUsageInfoDto>> GetStartedImageGenerationRequestsAsync();
+    Task<List<RequestAccountUsageInfoDto>> GetPendingImageGenerationRequestsAsync();
+    Task<List<BlockedRequestInfoDto>> GetBlockedImageGenerationRequestsAsync();
     Task AddImageGenerationRequest(string requestId, string childId, long requestTimestamp);
-    Task<List<string>> AddApiKeys(List<ApiKeyEntry> apiKeyEntries);
-    Task<List<string>> RemoveApiKeys(List<string> apiKey);
-    Task<IReadOnlyList<APIAccountInfo>> GetAllApiKeys();
-    Task<SchedulerState> GetImageGenerationStates();
+    Task<List<ApiKey>> AddApiKeys(List<ApiKeyEntryDto> apiKeyEntries);
+    Task<List<ApiKey>> RemoveApiKeys(List<ApiKey> apiKeys);
+    Task<IReadOnlyList<ApiKeyEntryDto>> GetAllApiKeys();
+    Task<Dictionary<string, List<RequestAccountUsageInfoDto>>> GetImageGenerationStates();
     Task<Dictionary<string, ApiKeyUsageInfo>> GetApiKeysUsageInfo();
     Task<bool> IsOverloaded();
     Task FlushAsync();
     Task TickAsync();
+    Task<bool> ForceRequestExecution(string childId);
 }

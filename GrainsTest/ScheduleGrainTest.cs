@@ -9,6 +9,7 @@ using Orleans;
 using Orleans.Hosting;
 using Orleans.Runtime;
 using Orleans.Timers;
+using Shared;
 
 namespace GrainsTest;
 using Orleans.TestingHost;
@@ -239,7 +240,11 @@ public class ScheduleGrainTest
                 {
                     new APIAccountInfo
                     {
-                        ApiKey = "apiKey1",
+                        ApiKey = new ApiKey
+                        {
+                            ApiKeyString = "apiKey1",
+                            ServiceProvider = ImageGenerationServiceProvider.DalleOpenAI
+                        },
                         Description = "mocked api key 1",
                         Email = "mock@mock.com",
                         Tier = 0,

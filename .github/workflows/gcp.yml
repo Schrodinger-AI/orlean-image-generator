@@ -1,0 +1,87 @@
+name: Publish Docker Image to GCP
+
+on:
+  push:
+    branches: ['develop']
+
+env:
+  PROJECT_ID: ${{ vars.PROJECT_ID }}
+  PROJECT_NUMBER: ${{ vars.PROJECT_NUMBER }}
+  REPOSITORY: orlean-image-generator
+  REPOSITORY_REGION: us-central1
+
+jobs:
+  build-dotnet:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        servicename: [SiloHost, WebApiClient]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0'
+      - run: dotnet publish ${{ matrix.servicename }}/${{ matrix.servicename }}.csproj
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.servicename }}
+          path: ${{ matrix.servicename }}/bin/Release/net8.0/publish
+      
+  build-and-push-image:
+    needs: build-dotnet
+    runs-on: ubuntu-latest
+    environment: development
+    permissions:
+      id-token: write
+      contents: read
+    strategy:
+      matrix:
+        servicename: [SiloHost, WebApiClient]
+    outputs:
+      image: ${{ steps.tag.outputs.tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Download a single artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.servicename }}
+          path: ${{ matrix.servicename }}/bin/Release/net8.0/publish
+
+      - name: Create image tag
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REPOSITORY_REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ matrix.servicename }}
+          tags: |
+            type=sha
+
+      #
+      # Authenticate to Google Cloud using workload identity federation
+      #
+      - id: 'auth'
+        name: 'Obtain access token by using workload identity federation'
+        uses: 'google-github-actions/auth@v2'
+        with:
+          token_format: "access_token"
+          credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}'
+
+      - name: Login to GAR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REPOSITORY_REGION }}-docker.pkg.dev
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.access_token }}
+
+      - # Setting up Docker Buildx with docker-container driver is required
+        # at the moment to be able to use a subdirectory with Git context
+        name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: "${{ matrix.servicename }}"
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}

@@ -120,10 +120,10 @@ namespace Shared
         public int NumberOfImages { get; set; } = 1;
     }
 
-    public abstract class ImageGenerationResponse { }
+    public abstract class ImageGenerationAPIResponse { }
 
     [GenerateSerializer]
-    public class ImageGenerationResponseOk : ImageGenerationResponse
+    public class ImageGenerationResponseOk : ImageGenerationAPIResponse
     {
         [JsonPropertyName("requestId")]
         [Id(0)]
@@ -131,7 +131,7 @@ namespace Shared
     }
 
     [GenerateSerializer]
-    public class ImageGenerationResponseNotOk : ImageGenerationResponse
+    public class ImageGenerationResponseNotOk : ImageGenerationAPIResponse
     {
         [JsonPropertyName("error")]
         [Id(0)]
@@ -162,6 +162,10 @@ namespace Shared
         [JsonPropertyName("error")]
         [Id(0)]
         public string Error { get; set; }
+        
+        [JsonPropertyName("errorCode")]
+        [Id(1)]
+        public string ErrorCode { get; set; }
     }
 
     [GenerateSerializer]
@@ -170,6 +174,21 @@ namespace Shared
         [JsonPropertyName("requestId")]
         [Id(0)]
         public string RequestId { get; set; }
+    }
+    
+    public class PromptUpdateRequest
+    {
+        [JsonPropertyName("multiImageRequestId")]
+        public string MultiImageRequestId { get; set; }
+        
+        [JsonPropertyName("requestId")]
+        public string RequestId { get; set; } = "";
+        
+        [JsonPropertyName("prompt")]
+        public string? Prompt { get; set; } = null;
+        
+        [JsonPropertyName("attributes")]
+        public List<Attribute> Attributes { get; set; } = [];
     }
 
     

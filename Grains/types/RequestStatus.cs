@@ -22,5 +22,5 @@ public class RequestStatus
     [Id(3)]
     public long RequestTimestamp { get; set; }
     [Id(4)]
-    public DalleErrorCode? ErrorCode { get; set; }
+    public ImageGenerationErrorCode? ErrorCode { get; set; }
 }

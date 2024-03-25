@@ -3,13 +3,10 @@ namespace Shared
     public enum ImageGenerationStatus
     {
         Dormant,
-
         InProgress,
         FailedCompletion,
-
         SuccessfulCompletion,
-
-        ReScheduled
+        Blocked,
     }
 
     [GenerateSerializer]
@@ -37,6 +34,8 @@ namespace Shared
 
         [Id(3)]
         public List<string>? Errors { get; set; }
+
+        [Id(4)] public string? ErrorCode { get; set; } = "";
     }
 
     [GenerateSerializer]
@@ -46,14 +45,14 @@ namespace Shared
         public string RequestId { get; set; }
 
         [Id(1)]
-        public long DalleRequestTimestamp { get; set; }
+        public long ImageGenerationRequestTimestamp { get; set; }
 
         [Id(2)]
         public bool IsSuccessful { get; set; }
         [Id(3)]
         public string? Error { get; set; }
         [Id(4)]
-        public DalleErrorCode? ErrorCode { get; set; }
+        public ImageGenerationErrorCode? ErrorCode { get; set; }
     }
 
     [GenerateSerializer]

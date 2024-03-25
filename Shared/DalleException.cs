@@ -1,22 +1,22 @@
 namespace Shared;
 
-public class DalleException : Exception
+public class ImageGenerationException : Exception
 {
-    public DalleErrorCode ErrorCode { get; }
+    public ImageGenerationErrorCode ErrorCode { get; }
 
     public override string Message { get; }
 
-    public DalleException(DalleErrorCode errorCode)
+    public ImageGenerationException(ImageGenerationErrorCode errorCode)
     {
         ErrorCode = errorCode;
     }
 
-    public DalleException(DalleErrorCode errorCode, string message) : base(message)
+    public ImageGenerationException(ImageGenerationErrorCode errorCode, string message) : base(message)
     {
         ErrorCode = errorCode;
     }
 
-    public DalleException(DalleErrorCode errorCode, string message, Exception innerException) : base(message, innerException)
+    public ImageGenerationException(ImageGenerationErrorCode errorCode, string message, Exception innerException) : base(message, innerException)
     {
         ErrorCode = errorCode;
     }

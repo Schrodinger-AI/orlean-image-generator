@@ -1,3 +1,4 @@
+using System.Globalization;
 using Grains.types;
 using Microsoft.Extensions.Logging;
 using Orleans.Runtime;
@@ -31,7 +32,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
     private IDisposable? _flushTimer;
     private IGrainContext _grainContext;
     
-    private Dictionary<string, ApiKeyUsageInfo> _apiKeyStatus = new();
+    private readonly Dictionary<string, ApiKeyUsageInfo> _apiKeyStatus = new();
 
     public SchedulerGrain(
         [PersistentState("masterTrackerState", "MySqlSchrodingerImageStore")]
@@ -74,19 +75,6 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
             reminderName: REMINDER_NAME,
             dueTime: TimeSpan.Zero,
             period: TimeSpan.FromMinutes(5));
-        
-        if(_masterTrackerState.State.CompletedImageGenerationRequests == null)
-            _masterTrackerState.State.CompletedImageGenerationRequests = new Dictionary<string, RequestAccountUsageInfo>();
-        if(_masterTrackerState.State.FailedImageGenerationRequests == null)
-            _masterTrackerState.State.FailedImageGenerationRequests = new Dictionary<string, RequestAccountUsageInfo>();
-        if(_masterTrackerState.State.PendingImageGenerationRequests == null)
-            _masterTrackerState.State.PendingImageGenerationRequests = new Dictionary<string, RequestAccountUsageInfo>();
-        if(_masterTrackerState.State.StartedImageGenerationRequests == null)
-            _masterTrackerState.State.StartedImageGenerationRequests = new Dictionary<string, RequestAccountUsageInfo>();
-        if(_masterTrackerState.State.BlockedImageGenerationRequests == null)
-            _masterTrackerState.State.BlockedImageGenerationRequests = new Dictionary<string, BlockedRequestInfo>();
-        if(_masterTrackerState.State.ApiAccountInfoList == null)
-            _masterTrackerState.State.ApiAccountInfoList = new List<APIAccountInfo>();
         
         await base.OnActivateAsync(cancellationToken);
     }
@@ -156,29 +144,50 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
 
         return Task.CompletedTask;
     }
-
-    public Task<IReadOnlyDictionary<string, RequestAccountUsageInfo>> GetFailedImageGenerationRequestsAsync()
+    
+    public Task<List<RequestAccountUsageInfoDto>> GetFailedImageGenerationRequestsAsync()
     {
-        return Task.FromResult<IReadOnlyDictionary<string, RequestAccountUsageInfo>>(
-            _masterTrackerState.State.FailedImageGenerationRequests);
+        var ret = GetRequestAccountUsageInfoDtoList(_masterTrackerState.State.FailedImageGenerationRequests);
+        return Task.FromResult(ret.ToList());
     }
 
-    public Task<IReadOnlyDictionary<string, RequestAccountUsageInfo>> GetStartedImageGenerationRequestsAsync()
+    public Task<List<RequestAccountUsageInfoDto>> GetStartedImageGenerationRequestsAsync()
     {
-        return Task.FromResult<IReadOnlyDictionary<string, RequestAccountUsageInfo>>(_masterTrackerState.State
-            .StartedImageGenerationRequests);
+        var ret = GetRequestAccountUsageInfoDtoList(_masterTrackerState.State.StartedImageGenerationRequests);
+        return Task.FromResult(ret.ToList());
     }
 
-    public Task<IReadOnlyDictionary<string, RequestAccountUsageInfo>> GetPendingImageGenerationRequestsAsync()
+    public Task<List<RequestAccountUsageInfoDto>> GetPendingImageGenerationRequestsAsync()
     {
-        return Task.FromResult<IReadOnlyDictionary<string, RequestAccountUsageInfo>>(_masterTrackerState.State
-            .PendingImageGenerationRequests);
+        var ret = GetRequestAccountUsageInfoDtoList(_masterTrackerState.State.PendingImageGenerationRequests);
+        return Task.FromResult(ret.ToList());
     }
 
-    public Task<IReadOnlyDictionary<string, BlockedRequestInfo>> GetBlockedImageGenerationRequestsAsync()
+    public Task<List<BlockedRequestInfoDto>> GetBlockedImageGenerationRequestsAsync()
     {
-        return Task.FromResult<IReadOnlyDictionary<string, BlockedRequestInfo>>(_masterTrackerState.State
-            .BlockedImageGenerationRequests);
+        var requestList = new List<BlockedRequestInfo>(_masterTrackerState.State.BlockedImageGenerationRequests.Values);
+        var result = requestList.Select(i => new BlockedRequestInfoDto
+        {
+            BlockedReason = i.BlockedReason?.ToString(),
+            RequestInfo = new RequestAccountUsageInfoDto
+            {
+                RequestId = i.RequestAccountUsageInfo.RequestId,
+                RequestTimestamp = UnixTimeStampInSecondsToDateTime(i.RequestAccountUsageInfo.RequestTimestamp).ToString(CultureInfo.InvariantCulture),
+                StartedTimestamp = UnixTimeStampInSecondsToDateTime(i.RequestAccountUsageInfo.StartedTimestamp).ToString(CultureInfo.InvariantCulture),
+                FailedTimestamp = UnixTimeStampInSecondsToDateTime(i.RequestAccountUsageInfo.FailedTimestamp).ToString(CultureInfo.InvariantCulture),
+                CompletedTimestamp = UnixTimeStampInSecondsToDateTime(i.RequestAccountUsageInfo.CompletedTimestamp).ToString(CultureInfo.InvariantCulture),
+                Attempts = i.RequestAccountUsageInfo.Attempts,
+                ApiKey = i.RequestAccountUsageInfo.ApiKey == null? null: new ApiKeyDto
+                {
+                    ApiKeyString = i.RequestAccountUsageInfo.ApiKey.ApiKeyString[..(i.RequestAccountUsageInfo.ApiKey.ApiKeyString.Length / 2)],
+                    ServiceProvider = i.RequestAccountUsageInfo.ApiKey.ServiceProvider.ToString(),
+                    Url = i.RequestAccountUsageInfo.ApiKey.Url
+                },
+                ChildId = i.RequestAccountUsageInfo.ChildId,
+            }
+        });
+        
+        return Task.FromResult(result.ToList());
     }
 
     public Task AddImageGenerationRequest(string requestId, string childId, long requestTimestamp)
@@ -195,22 +204,22 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
         return Task.CompletedTask;
     }
 
-    public async Task<List<string>> AddApiKeys(List<ApiKeyEntry> apiKeyEntries)
+    public async Task<List<ApiKey>> AddApiKeys(List<ApiKeyEntryDto> apiKeyEntries)
     {
-        List<string> addedApiKeys = new();
-        foreach (var apiKeyEntry in apiKeyEntries)
+        var apiAccountInfos = apiKeyEntries.Select(entry => new APIAccountInfo
         {
-            if(_masterTrackerState.State.ApiAccountInfoList == null)
-                _masterTrackerState.State.ApiAccountInfoList = new List<APIAccountInfo>();
-            
-            _masterTrackerState.State.ApiAccountInfoList.Add(new APIAccountInfo
-            {
-                ApiKey = apiKeyEntry.ApiKey,
-                Email = apiKeyEntry.Email,
-                Tier = apiKeyEntry.Tier,
-                MaxQuota = apiKeyEntry.MaxQuota
-            });
-            addedApiKeys.Add(apiKeyEntry.ApiKey);
+            ApiKey = new ApiKey(entry.ApiKey.ApiKeyString, entry.ApiKey.ServiceProvider, entry.ApiKey.Url),
+            Email = entry.Email,
+            Tier = entry.Tier,
+            MaxQuota = entry.MaxQuota
+        }).ToList();
+        
+        List<ApiKey> addedApiKeys = new();
+        
+        foreach (var apiAccountInfo in apiAccountInfos)
+        {
+            _masterTrackerState.State.ApiAccountInfoList.Add(apiAccountInfo);
+            addedApiKeys.Add(apiAccountInfo.ApiKey);
         }
         await _masterTrackerState.WriteStateAsync();
 
@@ -218,20 +227,18 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
     }
 
     //returns a list of apikeys that were removed
-    public async Task<List<string>> RemoveApiKeys(List<string> apiKey)
+    public async Task<List<ApiKey>> RemoveApiKeys(List<ApiKey> apiKey)
     {
-        List<string> removedApiKeys = new();
-        
-        if(_masterTrackerState.State.ApiAccountInfoList == null)
-            return removedApiKeys;
+        List<ApiKey> removedApiKeys = [];
         
         _masterTrackerState.State.ApiAccountInfoList.RemoveAll(apiInfo =>
         {
-            if (apiKey.Contains(apiInfo.ApiKey))
+            if (apiKey.Any(key => key.GetConcatApiKeyString() == apiInfo.ApiKey.GetConcatApiKeyString()))
             {
                 removedApiKeys.Add(apiInfo.ApiKey);
                 return true;
             }
+
             return false;
         });
         
@@ -240,16 +247,45 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
         return removedApiKeys;
     }
 
-    public Task<IReadOnlyList<APIAccountInfo>> GetAllApiKeys()
+    public Task<IReadOnlyList<ApiKeyEntryDto>> GetAllApiKeys()
     {
-        if(_masterTrackerState.State.ApiAccountInfoList == null)
-            return Task.FromResult<IReadOnlyList<APIAccountInfo>>(new List<APIAccountInfo>());
-        return Task.FromResult<IReadOnlyList<APIAccountInfo>>(_masterTrackerState.State.ApiAccountInfoList);
+        var ret = new List<ApiKeyEntryDto>();
+        foreach (var info in _masterTrackerState.State.ApiAccountInfoList)
+        {
+            var newInfo = new ApiKeyEntryDto
+            {
+                ApiKey = new ApiKeyDto
+                {
+                    ApiKeyString = info.ApiKey.ApiKeyString.Substring(0, info.ApiKey.ApiKeyString.Length/2),
+                    ServiceProvider = info.ApiKey.ServiceProvider.ToString(),
+                    Url = info.ApiKey.Url
+                },
+                Email = info.Email,
+                MaxQuota = info.MaxQuota,
+                Tier = info.Tier
+            };
+            ret.Add(newInfo);
+        }
+        
+        return Task.FromResult<IReadOnlyList<ApiKeyEntryDto>>(ret);
     }
 
-    public Task<SchedulerState> GetImageGenerationStates()
+    public Task<Dictionary<string, List<RequestAccountUsageInfoDto>>> GetImageGenerationStates()
     {
-        return Task.FromResult(_masterTrackerState.State);
+        var startedImageGenerationRequests = GetRequestAccountUsageInfoDtoList(_masterTrackerState.State.StartedImageGenerationRequests);
+        var pendingImageGenerationRequests = GetRequestAccountUsageInfoDtoList(_masterTrackerState.State.PendingImageGenerationRequests);
+        var completedImageGenerationRequests = GetRequestAccountUsageInfoDtoList(_masterTrackerState.State.CompletedImageGenerationRequests);
+        var failedImageGenerationRequests = GetRequestAccountUsageInfoDtoList(_masterTrackerState.State.FailedImageGenerationRequests);
+            
+        var imageGenerationRequests = new Dictionary<string, List<RequestAccountUsageInfoDto>>()
+        {
+            {"startedRequests", startedImageGenerationRequests.ToList()},
+            {"pendingRequests", pendingImageGenerationRequests.ToList()},
+            {"completedRequests", completedImageGenerationRequests.ToList()},
+            {"failedRequests", failedImageGenerationRequests.ToList()}
+        };
+        
+        return Task.FromResult(imageGenerationRequests);
     }
     
     public Task<Dictionary<string, ApiKeyUsageInfo>> GetApiKeysUsageInfo()
@@ -273,7 +309,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
         UpdateApiUsageStatus();
         UpdateExpiredPendingRequestsToBlocked();
 
-        if (_masterTrackerState.State.ApiAccountInfoList == null)
+        if (_masterTrackerState.State.ApiAccountInfoList.Count == 0)
         {
             return;
         }
@@ -315,6 +351,30 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
         }
     }
 
+    public Task<bool> ForceRequestExecution(string childId)
+    {
+        RequestAccountUsageInfo? requestInfo = null;
+        if (_masterTrackerState.State.PendingImageGenerationRequests.ContainsKey(childId))
+        {
+            requestInfo = _masterTrackerState.State.PendingImageGenerationRequests[childId];
+            _masterTrackerState.State.PendingImageGenerationRequests.Remove(childId);
+        }
+        else if (_masterTrackerState.State.BlockedImageGenerationRequests.ContainsKey(childId))
+        {
+            requestInfo = _masterTrackerState.State.BlockedImageGenerationRequests[childId].RequestAccountUsageInfo;
+            _masterTrackerState.State.BlockedImageGenerationRequests.Remove(childId);
+        }
+
+        // not found in pending or blocked
+        if (requestInfo == null)
+        {
+            return Task.FromResult(false);
+        }
+        
+        _masterTrackerState.State.StartedImageGenerationRequests.Add(childId, requestInfo);
+        return Task.FromResult(true);
+    }
+
     #region Private Methods
 
     private void UpdateExpiredPendingRequestsToBlocked()
@@ -349,11 +409,11 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
         var usedQuota = allRequests
             .Where(i=> i.Value.StartedTimestamp > cutoff)
             .GroupBy(
-                x=>x.Value.ApiKey,
+                x=>x.Value.ApiKey?.GetConcatApiKeyString(),
                 x=>x
             ).ToDictionary(x=>x.Key, x=>x.Count());
         var remainingQuotaByApiKey = _masterTrackerState.State.ApiAccountInfoList
-            .ToDictionary(i=>i.ApiKey, i=> i.MaxQuota  - usedQuota.GetValueOrDefault(i.ApiKey, 0));
+            .ToDictionary(i=>i.ApiKey.GetConcatApiKeyString(), i=> i.MaxQuota - usedQuota.GetValueOrDefault(i.ApiKey.GetConcatApiKeyString(), 0));
 
         //remove on hold api keys
         var apiKeysOnHold = _apiKeyStatus
@@ -365,9 +425,9 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
         return remainingQuotaByApiKey;
     }
     
-    private void ResetApiUsageInfo(string apiKey)
+    private void ResetApiUsageInfo(ApiKey apiKey)
     {
-        if(_apiKeyStatus.TryGetValue(apiKey, out var usageInfo))
+        if(_apiKeyStatus.TryGetValue(apiKey.GetConcatApiKeyString(), out var usageInfo))
         {
             usageInfo.Attempts = 0;
             usageInfo.LastUsedTimestamp = 0;
@@ -376,7 +436,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
         }
         else
         {
-            _logger.LogWarning($"[SchedulerGrain] API key: {apiKey} not found in usage info");
+            _logger.LogWarning($"[SchedulerGrain] API key: {apiKey.ApiKeyString} not found in usage info");
         }
     }
     
@@ -389,27 +449,27 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
         }
     }
     
-    private void HandleErrorCode(string apiKey, long lastUsedTimestamp, DalleErrorCode? errorCode)
+    private void HandleErrorCode(ApiKey apiKey, long lastUsedTimestamp, ImageGenerationErrorCode? errorCode)
     {
         if(errorCode == null)
             return;
         
-        _logger.LogError($"[SchedulerGrain] Error code: {errorCode.ToString()} for API key: {apiKey}");
+        _logger.LogError($"[SchedulerGrain] Error code: {errorCode.ToString()} for API key: {apiKey.ApiKeyString}");
         
-        var apiInfo = _masterTrackerState.State.ApiAccountInfoList.Find(info => info.ApiKey == apiKey);
+        var apiInfo = _masterTrackerState.State.ApiAccountInfoList.Find(info => info.ApiKey.GetConcatApiKeyString() == apiKey.GetConcatApiKeyString());
         if (apiInfo == null)
         {
             _logger.LogError($"[SchedulerGrain] API key: {apiKey} not found in the list");
             return;
         }
         
-        if (!_apiKeyStatus.TryGetValue(apiKey, out var usageInfo))
+        if (!_apiKeyStatus.TryGetValue(apiKey.GetConcatApiKeyString(), out var usageInfo))
         {
             usageInfo = new ApiKeyUsageInfo { ApiKey = apiKey };
-            _apiKeyStatus.Add(apiKey, usageInfo);
+            _apiKeyStatus.Add(apiKey.GetConcatApiKeyString(), usageInfo);
         }
 
-        usageInfo.Attempts = errorCode is DalleErrorCode.rate_limit_reached or DalleErrorCode.invalid_api_key ? 1 : usageInfo.Attempts + 1;
+        usageInfo.Attempts = errorCode is ImageGenerationErrorCode.rate_limit_reached or ImageGenerationErrorCode.invalid_api_key ? 1 : usageInfo.Attempts + 1;
         usageInfo.LastUsedTimestamp = lastUsedTimestamp;
         usageInfo.Status = ApiKeyStatus.OnHold;
         usageInfo.ErrorCode = errorCode;
@@ -463,22 +523,21 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
                 continue;
             }
 
-            info.ApiKey = GetApiKey(apiQuota);
-            
-            // if there are no available api keys, we will try again in the next scheduling
-            if (string.IsNullOrEmpty(info.ApiKey))
+            var selectedApiKey = GetApiKey(apiQuota);
+            if (selectedApiKey == null || string.IsNullOrEmpty(selectedApiKey.ApiKeyString))
             {
                 _logger.LogError("[SchedulerGrain] No available API keys, will try again in the next scheduling");
                 break;
             }
             
+            info.ApiKey = selectedApiKey;
             info.Attempts++;
             
             AlarmWhenLowOnQuota(apiQuota);
             
             info.StartedTimestamp = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
             // Get child gen grain to process failed request again with the new api key
-            await imageGenerationGrain.SetApiKey(info.ApiKey);
+            await imageGenerationGrain.SetImageGenerationServiceProvider(info.ApiKey);
             
             // remove from list to add to pending
             _logger.LogWarning($"[SchedulerGrain] Request {requestId} is pending");
@@ -535,20 +594,25 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
         return totalQuota;
     }
 
-    private static string GetApiKey(IDictionary<string, int> apiQuota)
+    private ApiKey? GetApiKey(IDictionary<string, int> apiQuota)
     {
-       var (apiKey, quota)= apiQuota.MaxBy(pair => pair.Value);
-        // var apiKey = FindKeyWithHighestValue(apiQuota);
+        var (apiKey, quota)= apiQuota.MaxBy(pair => pair.Value);
         if (string.IsNullOrEmpty(apiKey) || quota <= 0)
         {
-            return "";
+            return null;
+        }
+
+        var apiAccountInfo = _masterTrackerState.State.ApiAccountInfoList.Find(info => info.ApiKey.GetConcatApiKeyString() == apiKey);
+        if (apiAccountInfo == null)
+        {
+            return null;
         }
         
         apiQuota[apiKey] -= 1;
-        return apiKey;
+        return apiAccountInfo.ApiKey;
     }
 
-    private RequestAccountUsageInfo PopFromPending(string requestId)
+    private RequestAccountUsageInfo? PopFromPending(string requestId)
     {
         if (!_masterTrackerState.State.PendingImageGenerationRequests.ContainsKey(requestId))
         {
@@ -570,6 +634,35 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
             _reminderRegistry.UnregisterReminder(
                 _grainContext.GrainId, _reminder);
         }
+    }
+    
+    private static IEnumerable<RequestAccountUsageInfoDto> GetRequestAccountUsageInfoDtoList(Dictionary<string, RequestAccountUsageInfo> requests)
+    {
+        var imageGenerationRequests = new List<RequestAccountUsageInfo>(requests.Values);
+        var ret = imageGenerationRequests.Select(i => new RequestAccountUsageInfoDto
+        {
+            RequestId = i.RequestId,
+            RequestTimestamp = UnixTimeStampInSecondsToDateTime(i.RequestTimestamp).ToString(CultureInfo.InvariantCulture),
+            StartedTimestamp = UnixTimeStampInSecondsToDateTime(i.StartedTimestamp).ToString(CultureInfo.InvariantCulture),
+            FailedTimestamp = UnixTimeStampInSecondsToDateTime(i.FailedTimestamp).ToString(CultureInfo.InvariantCulture),
+            CompletedTimestamp = UnixTimeStampInSecondsToDateTime(i.CompletedTimestamp).ToString(CultureInfo.InvariantCulture),
+            Attempts = i.Attempts,
+            ApiKey = i.ApiKey == null? null: new ApiKeyDto
+            {
+                ApiKeyString = i.ApiKey.ApiKeyString[..(i.ApiKey.ApiKeyString.Length / 2)],
+                ServiceProvider = i.ApiKey.ServiceProvider.ToString(),
+                Url = i.ApiKey.Url
+            },
+            ChildId = i.ChildId
+        });
+        return ret;
+    }
+    
+    private static DateTime UnixTimeStampInSecondsToDateTime( long unixTimeStamp )
+    {
+        var dateTimeOffset = DateTimeOffset.FromUnixTimeSeconds(unixTimeStamp);
+        var dateTime = new DateTime(dateTimeOffset.Ticks, DateTimeKind.Utc);
+        return dateTime;
     }
 
     #endregion

@@ -11,9 +11,9 @@ public class ApiKeyUsageInfo
 {
     public const long RATE_LIMIT_WAIT = 120; // 2 minutes
     public const long INVALID_API_KEY_WAIT = 86400; //1 day
-
+    
     [Id(0)]
-    public string ApiKey { get; set; }
+    public ApiKey ApiKey { get; set; }
     [Id(1)]
     public long LastUsedTimestamp { get; set; }
     [Id(2)]
@@ -21,14 +21,14 @@ public class ApiKeyUsageInfo
     [Id(3)]
     public ApiKeyStatus Status { get; set; }
     [Id(4)]
-    public DalleErrorCode? ErrorCode { get; set; }
+    public ImageGenerationErrorCode? ErrorCode { get; set; }
     
     public long GetReactivationTimestamp()
     {
         return ErrorCode switch
         {
-            DalleErrorCode.rate_limit_reached => LastUsedTimestamp + RATE_LIMIT_WAIT,
-            DalleErrorCode.invalid_api_key => LastUsedTimestamp + INVALID_API_KEY_WAIT,
+            ImageGenerationErrorCode.rate_limit_reached => LastUsedTimestamp + RATE_LIMIT_WAIT,
+            ImageGenerationErrorCode.invalid_api_key => LastUsedTimestamp + INVALID_API_KEY_WAIT,
             _ => LastUsedTimestamp + (long)Math.Min(Math.Pow(3, Attempts), 27.0)
         };
     }
