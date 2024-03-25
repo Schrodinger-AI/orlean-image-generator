@@ -9,28 +9,19 @@ public class ApiKey
     
     [Id(1)]
     public ImageGenerationServiceProvider ServiceProvider { get; set; } = ImageGenerationServiceProvider.DalleOpenAI;
+    
+    [Id(2)]
+    public string Url { get; set; } = "";
 
     public ApiKey()
     {
     }
     
-    public ApiKey(string concatApiKeyString)
-    {
-        var strings = concatApiKeyString.Split('_');
-        ServiceProvider = GetServiceProvider(strings[0]);
-        ApiKeyString = strings[1];
-    }
-    
-    public ApiKey(string apiKeyString, ImageGenerationServiceProvider serviceProvider)
-    {
-        ApiKeyString = apiKeyString;
-        ServiceProvider = serviceProvider;
-    }
-    
-    public ApiKey(string apiKeyString, string strServiceProvider)
+    public ApiKey(string apiKeyString, string strServiceProvider, string url)
     {
         ApiKeyString = apiKeyString;
         ServiceProvider = GetServiceProvider(strServiceProvider);
+        Url = url;
     }
     
     public string GetConcatApiKeyString()

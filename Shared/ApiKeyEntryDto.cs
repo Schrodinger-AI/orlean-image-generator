@@ -7,10 +7,12 @@ public class ApiKeyDto
     public string ApiKeyString { get; set; } = "";
     [Id(1)]
     public string ServiceProvider { get; set; } = "";
+    [Id(2)]
+    public string Url { get; set; } = "";
 }
 
 [GenerateSerializer]
-public class ApiKeyEntry
+public class ApiKeyEntryDto
 {
     [Id(0)]
     public ApiKeyDto ApiKey { get; set; }
