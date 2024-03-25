@@ -79,7 +79,7 @@ public class MultiImageGeneratorController : ControllerBase
     }
     
     [HttpPost("generations/{requestId}")]
-    public async Task<ImageGenerationResponse> ImageGenerations(ImageGenerationRequest imageGenerationRequest, string requestId)
+    public async Task<ObjectResult> ImageGenerations(ImageGenerationRequest imageGenerationRequest, string requestId)
     {
         List<Attribute> newTraits = imageGenerationRequest.NewTraits;
         List<Attribute> baseTraits = imageGenerationRequest.BaseImage.Attributes;
@@ -91,7 +91,7 @@ public class MultiImageGeneratorController : ControllerBase
         var isAlreadySubmitted = await multiImageGeneratorGrain.IsAlreadySubmitted();
         if (isAlreadySubmitted)
         {
-            return new ImageGenerationResponseNotOk { Error = "Duplicate request" };
+            return StatusCode(409, new ImageGenerationResponseNotOk { Error = "Duplicate request" });
         }
 
         var response = await multiImageGeneratorGrain.GenerateMultipleImagesAsync(traits.ToList(),
@@ -99,13 +99,13 @@ public class MultiImageGeneratorController : ControllerBase
 
         if (response.IsSuccessful)
         {
-            return new ImageGenerationResponseOk { RequestId = requestId };
+            return StatusCode(200, new ImageGenerationResponseOk { RequestId = requestId });
         }
         else
         {
             List<string> errorMessages = response.Errors ?? new List<string>();
             string errorMessage = string.Join(", ", errorMessages);
-            return new ImageGenerationResponseNotOk { Error = errorMessage };
+            return StatusCode(500, new ImageGenerationResponseNotOk { Error = errorMessage });
         }
     }
 
