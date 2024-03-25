@@ -18,9 +18,7 @@ namespace Grains;
 
 public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
 {
-    private string _apiKey;
-    
-    private ImageGenerationServiceProvider _imageGenerationServiceProvider;
+    private ApiKey? _apiKey = null;
 
     private IDisposable _timer;
 
@@ -76,11 +74,10 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
         await _imageGenerationState.WriteStateAsync();
     }
     
-    public async Task SetImageGenerationServiceProvider(string apiKey, ImageGenerationServiceProvider serviceProvider)
+    public async Task SetImageGenerationServiceProvider(ApiKey apiKey)
     {
-        _logger.LogInformation($"ImageGeneratorGrain - Setting ImageGenerationServiceProvider: {serviceProvider} for imageGeneratorId: {_imageGenerationState.State.RequestId}");
+        _logger.LogInformation($"ImageGeneratorGrain - Setting ImageGenerationServiceProvider: {apiKey.ServiceProvider} for imageGeneratorId: {_imageGenerationState.State.RequestId}");
         _apiKey = apiKey;
-        _imageGenerationServiceProvider = serviceProvider;
         await Task.CompletedTask;
     }
 
@@ -148,10 +145,10 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
 
     public async Task TriggerImageGenerationAsync()
     {
-        _logger.LogInformation($"ImageGeneratorGrain - TriggerImageGenerationAsync with ApiKey: {_apiKey}");
+        _logger.LogInformation($"ImageGeneratorGrain - TriggerImageGenerationAsync with ApiKey: {_apiKey.GetConcatApiKeyString()}");
 
         // Check if the API key exists in memory
-        if (string.IsNullOrEmpty(_apiKey))
+        if (_apiKey == null)
         {
             _logger.LogInformation($"ImageGeneratorGrain - generatorId: {_imageGenerationState.State.RequestId} : ApiKey is null");
             // Handle the case where the API key does not exist or image-generation in-progress
@@ -175,7 +172,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
         }
 
         _imageGenerationState.State.Status = ImageGenerationStatus.InProgress;
-        _imageGenerationState.State.ServiceProvider = _imageGenerationServiceProvider;
+        _imageGenerationState.State.ServiceProvider = _apiKey.ServiceProvider;
         await _imageGenerationState.WriteStateAsync();
 
         // Call GenerateImageFromPromptAsync with its arguments taken from the state and the API key taken from memory
@@ -241,14 +238,14 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
             _imageGenerationState.State.Prompt = prompt;
 
             ImageGenerationResponse imageGenerationResponse;
-
-            if (_imageGenerationServiceProvider == ImageGenerationServiceProvider.DalleOpenAI)
+            
+            if (_apiKey?.ServiceProvider == ImageGenerationServiceProvider.DalleOpenAI)
             {
                 // Start the image data generation process
                 imageGenerationResponse = await _dalleOpenAiImageGenerator.RunImageGenerationAsync(prompt, _apiKey, 1,
                     _imageSettings, _imageGenerationState.State.RequestId);
             }
-            else if (_imageGenerationServiceProvider == ImageGenerationServiceProvider.AzureOpenAI)
+            else if (_apiKey?.ServiceProvider == ImageGenerationServiceProvider.AzureOpenAI)
             {
                 // Start the image data generation process
                 imageGenerationResponse = await _azureOpenAiImageGenerator.RunImageGenerationAsync(prompt, _apiKey, 1,

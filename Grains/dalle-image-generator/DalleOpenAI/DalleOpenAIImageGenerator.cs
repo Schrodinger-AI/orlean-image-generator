@@ -18,7 +18,7 @@ public class DalleOpenAIImageGenerator : IImageGenerator
         _logger = logger;
     }
 
-    public async Task<ImageGenerationResponse> RunImageGenerationAsync(string prompt, string apikey, int numberOfImages, ImageSettings imageSettings, string requestId)
+    public async Task<ImageGenerationResponse> RunImageGenerationAsync(string prompt, ApiKey apikey, int numberOfImages, ImageSettings imageSettings, string requestId)
     {
         _logger.LogInformation($"DalleOpenAIImageGenerator - generatorId: {requestId} , about to call Dalle API to generate image for prompt: {prompt}");
         var response = new HttpResponseMessage();
@@ -26,7 +26,7 @@ public class DalleOpenAIImageGenerator : IImageGenerator
         try
         {
             using var client = new HttpClient();
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apikey);
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apikey.ApiKeyString);
             client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
             var content = new StringContent(JsonConvert.SerializeObject(new

@@ -23,21 +23,13 @@ public class SchedulerController : ControllerBase
     }
 
     [HttpPost("add")]
-    public async Task<AddApiKeyAPIResponse> AddApiKeys(List<ApiKeyEntry> apiKeyEntries)
+    public async Task<AddApiKeyAPIResponse> AddApiKeys(List<ApiKeyEntryDto> apiKeyEntries)
     {
         try
         {
-            var apiAccountInfos = apiKeyEntries.Select(entry => new APIAccountInfo
-            {
-                ApiKey = new ApiKey(entry.ApiKey.ApiKeyString, entry.ApiKey.ServiceProvider),
-                Email = entry.Email,
-                Tier = entry.Tier,
-                MaxQuota = entry.MaxQuota
-            }).ToList();
-
             var grain = _client.GetGrain<ISchedulerGrain>("SchedulerGrain");
-            var addedApiKeys = await grain.AddApiKeys(apiAccountInfos);
-            var ret = addedApiKeys.Select(apiKey => new ApiKeyDto { ApiKeyString = apiKey.ApiKeyString.Substring(0, apiKey.ApiKeyString.Length / 2), ServiceProvider = apiKey.ServiceProvider.ToString() }).ToList();
+            var addedApiKeys = await grain.AddApiKeys(apiKeyEntries);
+            var ret = addedApiKeys.Select(apiKey => new ApiKeyDto { ApiKeyString = apiKey.ApiKeyString.Substring(0, apiKey.ApiKeyString.Length / 2), ServiceProvider = apiKey.ServiceProvider.ToString(), Url = apiKey.Url}).ToList();
             return new AddApiKeyResponseOk(ret);
         }
         catch (Exception ex)
@@ -51,7 +43,7 @@ public class SchedulerController : ControllerBase
     {
         try
         {
-            var apiKeys = apiKeyDtos.Select(dto => new ApiKey(dto.ApiKeyString, dto.ServiceProvider)).ToList();
+            var apiKeys = apiKeyDtos.Select(dto => new ApiKey(dto.ApiKeyString, dto.ServiceProvider, dto.Url)).ToList();
 
             var grain = _client.GetGrain<ISchedulerGrain>("SchedulerGrain");
             var addedApiKeys = await grain.RemoveApiKeys(apiKeys);
@@ -71,30 +63,12 @@ public class SchedulerController : ControllerBase
     }
     
     [HttpGet]
-    public async Task<ActionResult<ApiKeyEntry[]>> GetAllApiKeys()
+    public async Task<ActionResult<ApiKeyEntryDto[]>> GetAllApiKeys()
     {
         var grain = _client.GetGrain<ISchedulerGrain>("SchedulerGrain");
         var apiAccountInfos = await grain.GetAllApiKeys();
         
-        //hack for when we do not have user protection
-        var ret = new List<ApiKeyEntry>();
-        foreach (var info in apiAccountInfos)
-        {
-            var newInfo = new ApiKeyEntry
-            {
-                ApiKey = new ApiKeyDto
-                {
-                    ApiKeyString = info.ApiKey.ApiKeyString.Substring(0, info.ApiKey.ApiKeyString.Length/2),
-                    ServiceProvider = info.ApiKey.ServiceProvider.ToString()
-                },
-                Email = info.Email,
-                MaxQuota = info.MaxQuota,
-                Tier = info.Tier
-            };
-            ret.Add(newInfo);
-        }
-        
-        return Ok(ret.ToArray());
+        return Ok(apiAccountInfos.ToArray());
     }
     
     [HttpGet("apiKeysUsageInfo")]
@@ -166,19 +140,7 @@ public class SchedulerController : ControllerBase
             var grain = _client.GetGrain<ISchedulerGrain>("SchedulerGrain");
             var states = await grain.GetImageGenerationStates();
             
-            var startedImageGenerationRequests = GetRequestAccountUsageInfoDtoList(states.StartedImageGenerationRequests);
-            var pendingImageGenerationRequests = GetRequestAccountUsageInfoDtoList(states.PendingImageGenerationRequests);
-            var completedImageGenerationRequests = GetRequestAccountUsageInfoDtoList(states.CompletedImageGenerationRequests);
-            var failedImageGenerationRequests = GetRequestAccountUsageInfoDtoList(states.FailedImageGenerationRequests);
-            
-            var imageGenerationRequests = new Dictionary<string, IEnumerable<RequestAccountUsageInfoDto>>()
-            {
-                {"startedRequests", startedImageGenerationRequests},
-                {"pendingRequests", pendingImageGenerationRequests},
-                {"completedRequests", completedImageGenerationRequests},
-                {"failedRequests", failedImageGenerationRequests}
-            };
-            return new ImageGenerationStatesResponseOk<Dictionary<string, IEnumerable<RequestAccountUsageInfoDto>>>(imageGenerationRequests);
+            return new ImageGenerationStatesResponseOk<Dictionary<string, List<RequestAccountUsageInfoDto>>>(states);
         }
         catch (Exception ex)
         {
@@ -194,51 +156,11 @@ public class SchedulerController : ControllerBase
             var grain = _client.GetGrain<ISchedulerGrain>("SchedulerGrain");
             var blockedRequests = await grain.GetBlockedImageGenerationRequestsAsync();
             
-            var requestList = new List<BlockedRequestInfo>(blockedRequests.Values);
-            requestList.ForEach(item => item.RequestAccountUsageInfo.ApiKey.ApiKeyString = item.RequestAccountUsageInfo.ApiKey.ApiKeyString[..(item.RequestAccountUsageInfo.ApiKey.ApiKeyString.Length/2)]);
-            var result = requestList.Select(i => new BlockedRequestInfoDto
-            {
-                BlockedReason = i.BlockedReason?.ToString(),
-                RequestInfo = new RequestAccountUsageInfoDto
-                {
-                    RequestId = i.RequestAccountUsageInfo.RequestId,
-                    RequestTimestamp = UnixTimeStampInSecondsToDateTime(i.RequestAccountUsageInfo.RequestTimestamp).ToString(CultureInfo.InvariantCulture),
-                    StartedTimestamp = UnixTimeStampInSecondsToDateTime(i.RequestAccountUsageInfo.StartedTimestamp).ToString(CultureInfo.InvariantCulture),
-                    FailedTimestamp = UnixTimeStampInSecondsToDateTime(i.RequestAccountUsageInfo.FailedTimestamp).ToString(CultureInfo.InvariantCulture),
-                    CompletedTimestamp = UnixTimeStampInSecondsToDateTime(i.RequestAccountUsageInfo.CompletedTimestamp).ToString(CultureInfo.InvariantCulture),
-                    Attempts = i.RequestAccountUsageInfo.Attempts,
-                    ApiKey = i.RequestAccountUsageInfo.ApiKey,
-                    ChildId = i.RequestAccountUsageInfo.ChildId,
-                }
-            });
-            
-            return new BlockedRequestResponseOk<IEnumerable<BlockedRequestInfoDto>>(result);
+            return new BlockedRequestResponseOk<List<BlockedRequestInfoDto>>(blockedRequests);
         }
         catch (Exception ex)
         {
             return new BlockedRequestResponseFailed(ex.Message);
         }
-    }
-
-    private static IEnumerable<RequestAccountUsageInfoDto> GetRequestAccountUsageInfoDtoList(Dictionary<string, RequestAccountUsageInfo> requests)
-    {
-        var imageGenerationRequests = new List<RequestAccountUsageInfo>(requests.Values);
-        imageGenerationRequests.ForEach(item =>
-        {
-            if (item.ApiKey != null)
-                item.ApiKey.ApiKeyString = item.ApiKey.ApiKeyString[..(item.ApiKey.ApiKeyString.Length / 2)];
-        });
-        var ret = imageGenerationRequests.Select(i => new RequestAccountUsageInfoDto
-        {
-            RequestId = i.RequestId,
-            RequestTimestamp = UnixTimeStampInSecondsToDateTime(i.RequestTimestamp).ToString(CultureInfo.InvariantCulture),
-            StartedTimestamp = UnixTimeStampInSecondsToDateTime(i.StartedTimestamp).ToString(CultureInfo.InvariantCulture),
-            FailedTimestamp = UnixTimeStampInSecondsToDateTime(i.FailedTimestamp).ToString(CultureInfo.InvariantCulture),
-            CompletedTimestamp = UnixTimeStampInSecondsToDateTime(i.CompletedTimestamp).ToString(CultureInfo.InvariantCulture),
-            Attempts = i.Attempts,
-            ApiKey = i.ApiKey,
-            ChildId = i.ChildId
-        });
-        return ret;
     }
 }

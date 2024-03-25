@@ -18,7 +18,7 @@ public class AzureOpenAIImageGenerator : IImageGenerator
         _logger = logger;
     }
 
-    public async Task<ImageGenerationResponse> RunImageGenerationAsync(string prompt, string apikey, int numberOfImages, ImageSettings imageSettings, string requestId)
+    public async Task<ImageGenerationResponse> RunImageGenerationAsync(string prompt, ApiKey apikey, int numberOfImages, ImageSettings imageSettings, string requestId)
     {
         Response<ImageGenerations> imageGenerationsResponse;
         Response rawResponse;
@@ -48,8 +48,8 @@ public class AzureOpenAIImageGenerator : IImageGenerator
 
         try
         {
-            OpenAIClient client = new(new Uri("https://schrodinger-east-us.openai.azure.com/"),
-                new AzureKeyCredential(apikey));
+            OpenAIClient client = new(new Uri(apikey.Url),
+                new AzureKeyCredential(apikey.ApiKeyString));
 
             imageGenerationsResponse = await client.GetImageGenerationsAsync(
                 new ImageGenerationOptions()
