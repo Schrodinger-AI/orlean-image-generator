@@ -153,7 +153,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
             return;
         }
         
-        _logger.LogInformation($"ImageGeneratorGrain - TriggerImageGenerationAsync with ApiKey: {_apiKey.GetConcatApiKeyString()}");
+        _logger.LogInformation($"ImageGeneratorGrain - TriggerImageGenerationAsync with ApiKey: {_apiKey}");
 
         if (_imageGenerationState.State.Status == ImageGenerationStatus.InProgress)
         {
