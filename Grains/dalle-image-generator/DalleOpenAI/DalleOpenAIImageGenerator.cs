@@ -80,7 +80,7 @@ public class DalleOpenAIImageGenerator : IImageGenerator
             throw new ImageGenerationException(ImageGenerationErrorCode.api_call_failed, e.Message);
         }
         
-        _logger.LogError($"DalleOpenAIImageGenerator ImageGeneration ResponseCode : {response.StatusCode}");
+        _logger.LogInformation($"DalleOpenAIImageGenerator ImageGeneration ResponseCode : {response.StatusCode}");
         
         if(imageGenerationResponse.Error != null)
         {
