@@ -1,7 +1,6 @@
 using System.Globalization;
 using Grains.types;
 using Microsoft.Extensions.Logging;
-using Orleans;
 using Orleans.Runtime;
 using Orleans.Timers;
 using Shared;
@@ -14,8 +13,10 @@ namespace Grains.usage_tracker;
 /// one minute ago but haven't completed). It will compare this count against the account's quota and choose the least
 /// loaded account for the next job.
 /// </summary>
-public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
+[KeepAlive]
+public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
 {
+    private const string REMINDER_NAME = "SchedulerReminder";
     private const long RATE_LIMIT_DURATION = 63; // 1 minute and 3 seconds, 3 seconds for the buffer
     private const long CLEANUP_INTERVAL = 180; // 3 minutes
     private const int MAX_ATTEMPTS = 99999;
@@ -24,19 +25,26 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
 
     private readonly IPersistentState<SchedulerState> _masterTrackerState;
     private readonly ILogger<SchedulerGrain> _logger;
+    private readonly IReminderRegistry _reminderRegistry;
     
+    private IGrainReminder? _reminder;
     private IDisposable? _timer;
     private IDisposable? _flushTimer;
+    private IGrainContext _grainContext;
     
     private readonly Dictionary<string, ApiKeyUsageInfo> _apiKeyStatus = new();
 
     public SchedulerGrain(
         [PersistentState("masterTrackerState", "MySqlSchrodingerImageStore")]
         IPersistentState<SchedulerState> masterTrackerState,
+        IReminderRegistry reminderRegistry,
+        IGrainContext grainContext,
         ILogger<SchedulerGrain> logger)
     {
+        _reminderRegistry = reminderRegistry;
         _logger = logger;
         _masterTrackerState = masterTrackerState;
+        _grainContext = grainContext;
     }
     
     public async Task FlushAsync()
@@ -52,7 +60,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         }
     }
     
-    public override Task OnActivateAsync(CancellationToken cancellationToken)
+    public override async Task OnActivateAsync(CancellationToken cancellationToken)
     {
         _timer = RegisterTimer(asyncCallback: _ => this.AsReference<ISchedulerGrain>().TickAsync(),null,
             dueTime: TimeSpan.Zero,
@@ -64,7 +72,19 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
 
         CleanUpPendingRequests();
         
-        return base.OnActivateAsync(cancellationToken);
+        _reminder = await _reminderRegistry.RegisterOrUpdateReminder(
+            callingGrainId: _grainContext.GrainId,
+            reminderName: REMINDER_NAME,
+            dueTime: TimeSpan.Zero,
+            period: TimeSpan.FromMinutes(5));
+        
+        await base.OnActivateAsync(cancellationToken);
+    }
+    
+    Task IRemindable.ReceiveReminder(string reminderName, TickStatus status)
+    {
+        _logger.LogInformation($"SchedulerGrain ({reminderName}) has been reminded!");
+        return Task.CompletedTask;
     }
 
     public Task ReportFailedImageGenerationRequestAsync(RequestStatus requestStatus)
@@ -623,6 +643,12 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
     {
         _timer?.Dispose();
         _flushTimer?.Dispose();
+        
+        if (_reminder is not null)
+        {
+            _reminderRegistry.UnregisterReminder(
+                _grainContext.GrainId, _reminder);
+        }
     }
     
     private static IEnumerable<RequestAccountUsageInfoDto> GetRequestAccountUsageInfoDtoList(Dictionary<string, RequestAccountUsageInfo> requests)

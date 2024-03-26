@@ -12,6 +12,7 @@ using Shared;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Orleans.Serialization;
+using SiloHost.startup;
 
 namespace SiloHost
 {
@@ -87,7 +88,13 @@ namespace SiloHost
                         .UseDashboard(options =>
                         {
                             options.CounterUpdateIntervalMs = 10000;
-                        });
+                        })
+                        .UseAdoNetReminderService(options =>
+                        {
+                            options.ConnectionString = connectionString;
+                            options.Invariant = "MySql.Data.MySqlClient";
+                        })
+                        .AddStartupTask<SchedulerGrainStartupTask>();
                 })
                 .UseConsoleLifetime()
                 .Build();
