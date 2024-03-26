@@ -1,18 +1,11 @@
-﻿using Grains;
-using Grains.AzureOpenAI;
-using Grains.DalleOpenAI;
-using Grains.ImageGenerator;
-using Orleans;
-using Orleans.Configuration;
-using Orleans.Hosting;
-using Microsoft.Extensions.DependencyInjection;
-using Serilog;
-using Serilog.Formatting.Json;
-using Shared;
+﻿using System.Net;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
-using Orleans.Serialization;
-using SiloHost.startup;
+using Newtonsoft.Json;
+using Orleans.Configuration;
+using Orleans.Providers.MongoDB.Configuration;
+using Serilog;
+using Serilog.Formatting.Json;
 
 namespace SiloHost
 {
@@ -26,8 +19,8 @@ namespace SiloHost
                 .CreateLogger();
 
             var builder = new ConfigurationBuilder()
-            .SetBasePath(Directory.GetCurrentDirectory())
-            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
             var configuration = builder.Build();
 
             var siloPort = configuration.GetValue<int>("SiloPort");
@@ -52,50 +45,48 @@ namespace SiloHost
             }
 
             var host = new HostBuilder()
-                .UseOrleans(c =>
-                {
-                    c.UseAdoNetClustering(options =>
+                .UseOrleans((ctx, siloBuilder) => siloBuilder
+                    .UseMongoDBClient(connectionString)
+                    .UseMongoDBClustering(options =>
+                    {
+                        options.DatabaseName = configuration.GetValue<string>("MongoDataBase");
+                        options.CreateShardKeyForCosmos = false;
+                        options.Strategy = MongoDBMembershipStrategy.SingleDocument;
+                    })
+                    // todo ??
+                    // .AddStartupTask<SchedulerGrainStartupTask>()
+                    .UseMongoDBReminders(options =>
+                    {
+                        options.DatabaseName = configuration.GetValue<string>("MongoDataBase");
+                        options.CreateShardKeyForCosmos = false;
+                    })
+                    // .AddMemoryStreams<DefaultMemoryMessageBodySerializer>("OrleansTestStream")
+                    .Configure<JsonGrainStateSerializerOptions>(options => options.ConfigureJsonSerializerSettings =
+                        settings =>
                         {
-                            options.Invariant = "MySql.Data.MySqlClient";
-                            options.ConnectionString = connectionString;
+                            settings.NullValueHandling = NullValueHandling.Include;
+                            settings.ObjectCreationHandling = ObjectCreationHandling.Replace;
+                            settings.DefaultValueHandling = DefaultValueHandling.Populate;
                         })
-                        .ConfigureEndpoints(siloPort: siloPort, gatewayPort: gatewayPort)
-                        .ConfigureServices(services =>
-                        {
-                            services.Configure<ImageSettings>(configuration.GetSection("ImageSettings"));
-                            services.AddTransient<IImageGenerator, DalleOpenAIImageGenerator>();
-                            services.AddTransient<IImageGenerator, AzureOpenAIImageGenerator>();
-                            services.AddSerializer(serializerBuilder =>
-                            {
-                                serializerBuilder.AddNewtonsoftJsonSerializer(
-                                        isSupported: type => type.Namespace.StartsWith("Grains"))
-                                    .AddNewtonsoftJsonSerializer(
-                                        isSupported: type => type.Namespace.StartsWith("Shared"));
-                            });
-                        })
-                        .Configure<ClusterOptions>(options =>
-                        {
-                            options.ClusterId = "dev";
-                            options.ServiceId = "OrleansImageGeneratorService";
-                        })
-                        .AddAdoNetGrainStorage(Constants.MySqlSchrodingerImageStore,
-                            (Action<AdoNetGrainStorageOptions>)(options =>
-                            {
-                                options.Invariant = "MySql.Data.MySqlClient";
-                                options.ConnectionString = connectionString;
-                            }))
-                        .ConfigureLogging(logging => logging.AddSerilog())
-                        .UseDashboard(options =>
-                        {
-                            options.CounterUpdateIntervalMs = 10000;
-                        })
-                        .UseAdoNetReminderService(options =>
-                        {
-                            options.ConnectionString = connectionString;
-                            options.Invariant = "MySql.Data.MySqlClient";
-                        })
-                        .AddStartupTask<SchedulerGrainStartupTask>();
-                })
+                    // .ConfigureServices(services => services
+                    // .AddKeyedSingleton<IGrainStateSerializer, BinaryGrainStateSerializer>(ProviderConstants.DEFAULT_PUBSUB_PROVIDER_NAME)
+                    // .AddKeyedSingleton<IGrainStateSerializer, BsonGrainStateSerializer>("MySqlSchrodingerImageStore"))
+                    .AddMongoDBGrainStorage("MySqlSchrodingerImageStore", options =>
+                    {
+                        options.DatabaseName = configuration.GetValue<string>("MongoDataBase");
+                        options.CreateShardKeyForCosmos = false;
+                    })
+                    .Configure<ClusterOptions>(options =>
+                    {
+                        options.ClusterId = "dev";
+                        options.ServiceId = "OrleansImageGeneratorService";
+                    })
+                    .ConfigureEndpoints(IPAddress.Loopback, siloPort, gatewayPort)
+                    .ConfigureLogging(logging => logging.AddSerilog())
+                    .UseDashboard(options =>
+                    {
+                        options.CounterUpdateIntervalMs = 10000;
+                    }))
                 .UseConsoleLifetime()
                 .Build();
 
