@@ -37,4 +37,5 @@ public interface IMultiImageGeneratorGrain : ISchrodingerGrain, IGrainWithString
 
     Task<MultiImageQueryGrainResponse> QueryMultipleImagesAsync();
     
+    Task<bool> IsAlreadySubmitted();
 }

@@ -119,12 +119,12 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
             var IsSuccessful = true;
 
             // Extract trait names from the request
+            _multiImageGenerationState.State.Traits = traits;
             var prompt = await GeneratePromptAsync(traits);
 
             _logger.LogInformation($"For MultiImageRequest: {multiImageRequestId} Prompt generated: {prompt}");
 
             _multiImageGenerationState.State.Prompt = prompt;
-            _multiImageGenerationState.State.Traits = traits;
             var schedulerGrain = GrainFactory.GetGrain<ISchedulerGrain>("SchedulerGrain");
 
             //get timestamp
@@ -241,7 +241,7 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
                 var response = await imageGeneratorGrain.QueryImageAsync();
 
                 _logger.LogInformation(
-                    $"Query response for ImageGenerationRequestId: {imageGenerationRequestId} is: {response}");
+                    $"Query response for ImageGenerationRequestId: {imageGenerationRequestId} is: {response.Status}");
 
                 if (response is not { } grainResponse)
                 {
@@ -278,4 +278,10 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
             };
         }
     }
+    
+    public Task<bool> IsAlreadySubmitted()
+    {
+        return Task.FromResult(!string.IsNullOrEmpty(_multiImageGenerationState.State.RequestId));
+    }
+    
 }
