@@ -96,6 +96,7 @@ namespace SiloHost
                         })
                         .AddStartupTask<SchedulerGrainStartupTask>();
                 })
+                .UseConsoleLifetime()
                 .Build();
 
             await host.StartAsync();

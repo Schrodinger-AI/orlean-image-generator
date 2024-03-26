@@ -4,7 +4,12 @@ using Orleans;
 namespace Shared;
 
 public interface ISchrodingerGrain : IGrainWithGuidKey
-{ }
+{
+    Task Activate()
+    {
+        return Task.CompletedTask;
+    }
+}
 
 public interface IImageGeneratorGrain : ISchrodingerGrain, IGrainWithStringKey
 {
