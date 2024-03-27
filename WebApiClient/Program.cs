@@ -1,4 +1,5 @@
 using Orleans.Configuration;
+using Orleans.Providers.MongoDB.Configuration;
 using Serilog;
 using Serilog.Formatting.Json;
 
@@ -42,12 +43,14 @@ public class Program
                 {
                     throw new Exception("ConnectionString must be non-empty.");
                 }
-                
-                c.UseAdoNetClustering((Action<AdoNetClusteringClientOptions>)(options =>
+
+                c.UseMongoDBClient(connectionString)
+                    .UseMongoDBClustering(options =>
                     {
-                        options.Invariant = "MySql.Data.MySqlClient";
-                        options.ConnectionString = connectionString;
-                    }))
+                        options.DatabaseName = configuration.GetValue<string>("MongoDataBase");
+                        options.CreateShardKeyForCosmos = false;
+                        options.Strategy = MongoDBMembershipStrategy.SingleDocument;
+                    })
                     .Configure<ClusterOptions>(options =>
                     {
                         options.ClusterId = "dev";
