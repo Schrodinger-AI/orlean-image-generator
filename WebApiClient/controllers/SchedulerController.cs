@@ -30,24 +30,25 @@ public class SchedulerController : ControllerBase
             var grain = _client.GetGrain<ISchedulerGrain>("SchedulerGrain");
             AddApiKeysResponse addApiKeysResponse = await grain.AddApiKeys(apiKeyEntries);
             
-            if(addApiKeysResponse is AddApiKeysResponseOk addApiKeysResponseOk)
+            if(addApiKeysResponse.IsSuccessful)
             {
-                var ret = addApiKeysResponseOk.ApiKeys.Select(apiKey => new ApiKeyDto { ApiKeyString = apiKey.ApiKeyString.Substring(0, apiKey.ApiKeyString.Length / 2), ServiceProvider = apiKey.ServiceProvider.ToString(), Url = apiKey.Url}).ToList();
+                var ret = addApiKeysResponse.ValidApiKeys.Select(apiKey => new ApiKeyDto { ApiKeyString = apiKey.ApiKeyString.Substring(0, apiKey.ApiKeyString.Length / 2), ServiceProvider = apiKey.ServiceProvider.ToString(), Url = apiKey.Url}).ToList();
                 return new AddApiKeyResponseOk(ret);
             }
-            else if(addApiKeysResponse is AddApiKeysResponseNotOk addApiKeysResponseNotOk)
+
+            // generate a comma separated string of invalid APIKeys
+            else if(addApiKeysResponse.InvalidApiKeys == null)
             {
-                // generate a comma separated string of invalid APIKeys
-                var invalidAPIKeysAsCommaSeparatedString = string.Join(", ", addApiKeysResponseNotOk.InvalidApiKeys);
-                return new AddApiKeyResponseFailed(invalidAPIKeysAsCommaSeparatedString);
+                return new AddApiKeyResponseFailed("Invalid API keys");
             }
+            
+            var invalidAPIKeysAsCommaSeparatedString = string.Join(", ", addApiKeysResponse.InvalidApiKeys);
+            return new AddApiKeyResponseFailed(invalidAPIKeysAsCommaSeparatedString);
         }
         catch (Exception ex)
         {
             return new AddApiKeyResponseFailed(ex.Message);
         }
-
-        return new AddApiKeyResponseFailed("Internal error");
     }
     
     [HttpPost("remove")]

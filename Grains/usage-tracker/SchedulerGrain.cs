@@ -216,7 +216,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
         
         foreach (var entry in apiKeyEntries)
         {
-            if (_masterTrackerState.State.ApiAccountInfoList.Any(key => key.ApiKey.ToString() == entry.ApiKey.ApiKeyString))
+            if (_masterTrackerState.State.ApiAccountInfoList.Any(key => key.ApiKey.ApiKeyString == entry.ApiKey.ApiKeyString))
             {
                 invalidApiKeys.Add(entry.ApiKey.ApiKeyString);
             }
@@ -224,7 +224,11 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
         
         if(invalidApiKeys.Count > 0)
         {
-            return new AddApiKeysResponseNotOk(invalidApiKeys);
+            return new AddApiKeysResponse{
+                IsSuccessful = false,
+                ValidApiKeys = [],
+                InvalidApiKeys = invalidApiKeys
+            };
         }
         
         var apiAccountInfos = apiKeyEntries.Select(entry => new APIAccountInfo
@@ -250,7 +254,11 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
         }
         await _masterTrackerState.WriteStateAsync();
 
-        return new AddApiKeysResponseOk(addedApiKeys);
+        return new AddApiKeysResponse{
+            IsSuccessful = true,
+            ValidApiKeys = addedApiKeys,
+            InvalidApiKeys = []
+        };
     }
 
     //returns a list of apikeys that were removed
