@@ -220,7 +220,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
         
         foreach (var apiAccountInfo in apiAccountInfos)
         {
-            if(addedApiKeys.Any(key => key.GetConcatApiKeyString() == apiAccountInfo.ApiKey.GetConcatApiKeyString()))
+            if(_masterTrackerState.State.ApiAccountInfoList.Any(key => key.ApiKey.GetConcatApiKeyString() == apiAccountInfo.ApiKey.GetConcatApiKeyString()))
             {
                 _logger.LogError($"[SchedulerGrain] API key: {apiAccountInfo.ApiKey} already exists");
                 continue;

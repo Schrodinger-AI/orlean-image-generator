@@ -50,7 +50,7 @@ public class AzureOpenAIImageGenerator : IImageGenerator
         {
             OpenAIClient client = new(new Uri(apikey.Url),
                 new AzureKeyCredential(apikey.ApiKeyString));
-
+            
             imageGenerationsResponse = await client.GetImageGenerationsAsync(
                 new ImageGenerationOptions()
                 {
