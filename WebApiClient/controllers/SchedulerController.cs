@@ -28,14 +28,26 @@ public class SchedulerController : ControllerBase
         try
         {
             var grain = _client.GetGrain<ISchedulerGrain>("SchedulerGrain");
-            var addedApiKeys = await grain.AddApiKeys(apiKeyEntries);
-            var ret = addedApiKeys.Select(apiKey => new ApiKeyDto { ApiKeyString = apiKey.ApiKeyString.Substring(0, apiKey.ApiKeyString.Length / 2), ServiceProvider = apiKey.ServiceProvider.ToString(), Url = apiKey.Url}).ToList();
-            return new AddApiKeyResponseOk(ret);
+            AddApiKeysResponse addApiKeysResponse = await grain.AddApiKeys(apiKeyEntries);
+            
+            if(addApiKeysResponse is AddApiKeysResponseOk addApiKeysResponseOk)
+            {
+                var ret = addApiKeysResponseOk.ApiKeys.Select(apiKey => new ApiKeyDto { ApiKeyString = apiKey.ApiKeyString.Substring(0, apiKey.ApiKeyString.Length / 2), ServiceProvider = apiKey.ServiceProvider.ToString(), Url = apiKey.Url}).ToList();
+                return new AddApiKeyResponseOk(ret);
+            }
+            else if(addApiKeysResponse is AddApiKeysResponseNotOk addApiKeysResponseNotOk)
+            {
+                // generate a comma separated string of invalid APIKeys
+                var invalidAPIKeysAsCommaSeparatedString = string.Join(", ", addApiKeysResponseNotOk.InvalidApiKeys);
+                return new AddApiKeyResponseFailed(invalidAPIKeysAsCommaSeparatedString);
+            }
         }
         catch (Exception ex)
         {
             return new AddApiKeyResponseFailed(ex.Message);
         }
+
+        return new AddApiKeyResponseFailed("Internal error");
     }
     
     [HttpPost("remove")]

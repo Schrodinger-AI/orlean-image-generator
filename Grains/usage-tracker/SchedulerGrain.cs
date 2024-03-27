@@ -206,8 +206,27 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
         return Task.CompletedTask;
     }
 
-    public async Task<List<ApiKey>> AddApiKeys(List<ApiKeyEntryDto> apiKeyEntries)
+    public async Task<AddApiKeysResponse> AddApiKeys(List<ApiKeyEntryDto> apiKeyEntries)
     {
+        // duplicateAPiKey ValidationLogic
+        // Create an empty list for valid API keys and another for invalid API keys.
+        // If the API key does not exist in the state, add it to the valid API keys list.
+        // If the invalid API keys list is not empty, then return new AddApiKeysResponseNotOk(invalidApiKeys) 
+        var invalidApiKeys = new List<string>();
+        
+        foreach (var entry in apiKeyEntries)
+        {
+            if (_masterTrackerState.State.ApiAccountInfoList.Any(key => key.ApiKey.ToString() == entry.ApiKey.ApiKeyString))
+            {
+                invalidApiKeys.Add(entry.ApiKey.ApiKeyString);
+            }
+        }
+        
+        if(invalidApiKeys.Count > 0)
+        {
+            return new AddApiKeysResponseNotOk(invalidApiKeys);
+        }
+        
         var apiAccountInfos = apiKeyEntries.Select(entry => new APIAccountInfo
         {
             ApiKey = new ApiKey(entry.ApiKey.ApiKeyString, entry.ApiKey.ServiceProvider, entry.ApiKey.Url),
@@ -231,7 +250,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
         }
         await _masterTrackerState.WriteStateAsync();
 
-        return addedApiKeys;
+        return new AddApiKeysResponseOk(addedApiKeys);
     }
 
     //returns a list of apikeys that were removed
