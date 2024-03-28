@@ -1,5 +1,5 @@
 using System.Collections.Concurrent;
-using Orleans;
+using Orleans.Runtime;
 using Orleans.Timers;
 
 /// <summary>
@@ -9,18 +9,16 @@ public class FakeTimerEntry : IDisposable
 {
     private readonly TaskScheduler scheduler;
     private readonly FakeTimerRegistry owner;
-    public Grain Grain { get; }
     public Func<object, Task> AsyncCallback { get; }
     public object State { get; }
     public TimeSpan DueTime { get; }
     public TimeSpan DuePeriod { get; }
 
-    public FakeTimerEntry(FakeTimerRegistry owner, TaskScheduler scheduler, Grain grain, Func<object, Task> asyncCallback, object state, TimeSpan dueTime, TimeSpan period)
+    public FakeTimerEntry(FakeTimerRegistry owner, TaskScheduler scheduler, Func<object, Task> asyncCallback, object state, TimeSpan dueTime, TimeSpan period)
     {
         this.scheduler = scheduler;
         this.owner = owner;
 
-        Grain = grain;
         AsyncCallback = asyncCallback;
         State = state;
         DueTime = dueTime;
@@ -56,17 +54,6 @@ public class FakeTimerRegistry : ITimerRegistry
     private readonly ConcurrentDictionary<FakeTimerEntry, FakeTimerEntry> timers = new ConcurrentDictionary<FakeTimerEntry, FakeTimerEntry>();
 
     /// <summary>
-    /// Registers a new fake timer entry and returns it.
-    /// Note how we are capturing the activation task scheduler to ensure we can tick the fake timers within the activation context.
-    /// </summary>
-    public IDisposable RegisterTimer(Grain grain, Func<object, Task> asyncCallback, object state, TimeSpan dueTime, TimeSpan period)
-    {
-        var timer = new FakeTimerEntry(this, TaskScheduler.Current, grain, asyncCallback, state, dueTime, period);
-        timers[timer] = timer;
-        return timer;
-    }
-
-    /// <summary>
     /// Returns all fake timer entries.
     /// </summary>
     public IEnumerable<FakeTimerEntry> GetAll() => timers.Keys.ToList();
@@ -75,4 +62,12 @@ public class FakeTimerRegistry : ITimerRegistry
     /// Removes a timer.
     /// </summary>
     public void Remove(FakeTimerEntry entry) => timers.TryRemove(entry, out _);
+
+    public IDisposable RegisterTimer(IGrainContext grainContext, Func<object, Task> asyncCallback, object state, TimeSpan dueTime,
+        TimeSpan period)
+    {
+        var timer = new FakeTimerEntry(this, TaskScheduler.Current, asyncCallback, state, dueTime, period);
+        timers[timer] = timer;
+        return timer;
+    }
 }

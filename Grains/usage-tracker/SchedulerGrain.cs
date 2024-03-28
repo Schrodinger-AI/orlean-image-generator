@@ -17,20 +17,20 @@ namespace Grains.usage_tracker;
 public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
 {
     private const string REMINDER_NAME = "SchedulerReminder";
-    private const long RATE_LIMIT_DURATION = 63; // 1 minute and 3 seconds, 3 seconds for the buffer
-    private const long CLEANUP_INTERVAL = 180; // 3 minutes
-    private const int MAX_ATTEMPTS = 99999;
-    private const float QUOTA_THRESHOLD = 0.2f;
-    private const long PENDING_EXPIRY_THRESHOLD = 43200; // 12 hours
+    public const long RATE_LIMIT_DURATION = 63; // 1 minute and 3 seconds, 3 seconds for the buffer
+    public const long CLEANUP_INTERVAL = 180; // 3 minutes
+    public const int MAX_ATTEMPTS = 99999;
+    public const float QUOTA_THRESHOLD = 0.2f;
+    public const long PENDING_EXPIRY_THRESHOLD = 43200; // 12 hours
 
     private readonly IPersistentState<SchedulerState> _masterTrackerState;
     private readonly ILogger<SchedulerGrain> _logger;
     private readonly IReminderRegistry _reminderRegistry;
+    private readonly utilities.TimeProvider _timeProvider;
     
     private IGrainReminder? _reminder;
     private IDisposable? _timer;
     private IDisposable? _flushTimer;
-    private IGrainContext _grainContext;
     
     private readonly Dictionary<string, ApiKeyUsageInfo> _apiKeyStatus = new();
 
@@ -38,13 +38,18 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
         [PersistentState("masterTrackerState", "MySqlSchrodingerImageStore")]
         IPersistentState<SchedulerState> masterTrackerState,
         IReminderRegistry reminderRegistry,
-        IGrainContext grainContext,
+        utilities.TimeProvider timeProvider,
         ILogger<SchedulerGrain> logger)
     {
         _reminderRegistry = reminderRegistry;
         _logger = logger;
         _masterTrackerState = masterTrackerState;
-        _grainContext = grainContext;
+        _timeProvider = timeProvider;
+    }
+    
+    public new virtual IGrainFactory GrainFactory
+    {
+        get => base.GrainFactory;
     }
     
     public async Task FlushAsync()
@@ -73,7 +78,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
         CleanUpPendingRequests();
         
         _reminder = await _reminderRegistry.RegisterOrUpdateReminder(
-            callingGrainId: _grainContext.GrainId,
+            callingGrainId: this.GetGrainId(),
             reminderName: REMINDER_NAME,
             dueTime: TimeSpan.Zero,
             period: TimeSpan.FromMinutes(5));
@@ -95,7 +100,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
         {
             return Task.CompletedTask;
         }
-        var unixTimestamp = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
+        var unixTimestamp = ((DateTimeOffset)_timeProvider.UtcNow).ToUnixTimeSeconds();
         info.FailedTimestamp = unixTimestamp;
         info.StartedTimestamp = (requestStatus.RequestTimestamp == 0)? info.StartedTimestamp: requestStatus.RequestTimestamp;
         _masterTrackerState.State.FailedImageGenerationRequests.Add(requestStatus.RequestId, info);
@@ -115,7 +120,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
             return Task.CompletedTask;
         }
         
-        var unixTimestamp = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
+        var unixTimestamp = ((DateTimeOffset)_timeProvider.UtcNow).ToUnixTimeSeconds();
         info.CompletedTimestamp = unixTimestamp;
         info.StartedTimestamp = requestStatus.RequestTimestamp;
         _masterTrackerState.State.CompletedImageGenerationRequests.Add(requestStatus.RequestId, info);
@@ -133,7 +138,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
             return Task.CompletedTask;
         }
         
-        info.FailedTimestamp = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
+        info.FailedTimestamp = ((DateTimeOffset)_timeProvider.UtcNow).ToUnixTimeSeconds();
         info.StartedTimestamp = (requestStatus.RequestTimestamp == 0)? info.StartedTimestamp: requestStatus.RequestTimestamp;
 
         var blockedRequest = new BlockedRequestInfo()
@@ -165,6 +170,12 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
         return Task.FromResult(ret.ToList());
     }
 
+    public Task<List<RequestAccountUsageInfoDto>> GetCompletedImageGenerationRequestsAsync()
+    {
+        var ret = GetRequestAccountUsageInfoDtoList(_masterTrackerState.State.CompletedImageGenerationRequests);
+        return Task.FromResult(ret.ToList());
+    }
+
     public Task<List<BlockedRequestInfoDto>> GetBlockedImageGenerationRequestsAsync()
     {
         var requestList = new List<BlockedRequestInfo>(_masterTrackerState.State.BlockedImageGenerationRequests.Values);
@@ -179,12 +190,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
                 FailedTimestamp = UnixTimeStampInSecondsToDateTime(i.RequestAccountUsageInfo.FailedTimestamp).ToString(CultureInfo.InvariantCulture),
                 CompletedTimestamp = UnixTimeStampInSecondsToDateTime(i.RequestAccountUsageInfo.CompletedTimestamp).ToString(CultureInfo.InvariantCulture),
                 Attempts = i.RequestAccountUsageInfo.Attempts,
-                ApiKey = i.RequestAccountUsageInfo.ApiKey == null? null: new ApiKeyDto
-                {
-                    ApiKeyString = i.RequestAccountUsageInfo.ApiKey.ApiKeyString[..(i.RequestAccountUsageInfo.ApiKey.ApiKeyString.Length / 2)],
-                    ServiceProvider = i.RequestAccountUsageInfo.ApiKey.ServiceProvider.ToString(),
-                    Url = i.RequestAccountUsageInfo.ApiKey.Url
-                },
+                ApiKey = i.RequestAccountUsageInfo.ApiKey == null? null: new ApiKeyDto(i.RequestAccountUsageInfo.ApiKey),
                 ChildId = i.RequestAccountUsageInfo.ChildId,
             }
         });
@@ -206,26 +212,60 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
         return Task.CompletedTask;
     }
 
-    public async Task<List<ApiKey>> AddApiKeys(List<ApiKeyEntryDto> apiKeyEntries)
+    public async Task<AddApiKeysResponseDto> AddApiKeys(List<ApiKeyEntryDto> apiKeyEntries)
     {
-        var apiAccountInfos = apiKeyEntries.Select(entry => new APIAccountInfo
+        try
         {
-            ApiKey = new ApiKey(entry.ApiKey.ApiKeyString, entry.ApiKey.ServiceProvider, entry.ApiKey.Url),
-            Email = entry.Email,
-            Tier = entry.Tier,
-            MaxQuota = entry.MaxQuota
-        }).ToList();
-        
-        List<ApiKey> addedApiKeys = new();
-        
-        foreach (var apiAccountInfo in apiAccountInfos)
-        {
-            _masterTrackerState.State.ApiAccountInfoList.Add(apiAccountInfo);
-            addedApiKeys.Add(apiAccountInfo.ApiKey);
-        }
-        await _masterTrackerState.WriteStateAsync();
+            // duplicateAPiKey ValidationLogic
+            // Create an empty list for valid API keys and another for invalid API keys.
+            // If the API key does not exist in the state, add it to the valid API keys list.
+            // If the invalid API keys list is not empty, then return new AddApiKeysResponseNotOk(invalidApiKeys) 
 
-        return addedApiKeys;
+            var apiKeyDict = _masterTrackerState.State.ApiAccountInfoList.ToDictionary(info => info.ApiKey.GetConcatApiKeyString(), info => info);
+            var apiKeyToAdd = apiKeyEntries.Select(entry => new APIAccountInfo
+            {
+                ApiKey = new ApiKey(entry.ApiKey.ApiKeyString, entry.ApiKey.ServiceProvider, entry.ApiKey.Url),
+                Email = entry.Email,
+                Tier = entry.Tier,
+                MaxQuota = entry.MaxQuota
+            }).ToList();
+            
+            // Check for duplicate API keys in apiKeyDict from accountEntries
+            var duplicateKeys = (from entry in apiKeyToAdd where apiKeyDict.ContainsKey(entry.ApiKey.GetConcatApiKeyString()) select entry.ApiKey.GetConcatApiKeyString()).ToList();
+            apiKeyToAdd.RemoveAll(entry => duplicateKeys.Contains(entry.ApiKey.GetConcatApiKeyString()));
+            
+            // get APIAccountInfo from apiKeyDict for keys in duplicateKeys
+            var duplicateApiKeys = duplicateKeys.Select(key => apiKeyDict[key]).Select(info => new ApiKeyDto(info.ApiKey)).ToList();
+            
+            // If all API keys are duplicates, return an error
+            if (apiKeyToAdd.Count == 0)
+            {
+                return new AddApiKeysResponseDto
+                {
+                    IsSuccessful = false,
+                    ValidApiKeys = [],
+                    Error = "DUPLICATE_API_KEYS",
+                    DuplicateApiKeys = duplicateApiKeys
+                };
+            }
+            
+            _masterTrackerState.State.ApiAccountInfoList.AddRange(apiKeyToAdd);
+            await _masterTrackerState.WriteStateAsync();
+
+            return new AddApiKeysResponseDto
+            {
+                IsSuccessful = true,
+                ValidApiKeys = apiKeyToAdd.Select(entry => new ApiKeyDto(entry.ApiKey)).ToList(),
+                DuplicateApiKeys = duplicateApiKeys
+            };
+        } catch (Exception e)
+        {
+            return new AddApiKeysResponseDto
+            {
+                IsSuccessful = false,
+                Error = e.Message
+            };
+        }
     }
 
     //returns a list of apikeys that were removed
@@ -256,12 +296,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
         {
             var newInfo = new ApiKeyEntryDto
             {
-                ApiKey = new ApiKeyDto
-                {
-                    ApiKeyString = info.ApiKey.ApiKeyString.Substring(0, info.ApiKey.ApiKeyString.Length/2),
-                    ServiceProvider = info.ApiKey.ServiceProvider.ToString(),
-                    Url = info.ApiKey.Url
-                },
+                ApiKey = new ApiKeyDto(info.ApiKey),
                 Email = info.Email,
                 MaxQuota = info.MaxQuota,
                 Tier = info.Tier
@@ -316,7 +351,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
             return;
         }
         
-        var now = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
+        var now = ((DateTimeOffset)_timeProvider.UtcNow).ToUnixTimeSeconds();
         
         var remainingQuotaByApiKey = GetRemainingQuotaByApiKeys();
         
@@ -394,7 +429,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
     
     private void UpdateExpiredPendingRequestsToBlocked()
     {
-        var now = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
+        var now = ((DateTimeOffset)_timeProvider.UtcNow).ToUnixTimeSeconds();
         var cutoff = now - PENDING_EXPIRY_THRESHOLD;
         var expiredPendingRequests = _masterTrackerState.State.PendingImageGenerationRequests
             .Where(i => i.Value.StartedTimestamp < cutoff)
@@ -412,7 +447,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
     
     private Dictionary<string, int> GetRemainingQuotaByApiKeys()
     {
-        var now = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
+        var now = ((DateTimeOffset)_timeProvider.UtcNow).ToUnixTimeSeconds();
         
         //get all requests that are within the rate limit duration
         var cutoff = now - RATE_LIMIT_DURATION;
@@ -457,7 +492,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
     
     private void UpdateApiUsageStatus()
     {
-        var now = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
+        var now = ((DateTimeOffset)_timeProvider.UtcNow).ToUnixTimeSeconds();
         foreach (var usageInfo in _apiKeyStatus.Select(pair => pair.Value).Where(usageInfo => usageInfo.GetReactivationTimestamp() < now))
         {
             usageInfo.Status = ApiKeyStatus.Active;
@@ -510,7 +545,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
 
     private void CleanUpExpiredCompletedRequests()
     {
-        var now = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
+        var now = ((DateTimeOffset)_timeProvider.UtcNow).ToUnixTimeSeconds();
         
         //clean up completed requests
         foreach (var info in _masterTrackerState.State.CompletedImageGenerationRequests)
@@ -541,7 +576,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
             var selectedApiKey = GetApiKey(apiQuota);
             if (selectedApiKey == null || string.IsNullOrEmpty(selectedApiKey.ApiKeyString))
             {
-                _logger.LogError("[SchedulerGrain] No available API keys, will try again in the next scheduling");
+                _logger.LogWarning("[SchedulerGrain] No available API keys, will try again in the next scheduling");
                 break;
             }
             
@@ -550,7 +585,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
             
             AlarmWhenLowOnQuota(apiQuota);
             
-            info.StartedTimestamp = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
+            info.StartedTimestamp = ((DateTimeOffset)_timeProvider.UtcNow).ToUnixTimeSeconds();
             // Get child gen grain to process failed request again with the new api key
             await imageGenerationGrain.SetImageGenerationServiceProvider(info.ApiKey);
             
@@ -647,7 +682,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
         if (_reminder is not null)
         {
             _reminderRegistry.UnregisterReminder(
-                _grainContext.GrainId, _reminder);
+                this.GetGrainId(), _reminder);
         }
     }
     
@@ -662,12 +697,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
             FailedTimestamp = UnixTimeStampInSecondsToDateTime(i.FailedTimestamp).ToString(CultureInfo.InvariantCulture),
             CompletedTimestamp = UnixTimeStampInSecondsToDateTime(i.CompletedTimestamp).ToString(CultureInfo.InvariantCulture),
             Attempts = i.Attempts,
-            ApiKey = i.ApiKey == null? null: new ApiKeyDto
-            {
-                ApiKeyString = i.ApiKey.ApiKeyString[..(i.ApiKey.ApiKeyString.Length / 2)],
-                ServiceProvider = i.ApiKey.ServiceProvider.ToString(),
-                Url = i.ApiKey.Url
-            },
+            ApiKey = i.ApiKey == null? null: new ApiKeyDto(i.ApiKey),
             ChildId = i.ChildId
         });
         return ret;

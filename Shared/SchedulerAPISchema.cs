@@ -4,16 +4,21 @@ namespace Shared;
 
 public abstract class AddApiKeyAPIResponse { }
 
-public class AddApiKeyResponseOk(List<ApiKeyDto> apiKeys) : AddApiKeyAPIResponse
+public class AddApiKeyResponseOk(List<ApiKeyDto> apiKeys, List<ApiKeyDto>? duplicateApiKeys) : AddApiKeyAPIResponse
 {
     [JsonPropertyName("addedApiKey")]
     public List<ApiKeyDto> AddedApiKey { get; set; } = apiKeys;
+    [JsonPropertyName("duplicateAPIKeys")]
+    public List<ApiKeyDto>? DuplicateAPIKeys { get; set; } = duplicateApiKeys;
 }
 
-public class AddApiKeyResponseFailed(string error) : AddApiKeyAPIResponse
+public class AddApiKeyResponseFailed(string error, List<ApiKeyDto>? duplicateApiKeys) : AddApiKeyAPIResponse
 {
     [JsonPropertyName("error")]
     public string Error { get; set; } = error;
+    
+    [JsonPropertyName("duplicateAPIKeys")]
+    public List<ApiKeyDto>? DuplicateAPIKeys { get; set; } = duplicateApiKeys;
 }
 
 public abstract class RemoveApiKeyAPIResponse { }

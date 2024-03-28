@@ -28,13 +28,21 @@ public class SchedulerController : ControllerBase
         try
         {
             var grain = _client.GetGrain<ISchedulerGrain>("SchedulerGrain");
-            var addedApiKeys = await grain.AddApiKeys(apiKeyEntries);
-            var ret = addedApiKeys.Select(apiKey => new ApiKeyDto { ApiKeyString = apiKey.ApiKeyString.Substring(0, apiKey.ApiKeyString.Length / 2), ServiceProvider = apiKey.ServiceProvider.ToString(), Url = apiKey.Url}).ToList();
-            return new AddApiKeyResponseOk(ret);
+            var addApiKeysResponseDto = await grain.AddApiKeys(apiKeyEntries);
+            
+            if(addApiKeysResponseDto.IsSuccessful)
+            {
+                return new AddApiKeyResponseOk(addApiKeysResponseDto.ValidApiKeys, addApiKeysResponseDto.DuplicateApiKeys);
+            }
+
+            return new AddApiKeyResponseFailed(
+                addApiKeysResponseDto.Error,
+                addApiKeysResponseDto.DuplicateApiKeys
+            );
         }
         catch (Exception ex)
         {
-            return new AddApiKeyResponseFailed(ex.Message);
+            return new AddApiKeyResponseFailed(ex.Message, []);
         }
     }
     
@@ -46,15 +54,10 @@ public class SchedulerController : ControllerBase
             var apiKeys = apiKeyDtos.Select(dto => new ApiKey(dto.ApiKeyString, dto.ServiceProvider, dto.Url)).ToList();
 
             var grain = _client.GetGrain<ISchedulerGrain>("SchedulerGrain");
-            var addedApiKeys = await grain.RemoveApiKeys(apiKeys);
+            var removeApiKeys = await grain.RemoveApiKeys(apiKeys);
             
-            apiKeyDtos.Clear();
-            apiKeyDtos.AddRange(addedApiKeys.Select(apiKey => new ApiKeyDto
-            {
-                ApiKeyString = apiKey.ApiKeyString,
-                ServiceProvider = apiKey.ServiceProvider.ToString()
-            }));
-            return new RemoveApiKeyResponseOk(apiKeyDtos);
+            var removedApiKeyDtos = removeApiKeys.Select(apiKey => new ApiKeyDto(apiKey)).ToList();
+            return new RemoveApiKeyResponseOk(removedApiKeyDtos);
         }
         catch (Exception ex)
         {
