@@ -552,7 +552,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
             var selectedApiKey = GetApiKey(apiQuota);
             if (selectedApiKey == null || string.IsNullOrEmpty(selectedApiKey.ApiKeyString))
             {
-                _logger.LogError("[SchedulerGrain] No available API keys, will try again in the next scheduling");
+                _logger.LogWarning("[SchedulerGrain] No available API keys, will try again in the next scheduling");
                 break;
             }
             
