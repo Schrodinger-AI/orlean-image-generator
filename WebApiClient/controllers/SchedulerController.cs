@@ -28,17 +28,16 @@ public class SchedulerController : ControllerBase
         try
         {
             var grain = _client.GetGrain<ISchedulerGrain>("SchedulerGrain");
-            AddApiKeysResponse addApiKeysResponse = await grain.AddApiKeys(apiKeyEntries);
+            var addApiKeysResponseDto = await grain.AddApiKeys(apiKeyEntries);
             
-            if(addApiKeysResponse.IsSuccessful)
+            if(addApiKeysResponseDto.IsSuccessful)
             {
-                var ret = addApiKeysResponse.ValidApiKeys.Select(apiKey => new ApiKeyDto { ApiKeyString = apiKey.ApiKeyString.Substring(0, apiKey.ApiKeyString.Length / 2), ServiceProvider = apiKey.ServiceProvider.ToString(), Url = apiKey.Url}).ToList();
-                return new AddApiKeyResponseOk(ret);
+                return new AddApiKeyResponseOk(addApiKeysResponseDto.ValidApiKeys, addApiKeysResponseDto.DuplicateApiKeys);
             }
 
             return new AddApiKeyResponseFailed(
-                addApiKeysResponse.Error,
-                addApiKeysResponse.DuplicateApiKeys
+                addApiKeysResponseDto.Error,
+                addApiKeysResponseDto.DuplicateApiKeys
             );
         }
         catch (Exception ex)
