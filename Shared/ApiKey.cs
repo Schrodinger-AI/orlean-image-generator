@@ -37,7 +37,7 @@ public class ApiKey
         }
 
         var obfuscatedApiKeyString = new string(ApiKeyString.Take(ApiKeyString.Length / 2).Concat(Enumerable.Repeat('*', ApiKeyString.Length / 2)).ToArray());
-        return $"{ServiceProvider}_{obfuscatedApiKeyString}";
+        return obfuscatedApiKeyString;
     }
     
     public override string ToString()

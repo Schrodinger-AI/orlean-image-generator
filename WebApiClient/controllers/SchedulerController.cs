@@ -54,15 +54,10 @@ public class SchedulerController : ControllerBase
             var apiKeys = apiKeyDtos.Select(dto => new ApiKey(dto.ApiKeyString, dto.ServiceProvider, dto.Url)).ToList();
 
             var grain = _client.GetGrain<ISchedulerGrain>("SchedulerGrain");
-            var addedApiKeys = await grain.RemoveApiKeys(apiKeys);
+            var removeApiKeys = await grain.RemoveApiKeys(apiKeys);
             
-            apiKeyDtos.Clear();
-            apiKeyDtos.AddRange(addedApiKeys.Select(apiKey => new ApiKeyDto
-            {
-                ApiKeyString = apiKey.ApiKeyString,
-                ServiceProvider = apiKey.ServiceProvider.ToString()
-            }));
-            return new RemoveApiKeyResponseOk(apiKeyDtos);
+            var removedApiKeyDtos = removeApiKeys.Select(apiKey => new ApiKeyDto(apiKey)).ToList();
+            return new RemoveApiKeyResponseOk(removedApiKeyDtos);
         }
         catch (Exception ex)
         {
