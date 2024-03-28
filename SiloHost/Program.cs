@@ -2,6 +2,7 @@
 using Grains.AzureOpenAI;
 using Grains.DalleOpenAI;
 using Grains.ImageGenerator;
+using Grains.utilities;
 using Orleans;
 using Orleans.Configuration;
 using Orleans.Hosting;
@@ -13,6 +14,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Orleans.Serialization;
 using SiloHost.startup;
+using TimeProvider = Grains.utilities.TimeProvider;
 
 namespace SiloHost
 {
@@ -66,6 +68,7 @@ namespace SiloHost
                             services.Configure<ImageSettings>(configuration.GetSection("ImageSettings"));
                             services.AddTransient<IImageGenerator, DalleOpenAIImageGenerator>();
                             services.AddTransient<IImageGenerator, AzureOpenAIImageGenerator>();
+                            services.AddSingleton<TimeProvider, DefaultTimeProvider>();
                             services.AddSerializer(serializerBuilder =>
                             {
                                 serializerBuilder.AddNewtonsoftJsonSerializer(
