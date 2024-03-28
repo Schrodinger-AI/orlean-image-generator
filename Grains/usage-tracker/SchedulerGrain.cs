@@ -17,20 +17,20 @@ namespace Grains.usage_tracker;
 public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
 {
     private const string REMINDER_NAME = "SchedulerReminder";
-    private const long RATE_LIMIT_DURATION = 63; // 1 minute and 3 seconds, 3 seconds for the buffer
-    private const long CLEANUP_INTERVAL = 180; // 3 minutes
-    private const int MAX_ATTEMPTS = 99999;
-    private const float QUOTA_THRESHOLD = 0.2f;
-    private const long PENDING_EXPIRY_THRESHOLD = 43200; // 12 hours
+    public const long RATE_LIMIT_DURATION = 63; // 1 minute and 3 seconds, 3 seconds for the buffer
+    public const long CLEANUP_INTERVAL = 180; // 3 minutes
+    public const int MAX_ATTEMPTS = 99999;
+    public const float QUOTA_THRESHOLD = 0.2f;
+    public const long PENDING_EXPIRY_THRESHOLD = 43200; // 12 hours
 
     private readonly IPersistentState<SchedulerState> _masterTrackerState;
     private readonly ILogger<SchedulerGrain> _logger;
     private readonly IReminderRegistry _reminderRegistry;
+    private readonly utilities.TimeProvider _timeProvider;
     
     private IGrainReminder? _reminder;
     private IDisposable? _timer;
     private IDisposable? _flushTimer;
-    private IGrainContext _grainContext;
     
     private readonly Dictionary<string, ApiKeyUsageInfo> _apiKeyStatus = new();
 
@@ -38,13 +38,18 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
         [PersistentState("masterTrackerState", "MySqlSchrodingerImageStore")]
         IPersistentState<SchedulerState> masterTrackerState,
         IReminderRegistry reminderRegistry,
-        IGrainContext grainContext,
+        utilities.TimeProvider timeProvider,
         ILogger<SchedulerGrain> logger)
     {
         _reminderRegistry = reminderRegistry;
         _logger = logger;
         _masterTrackerState = masterTrackerState;
-        _grainContext = grainContext;
+        _timeProvider = timeProvider;
+    }
+    
+    public new virtual IGrainFactory GrainFactory
+    {
+        get => base.GrainFactory;
     }
     
     public async Task FlushAsync()
@@ -73,7 +78,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
         CleanUpPendingRequests();
         
         _reminder = await _reminderRegistry.RegisterOrUpdateReminder(
-            callingGrainId: _grainContext.GrainId,
+            callingGrainId: this.GetGrainId(),
             reminderName: REMINDER_NAME,
             dueTime: TimeSpan.Zero,
             period: TimeSpan.FromMinutes(5));
@@ -95,7 +100,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
         {
             return Task.CompletedTask;
         }
-        var unixTimestamp = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
+        var unixTimestamp = ((DateTimeOffset)_timeProvider.UtcNow).ToUnixTimeSeconds();
         info.FailedTimestamp = unixTimestamp;
         info.StartedTimestamp = (requestStatus.RequestTimestamp == 0)? info.StartedTimestamp: requestStatus.RequestTimestamp;
         _masterTrackerState.State.FailedImageGenerationRequests.Add(requestStatus.RequestId, info);
@@ -115,7 +120,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
             return Task.CompletedTask;
         }
         
-        var unixTimestamp = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
+        var unixTimestamp = ((DateTimeOffset)_timeProvider.UtcNow).ToUnixTimeSeconds();
         info.CompletedTimestamp = unixTimestamp;
         info.StartedTimestamp = requestStatus.RequestTimestamp;
         _masterTrackerState.State.CompletedImageGenerationRequests.Add(requestStatus.RequestId, info);
@@ -133,7 +138,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
             return Task.CompletedTask;
         }
         
-        info.FailedTimestamp = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
+        info.FailedTimestamp = ((DateTimeOffset)_timeProvider.UtcNow).ToUnixTimeSeconds();
         info.StartedTimestamp = (requestStatus.RequestTimestamp == 0)? info.StartedTimestamp: requestStatus.RequestTimestamp;
 
         var blockedRequest = new BlockedRequestInfo()
@@ -162,6 +167,12 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
     public Task<List<RequestAccountUsageInfoDto>> GetPendingImageGenerationRequestsAsync()
     {
         var ret = GetRequestAccountUsageInfoDtoList(_masterTrackerState.State.PendingImageGenerationRequests);
+        return Task.FromResult(ret.ToList());
+    }
+
+    public Task<List<RequestAccountUsageInfoDto>> GetCompletedImageGenerationRequestsAsync()
+    {
+        var ret = GetRequestAccountUsageInfoDtoList(_masterTrackerState.State.CompletedImageGenerationRequests);
         return Task.FromResult(ret.ToList());
     }
 
@@ -316,7 +327,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
             return;
         }
         
-        var now = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
+        var now = ((DateTimeOffset)_timeProvider.UtcNow).ToUnixTimeSeconds();
         
         var remainingQuotaByApiKey = GetRemainingQuotaByApiKeys();
         
@@ -394,7 +405,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
     
     private void UpdateExpiredPendingRequestsToBlocked()
     {
-        var now = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
+        var now = ((DateTimeOffset)_timeProvider.UtcNow).ToUnixTimeSeconds();
         var cutoff = now - PENDING_EXPIRY_THRESHOLD;
         var expiredPendingRequests = _masterTrackerState.State.PendingImageGenerationRequests
             .Where(i => i.Value.StartedTimestamp < cutoff)
@@ -412,7 +423,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
     
     private Dictionary<string, int> GetRemainingQuotaByApiKeys()
     {
-        var now = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
+        var now = ((DateTimeOffset)_timeProvider.UtcNow).ToUnixTimeSeconds();
         
         //get all requests that are within the rate limit duration
         var cutoff = now - RATE_LIMIT_DURATION;
@@ -457,7 +468,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
     
     private void UpdateApiUsageStatus()
     {
-        var now = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
+        var now = ((DateTimeOffset)_timeProvider.UtcNow).ToUnixTimeSeconds();
         foreach (var usageInfo in _apiKeyStatus.Select(pair => pair.Value).Where(usageInfo => usageInfo.GetReactivationTimestamp() < now))
         {
             usageInfo.Status = ApiKeyStatus.Active;
@@ -510,7 +521,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
 
     private void CleanUpExpiredCompletedRequests()
     {
-        var now = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
+        var now = ((DateTimeOffset)_timeProvider.UtcNow).ToUnixTimeSeconds();
         
         //clean up completed requests
         foreach (var info in _masterTrackerState.State.CompletedImageGenerationRequests)
@@ -550,7 +561,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
             
             AlarmWhenLowOnQuota(apiQuota);
             
-            info.StartedTimestamp = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
+            info.StartedTimestamp = ((DateTimeOffset)_timeProvider.UtcNow).ToUnixTimeSeconds();
             // Get child gen grain to process failed request again with the new api key
             await imageGenerationGrain.SetImageGenerationServiceProvider(info.ApiKey);
             
@@ -647,7 +658,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
         if (_reminder is not null)
         {
             _reminderRegistry.UnregisterReminder(
-                _grainContext.GrainId, _reminder);
+                this.GetGrainId(), _reminder);
         }
     }
     

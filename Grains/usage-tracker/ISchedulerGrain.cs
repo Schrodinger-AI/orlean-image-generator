@@ -8,6 +8,7 @@ public interface ISchedulerGrain : ISchrodingerGrain, Orleans.IGrainWithStringKe
     Task<List<RequestAccountUsageInfoDto>> GetFailedImageGenerationRequestsAsync();
     Task<List<RequestAccountUsageInfoDto>> GetStartedImageGenerationRequestsAsync();
     Task<List<RequestAccountUsageInfoDto>> GetPendingImageGenerationRequestsAsync();
+    Task<List<RequestAccountUsageInfoDto>> GetCompletedImageGenerationRequestsAsync();
     Task<List<BlockedRequestInfoDto>> GetBlockedImageGenerationRequestsAsync();
     Task AddImageGenerationRequest(string requestId, string childId, long requestTimestamp);
     Task<List<ApiKey>> AddApiKeys(List<ApiKeyEntryDto> apiKeyEntries);
