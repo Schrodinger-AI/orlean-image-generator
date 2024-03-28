@@ -4,6 +4,7 @@ using GrainsTest.utilities;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Orleans.Runtime;
+using Orleans.Timers;
 using Shared;
 using Xunit;
 using TimeProvider = Grains.utilities.TimeProvider;
@@ -933,6 +934,130 @@ public class SchedulerGrainTest(ClusterFixture fixture)
 
         // Assert
         Assert.True(schedulerGrain.Object.IsOverloaded().Result);
+    }
+    
+    [Fact]
+    public async Task GetImageGenerationStates()
+    {
+        // Arrange
+        var mockSchedulerState = GetMockSchedulerState();
+
+        var timeMock = new Mock<TimeProvider>();
+        timeMock.SetupGet(tp => tp.UtcNow).Returns(DateTime.UtcNow.AddSeconds(-SchedulerGrain.PENDING_EXPIRY_THRESHOLD + 1));
+
+        var imageGenGrain = new Mock<IImageGeneratorGrain>();
+        var schedulerGrain = new Mock<SchedulerGrain>(mockSchedulerState.Object, ClusterFixture.FakeReminderRegistry, timeMock.Object, Mock.Of<ILogger<SchedulerGrain>>());
+        schedulerGrain
+            .Setup(x => x.GrainFactory.GetGrain<IImageGeneratorGrain>(It.IsAny<string>(), null))
+            .Returns(imageGenGrain.Object);
+        
+        var now = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
+        await schedulerGrain.Object.AddImageGenerationRequest("parent", "myRequestId", now);
+        
+        // Act
+        await schedulerGrain.Object.TickAsync();
+
+        // Assert
+        Assert.Single(schedulerGrain.Object.GetImageGenerationStates().Result["pendingRequests"]);
+    }
+    
+    [Fact]
+    public async Task ForceRequestExecution_BlockedRequest()
+    {
+        // Arrange
+        var childId = "myRequestId";
+        var mockSchedulerState = GetMockSchedulerState();
+        
+        var timeMock = new Mock<TimeProvider>();
+        timeMock.SetupGet(tp => tp.UtcNow).Returns(DateTime.UtcNow);
+
+        var imageGenGrain = new Mock<IImageGeneratorGrain>();
+        var schedulerGrain = new Mock<SchedulerGrain>(mockSchedulerState.Object, ClusterFixture.FakeReminderRegistry, timeMock.Object, Mock.Of<ILogger<SchedulerGrain>>());
+        schedulerGrain
+            .Setup(x => x.GrainFactory.GetGrain<IImageGeneratorGrain>(It.IsAny<string>(), null))
+            .Returns(imageGenGrain.Object);
+        
+        var now = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
+        await schedulerGrain.Object.AddImageGenerationRequest("parent", childId, now);
+        
+        // Act
+        await schedulerGrain.Object.TickAsync();
+
+        await schedulerGrain.Object.ReportBlockedImageGenerationRequestAsync(new RequestStatus
+        {
+            RequestId = childId,
+            Status = RequestStatusEnum.Failed,
+            ErrorCode = ImageGenerationErrorCode.content_violation
+        });
+        
+        await schedulerGrain.Object.TickAsync();
+        await schedulerGrain.Object.ForceRequestExecution(childId);
+        
+        // Assert
+        Assert.Single(schedulerGrain.Object.GetStartedImageGenerationRequestsAsync().Result);
+    }
+    
+    [Fact]
+    public async Task ForceRequestExecution_NoRequest()
+    {
+        // Arrange
+        var childId = "myRequestId";
+        var mockSchedulerState = GetMockSchedulerState();
+        
+        var timeMock = new Mock<TimeProvider>();
+        timeMock.SetupGet(tp => tp.UtcNow).Returns(DateTime.UtcNow);
+
+        var imageGenGrain = new Mock<IImageGeneratorGrain>();
+        var schedulerGrain = new Mock<SchedulerGrain>(mockSchedulerState.Object, ClusterFixture.FakeReminderRegistry, timeMock.Object, Mock.Of<ILogger<SchedulerGrain>>());
+        schedulerGrain
+            .Setup(x => x.GrainFactory.GetGrain<IImageGeneratorGrain>(It.IsAny<string>(), null))
+            .Returns(imageGenGrain.Object);
+        
+        var now = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
+        await schedulerGrain.Object.AddImageGenerationRequest("parent", childId, now);
+        
+        // Act
+        await schedulerGrain.Object.TickAsync();
+        
+        await schedulerGrain.Object.ReportCompletedImageGenerationRequestAsync(new RequestStatus
+        {
+            RequestId = childId,
+            Status = RequestStatusEnum.Completed,
+            RequestTimestamp = now
+        });
+        
+        await schedulerGrain.Object.ForceRequestExecution(childId);
+        
+        // Assert
+        Assert.Empty(schedulerGrain.Object.GetStartedImageGenerationRequestsAsync().Result);
+        Assert.Single(schedulerGrain.Object.GetCompletedImageGenerationRequestsAsync().Result);
+    }
+    
+    [Fact]
+    public async Task ForceRequestExecution_PendingRequest()
+    {
+        // Arrange
+        var childId = "myRequestId";
+        var mockSchedulerState = GetMockSchedulerState();
+        
+        var timeMock = new Mock<TimeProvider>();
+        timeMock.SetupGet(tp => tp.UtcNow).Returns(DateTime.UtcNow);
+
+        var imageGenGrain = new Mock<IImageGeneratorGrain>();
+        var schedulerGrain = new Mock<SchedulerGrain>(mockSchedulerState.Object, ClusterFixture.FakeReminderRegistry, timeMock.Object, Mock.Of<ILogger<SchedulerGrain>>());
+        schedulerGrain
+            .Setup(x => x.GrainFactory.GetGrain<IImageGeneratorGrain>(It.IsAny<string>(), null))
+            .Returns(imageGenGrain.Object);
+        
+        var now = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
+        await schedulerGrain.Object.AddImageGenerationRequest("parent", childId, now);
+        
+        // Act
+        await schedulerGrain.Object.TickAsync();
+        await schedulerGrain.Object.ForceRequestExecution(childId);
+        
+        // Assert
+        Assert.Single(schedulerGrain.Object.GetStartedImageGenerationRequestsAsync().Result);
     }
     
     private static Mock<IPersistentState<SchedulerState>> GetMockSchedulerState(ApiKey? apiKey = null)
