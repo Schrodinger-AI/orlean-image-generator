@@ -10,10 +10,13 @@ public class AddApiKeyResponseOk(List<ApiKeyDto> apiKeys) : AddApiKeyAPIResponse
     public List<ApiKeyDto> AddedApiKey { get; set; } = apiKeys;
 }
 
-public class AddApiKeyResponseFailed(string error) : AddApiKeyAPIResponse
+public class AddApiKeyResponseFailed(string error, List<string> duplicateApiKeys) : AddApiKeyAPIResponse
 {
     [JsonPropertyName("error")]
     public string Error { get; set; } = error;
+    
+    [JsonPropertyName("duplicateAPIKeys")]
+    public List<string>? DuplicateAPIKeys { get; set; } = duplicateApiKeys;
 }
 
 public abstract class RemoveApiKeyAPIResponse { }

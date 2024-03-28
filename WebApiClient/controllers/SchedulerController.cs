@@ -36,18 +36,14 @@ public class SchedulerController : ControllerBase
                 return new AddApiKeyResponseOk(ret);
             }
 
-            // generate a comma separated string of invalid APIKeys
-            else if(addApiKeysResponse.InvalidApiKeys == null)
-            {
-                return new AddApiKeyResponseFailed("Invalid API keys");
-            }
-            
-            var invalidAPIKeysAsCommaSeparatedString = string.Join(", ", addApiKeysResponse.InvalidApiKeys);
-            return new AddApiKeyResponseFailed(invalidAPIKeysAsCommaSeparatedString);
+            return new AddApiKeyResponseFailed(
+                addApiKeysResponse.Error,
+                addApiKeysResponse.DuplicateApiKeys
+            );
         }
         catch (Exception ex)
         {
-            return new AddApiKeyResponseFailed(ex.Message);
+            return new AddApiKeyResponseFailed(ex.Message, []);
         }
     }
     

@@ -208,57 +208,72 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
 
     public async Task<AddApiKeysResponse> AddApiKeys(List<ApiKeyEntryDto> apiKeyEntries)
     {
-        // duplicateAPiKey ValidationLogic
-        // Create an empty list for valid API keys and another for invalid API keys.
-        // If the API key does not exist in the state, add it to the valid API keys list.
-        // If the invalid API keys list is not empty, then return new AddApiKeysResponseNotOk(invalidApiKeys) 
-        var invalidApiKeys = new List<string>();
-        
-        foreach (var entry in apiKeyEntries)
+        try
         {
-            if (_masterTrackerState.State.ApiAccountInfoList.Any(key => key.ApiKey.ApiKeyString == entry.ApiKey.ApiKeyString))
+            // duplicateAPiKey ValidationLogic
+            // Create an empty list for valid API keys and another for invalid API keys.
+            // If the API key does not exist in the state, add it to the valid API keys list.
+            // If the invalid API keys list is not empty, then return new AddApiKeysResponseNotOk(invalidApiKeys) 
+            var duplicateApiKeys = new List<string>();
+
+            foreach (var entry in apiKeyEntries)
             {
-                invalidApiKeys.Add(entry.ApiKey.ApiKeyString);
+                if (_masterTrackerState.State.ApiAccountInfoList.Any(key =>
+                        key.ApiKey.ApiKeyString == entry.ApiKey.ApiKeyString))
+                {
+                    duplicateApiKeys.Add(entry.ApiKey.ApiKeyString.Substring(0, entry.ApiKey.ApiKeyString.Length / 2));                
+                }
             }
-        }
-        
-        if(invalidApiKeys.Count > 0)
+
+            if (duplicateApiKeys.Count > 0)
+            {
+                return new AddApiKeysResponse
+                {
+                    IsSuccessful = false,
+                    ValidApiKeys = [],
+                    Error = "DUPLICATE_API_KEYS",
+                    DuplicateApiKeys = duplicateApiKeys
+                };
+            }
+
+            var apiAccountInfos = apiKeyEntries.Select(entry => new APIAccountInfo
+            {
+                ApiKey = new ApiKey(entry.ApiKey.ApiKeyString, entry.ApiKey.ServiceProvider, entry.ApiKey.Url),
+                Email = entry.Email,
+                Tier = entry.Tier,
+                MaxQuota = entry.MaxQuota
+            }).ToList();
+
+            List<ApiKey> addedApiKeys = new();
+
+            foreach (var apiAccountInfo in apiAccountInfos)
+            {
+                if (_masterTrackerState.State.ApiAccountInfoList.Any(key =>
+                        key.ApiKey.GetConcatApiKeyString() == apiAccountInfo.ApiKey.GetConcatApiKeyString()))
+                {
+                    _logger.LogError($"[SchedulerGrain] API key: {apiAccountInfo.ApiKey} already exists");
+                    continue;
+                }
+
+                _masterTrackerState.State.ApiAccountInfoList.Add(apiAccountInfo);
+                addedApiKeys.Add(apiAccountInfo.ApiKey);
+            }
+
+            await _masterTrackerState.WriteStateAsync();
+
+            return new AddApiKeysResponse
+            {
+                IsSuccessful = true,
+                ValidApiKeys = addedApiKeys
+            };
+        } catch (Exception e)
         {
-            return new AddApiKeysResponse{
+            return new AddApiKeysResponse
+            {
                 IsSuccessful = false,
-                ValidApiKeys = [],
-                InvalidApiKeys = invalidApiKeys
+                Error = e.Message
             };
         }
-        
-        var apiAccountInfos = apiKeyEntries.Select(entry => new APIAccountInfo
-        {
-            ApiKey = new ApiKey(entry.ApiKey.ApiKeyString, entry.ApiKey.ServiceProvider, entry.ApiKey.Url),
-            Email = entry.Email,
-            Tier = entry.Tier,
-            MaxQuota = entry.MaxQuota
-        }).ToList();
-        
-        List<ApiKey> addedApiKeys = new();
-        
-        foreach (var apiAccountInfo in apiAccountInfos)
-        {
-            if(_masterTrackerState.State.ApiAccountInfoList.Any(key => key.ApiKey.GetConcatApiKeyString() == apiAccountInfo.ApiKey.GetConcatApiKeyString()))
-            {
-                _logger.LogError($"[SchedulerGrain] API key: {apiAccountInfo.ApiKey} already exists");
-                continue;
-            }
-            
-            _masterTrackerState.State.ApiAccountInfoList.Add(apiAccountInfo);
-            addedApiKeys.Add(apiAccountInfo.ApiKey);
-        }
-        await _masterTrackerState.WriteStateAsync();
-
-        return new AddApiKeysResponse{
-            IsSuccessful = true,
-            ValidApiKeys = addedApiKeys,
-            InvalidApiKeys = []
-        };
     }
 
     //returns a list of apikeys that were removed

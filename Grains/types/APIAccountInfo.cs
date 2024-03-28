@@ -10,12 +10,3 @@ public class APIAccountInfo
     public int Tier { get; set; } = 0;
     public int MaxQuota { get; set; } = 5;
 }
-
-[Serializable]
-[GenerateSerializer]
-public class AddApiKeysResponse
-{
-    public bool IsSuccessful { get; set; }
-    public List<ApiKey> ValidApiKeys { get; set; }
-    public List<string> InvalidApiKeys { get; set; }
-}
