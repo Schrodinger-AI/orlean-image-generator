@@ -145,8 +145,6 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
 
     public async Task TriggerImageGenerationAsync()
     {
-        _logger.LogInformation($"ImageGeneratorGrain - TriggerImageGenerationAsync with ApiKey: {_apiKey.GetConcatApiKeyString()}");
-
         // Check if the API key exists in memory
         if (_apiKey == null)
         {
@@ -154,6 +152,8 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
             // Handle the case where the API key does not exist or image-generation in-progress
             return;
         }
+        
+        _logger.LogInformation($"ImageGeneratorGrain - TriggerImageGenerationAsync with ApiKey: {_apiKey}");
 
         if (_imageGenerationState.State.Status == ImageGenerationStatus.InProgress)
         {

@@ -448,6 +448,9 @@ public class SchedulerGrainTest(ClusterFixture fixture)
         
         var now = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
         await schedulerGrain.Object.AddImageGenerationRequest("parent", requestId, now);
+
+        var apiKeyToTest = new ApiKey(apiKeyString, ImageGenerationServiceProvider.DalleOpenAI.ToString(), "");
+        var apiKeyDtoToTest = new ApiKeyDto(apiKeyToTest);
         
         // Act
         await schedulerGrain.Object.TickAsync();
@@ -491,7 +494,7 @@ public class SchedulerGrainTest(ClusterFixture fixture)
 
         // Assert
         var result = schedulerGrain.Object.GetPendingImageGenerationRequestsAsync().Result;
-        Assert.Equal(apiKeyString.Substring(0, apiKeyString.Length/2), result[0].ApiKey?.ApiKeyString);
+        Assert.Equal(apiKeyDtoToTest.ApiKeyString, result[0].ApiKey?.ApiKeyString);
     }
     
     //1. use an invalid azure api key
@@ -631,12 +634,14 @@ public class SchedulerGrainTest(ClusterFixture fixture)
     {
         // Arrange
         const string apiKeyString = "apiKey1apiKey1";
-        var mockSchedulerState = GetMockSchedulerState(new ApiKey
+        var apiKeyToTest = new ApiKey
         {
             ApiKeyString = apiKeyString,
             ServiceProvider = ImageGenerationServiceProvider.DalleOpenAI,
             Url = "some_url"
-        });
+        };
+        var apiKeyDtoToTest = new ApiKeyDto(apiKeyToTest);
+        var mockSchedulerState = GetMockSchedulerState(apiKeyToTest);
 
         var timeMock = new Mock<TimeProvider>();
         timeMock.SetupGet(tp => tp.UtcNow).Returns(DateTime.UtcNow);
@@ -655,7 +660,7 @@ public class SchedulerGrainTest(ClusterFixture fixture)
 
         // Assert
         var result = schedulerGrain.Object.GetPendingImageGenerationRequestsAsync().Result;
-        Assert.Equal(apiKeyString.Substring(0, apiKeyString.Length/2), result[0].ApiKey?.ApiKeyString);
+        Assert.Equal(apiKeyDtoToTest.ApiKeyString, result[0].ApiKey?.ApiKeyString);
     }
     
     [Fact]
@@ -842,52 +847,6 @@ public class SchedulerGrainTest(ClusterFixture fixture)
     }
     
     [Fact]
-    public async Task AddApiKeys()
-    {
-        // Arrange
-        var mockSchedulerState = GetMockSchedulerState();
-        
-        var timeMock = new Mock<TimeProvider>();
-        timeMock.SetupGet(tp => tp.UtcNow).Returns(DateTime.UtcNow);
-
-        var imageGenGrain = new Mock<IImageGeneratorGrain>();
-        var schedulerGrain = new Mock<SchedulerGrain>(mockSchedulerState.Object, ClusterFixture.FakeReminderRegistry, timeMock.Object, Mock.Of<ILogger<SchedulerGrain>>());
-        schedulerGrain
-            .Setup(x => x.GrainFactory.GetGrain<IImageGeneratorGrain>(It.IsAny<string>(), null))
-            .Returns(imageGenGrain.Object);
-
-        var apiKeyList = new List<ApiKeyEntryDto>();
-        apiKeyList.Add(new ApiKeyEntryDto
-        {
-            ApiKey = new ApiKeyDto
-            {
-                ApiKeyString = "apikey2apikey2",
-                ServiceProvider = ImageGenerationServiceProvider.DalleOpenAI.ToString(),
-                Url = "some_url"
-            },
-            Email = "temp@temp.co",
-            Tier = 1,
-            MaxQuota = 5
-        });
-        apiKeyList.Add(new ApiKeyEntryDto
-        {
-            ApiKey = new ApiKeyDto
-            {
-                ApiKeyString = "apikey3apikey3",
-                ServiceProvider = ImageGenerationServiceProvider.DalleOpenAI.ToString(),
-                Url = "some_url"
-            },
-            Email = "temp1@temp.co",
-            Tier = 1,
-            MaxQuota = 5
-        });
-        await schedulerGrain.Object.AddApiKeys(apiKeyList);
-        
-        // Assert
-        Assert.Equal(3, schedulerGrain.Object.GetAllApiKeys().Result.Count);
-    }
-    
-    [Fact]
     public Task IsOverloaded_NotOverloaded()
     {
         // Arrange
@@ -1058,6 +1017,198 @@ public class SchedulerGrainTest(ClusterFixture fixture)
         
         // Assert
         Assert.Single(schedulerGrain.Object.GetStartedImageGenerationRequestsAsync().Result);
+    }
+    
+    [Fact]
+    public async Task AddApiKeys_NoDuplicates_AddMultipleApiKeys_ShouldAdd()
+    {
+        // Arrange
+        var mockSchedulerState = GetMockSchedulerState();
+        
+        var timeMock = new Mock<TimeProvider>();
+        timeMock.SetupGet(tp => tp.UtcNow).Returns(DateTime.UtcNow);
+
+        var imageGenGrain = new Mock<IImageGeneratorGrain>();
+        var schedulerGrain = new Mock<SchedulerGrain>(mockSchedulerState.Object, ClusterFixture.FakeReminderRegistry, timeMock.Object, Mock.Of<ILogger<SchedulerGrain>>());
+        schedulerGrain
+            .Setup(x => x.GrainFactory.GetGrain<IImageGeneratorGrain>(It.IsAny<string>(), null))
+            .Returns(imageGenGrain.Object);
+
+        var apiKeyList = new List<ApiKeyEntryDto>();
+        apiKeyList.Add(new ApiKeyEntryDto
+        {
+            ApiKey = new ApiKeyDto
+            {
+                ApiKeyString = "apikey2apikey2",
+                ServiceProvider = ImageGenerationServiceProvider.DalleOpenAI.ToString(),
+                Url = "some_url"
+            },
+            Email = "temp@temp.co",
+            Tier = 1,
+            MaxQuota = 5
+        });
+        apiKeyList.Add(new ApiKeyEntryDto
+        {
+            ApiKey = new ApiKeyDto
+            {
+                ApiKeyString = "apikey3apikey3",
+                ServiceProvider = ImageGenerationServiceProvider.DalleOpenAI.ToString(),
+                Url = "some_url"
+            },
+            Email = "temp1@temp.co",
+            Tier = 1,
+            MaxQuota = 5
+        });
+        var response = await schedulerGrain.Object.AddApiKeys(apiKeyList);
+        
+        // Assert
+        Assert.Equal(3, schedulerGrain.Object.GetAllApiKeys().Result.Count);
+        Assert.True(response.IsSuccessful);
+    }
+    
+    [Fact]
+    public async Task AddApiKeys_NoDuplicates_AddOneApiKey_ShouldAdd()
+    {
+        // Arrange
+        var apiKey1 = new ApiKey
+        {
+            ApiKeyString = "apiKey1apiKey1",
+            ServiceProvider = ImageGenerationServiceProvider.DalleOpenAI,
+            Url = "some_url"
+        };
+        var apiKey2String = "apiKey2apiKey";
+        var mockSchedulerState = GetMockSchedulerState(apiKey1);
+        
+        var timeMock = new Mock<TimeProvider>();
+        timeMock.SetupGet(tp => tp.UtcNow).Returns(DateTime.UtcNow);
+
+        var imageGenGrain = new Mock<IImageGeneratorGrain>();
+        var schedulerGrain = new Mock<SchedulerGrain>(mockSchedulerState.Object, ClusterFixture.FakeReminderRegistry, timeMock.Object, Mock.Of<ILogger<SchedulerGrain>>());
+        schedulerGrain
+            .Setup(x => x.GrainFactory.GetGrain<IImageGeneratorGrain>(It.IsAny<string>(), null))
+            .Returns(imageGenGrain.Object);
+        
+        var response = await schedulerGrain.Object.AddApiKeys(new List<ApiKeyEntryDto>
+        {
+            new ApiKeyEntryDto
+            {
+                Email = "second@api.key",
+                Tier = 1,
+                MaxQuota = 2,
+                ApiKey = new ApiKeyDto
+                {
+                    ApiKeyString = apiKey2String,
+                    ServiceProvider = ImageGenerationServiceProvider.DalleOpenAI.ToString(),
+                    Url = ""
+                }
+            }
+        });
+        
+        // Assert
+        Assert.Equal(2, schedulerGrain.Object.GetAllApiKeys().Result.Count);
+        Assert.True(response.IsSuccessful);
+    }
+    
+    [Fact]
+    public async Task AddApiKeys_OneDuplicate_AddOneApiKey_ShouldFail()
+    {
+        // Arrange
+        var apiKeyString = "apiKey2apiKey2";
+        var apiKey1 = new ApiKey
+        {
+            ApiKeyString = apiKeyString,
+            ServiceProvider = ImageGenerationServiceProvider.DalleOpenAI,
+            Url = "some_url"
+        };
+        var mockSchedulerState = GetMockSchedulerState(apiKey1);
+        
+        var timeMock = new Mock<TimeProvider>();
+        timeMock.SetupGet(tp => tp.UtcNow).Returns(DateTime.UtcNow);
+
+        var imageGenGrain = new Mock<IImageGeneratorGrain>();
+        var schedulerGrain = new Mock<SchedulerGrain>(mockSchedulerState.Object, ClusterFixture.FakeReminderRegistry, timeMock.Object, Mock.Of<ILogger<SchedulerGrain>>());
+        schedulerGrain
+            .Setup(x => x.GrainFactory.GetGrain<IImageGeneratorGrain>(It.IsAny<string>(), null))
+            .Returns(imageGenGrain.Object);
+        
+        var response = await schedulerGrain.Object.AddApiKeys(new List<ApiKeyEntryDto>
+        {
+            new ApiKeyEntryDto
+            {
+                Email = "second@api.key",
+                Tier = 1,
+                MaxQuota = 2,
+                ApiKey = new ApiKeyDto
+                {
+                    ApiKeyString = apiKeyString,
+                    ServiceProvider = ImageGenerationServiceProvider.DalleOpenAI.ToString(),
+                    Url = ""
+                }
+            }
+        });
+        
+        // Assert
+        Assert.Equal(1, schedulerGrain.Object.GetAllApiKeys().Result.Count);
+        Assert.Equal("DUPLICATE_API_KEYS", response.Error);
+        Assert.Single(response.DuplicateApiKeys);
+        Assert.False(response.IsSuccessful);
+    }
+    
+    [Fact]
+    public async Task AddApiKeys_OneDuplicate_AddMultipleApiKeys_ShouldFail()
+    {
+        // Arrange
+        var apiKeyString = "apiKey2apiKey2";
+        var apiKey3String = "apiKey3apiKey3";
+        var apiKey1 = new ApiKey
+        {
+            ApiKeyString = apiKeyString,
+            ServiceProvider = ImageGenerationServiceProvider.DalleOpenAI,
+            Url = "some_url"
+        };
+        var mockSchedulerState = GetMockSchedulerState(apiKey1);
+        
+        var timeMock = new Mock<TimeProvider>();
+        timeMock.SetupGet(tp => tp.UtcNow).Returns(DateTime.UtcNow);
+
+        var imageGenGrain = new Mock<IImageGeneratorGrain>();
+        var schedulerGrain = new Mock<SchedulerGrain>(mockSchedulerState.Object, ClusterFixture.FakeReminderRegistry, timeMock.Object, Mock.Of<ILogger<SchedulerGrain>>());
+        schedulerGrain
+            .Setup(x => x.GrainFactory.GetGrain<IImageGeneratorGrain>(It.IsAny<string>(), null))
+            .Returns(imageGenGrain.Object);
+        
+        var response = await schedulerGrain.Object.AddApiKeys(new List<ApiKeyEntryDto>
+        {
+            new ApiKeyEntryDto
+            {
+                Email = "second@api.key",
+                Tier = 1,
+                MaxQuota = 2,
+                ApiKey = new ApiKeyDto
+                {
+                    ApiKeyString = apiKeyString,
+                    ServiceProvider = ImageGenerationServiceProvider.DalleOpenAI.ToString(),
+                    Url = ""
+                }
+            },
+            new ApiKeyEntryDto
+            {
+                Email = "second@api.key",
+                Tier = 1,
+                MaxQuota = 2,
+                ApiKey = new ApiKeyDto
+                {
+                    ApiKeyString = apiKey3String,
+                    ServiceProvider = ImageGenerationServiceProvider.DalleOpenAI.ToString(),
+                    Url = ""
+                }
+            }
+        });
+        
+        // Assert
+        Assert.Equal(2, schedulerGrain.Object.GetAllApiKeys().Result.Count);
+        Assert.Single(response.DuplicateApiKeys);
+        Assert.True(response.IsSuccessful);
     }
     
     private static Mock<IPersistentState<SchedulerState>> GetMockSchedulerState(ApiKey? apiKey = null)

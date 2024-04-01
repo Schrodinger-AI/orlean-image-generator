@@ -190,12 +190,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
                 FailedTimestamp = UnixTimeStampInSecondsToDateTime(i.RequestAccountUsageInfo.FailedTimestamp).ToString(CultureInfo.InvariantCulture),
                 CompletedTimestamp = UnixTimeStampInSecondsToDateTime(i.RequestAccountUsageInfo.CompletedTimestamp).ToString(CultureInfo.InvariantCulture),
                 Attempts = i.RequestAccountUsageInfo.Attempts,
-                ApiKey = i.RequestAccountUsageInfo.ApiKey == null? null: new ApiKeyDto
-                {
-                    ApiKeyString = i.RequestAccountUsageInfo.ApiKey.ApiKeyString[..(i.RequestAccountUsageInfo.ApiKey.ApiKeyString.Length / 2)],
-                    ServiceProvider = i.RequestAccountUsageInfo.ApiKey.ServiceProvider.ToString(),
-                    Url = i.RequestAccountUsageInfo.ApiKey.Url
-                },
+                ApiKey = i.RequestAccountUsageInfo.ApiKey == null? null: new ApiKeyDto(i.RequestAccountUsageInfo.ApiKey),
                 ChildId = i.RequestAccountUsageInfo.ChildId,
             }
         });
@@ -217,26 +212,60 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
         return Task.CompletedTask;
     }
 
-    public async Task<List<ApiKey>> AddApiKeys(List<ApiKeyEntryDto> apiKeyEntries)
+    public async Task<AddApiKeysResponseDto> AddApiKeys(List<ApiKeyEntryDto> apiKeyEntries)
     {
-        var apiAccountInfos = apiKeyEntries.Select(entry => new APIAccountInfo
+        try
         {
-            ApiKey = new ApiKey(entry.ApiKey.ApiKeyString, entry.ApiKey.ServiceProvider, entry.ApiKey.Url),
-            Email = entry.Email,
-            Tier = entry.Tier,
-            MaxQuota = entry.MaxQuota
-        }).ToList();
-        
-        List<ApiKey> addedApiKeys = new();
-        
-        foreach (var apiAccountInfo in apiAccountInfos)
-        {
-            _masterTrackerState.State.ApiAccountInfoList.Add(apiAccountInfo);
-            addedApiKeys.Add(apiAccountInfo.ApiKey);
-        }
-        await _masterTrackerState.WriteStateAsync();
+            // duplicateAPiKey ValidationLogic
+            // Create an empty list for valid API keys and another for invalid API keys.
+            // If the API key does not exist in the state, add it to the valid API keys list.
+            // If the invalid API keys list is not empty, then return new AddApiKeysResponseNotOk(invalidApiKeys) 
 
-        return addedApiKeys;
+            var apiKeyDict = _masterTrackerState.State.ApiAccountInfoList.ToDictionary(info => info.ApiKey.GetConcatApiKeyString(), info => info);
+            var apiKeyToAdd = apiKeyEntries.Select(entry => new APIAccountInfo
+            {
+                ApiKey = new ApiKey(entry.ApiKey.ApiKeyString, entry.ApiKey.ServiceProvider, entry.ApiKey.Url),
+                Email = entry.Email,
+                Tier = entry.Tier,
+                MaxQuota = entry.MaxQuota
+            }).ToList();
+            
+            // Check for duplicate API keys in apiKeyDict from accountEntries
+            var duplicateKeys = (from entry in apiKeyToAdd where apiKeyDict.ContainsKey(entry.ApiKey.GetConcatApiKeyString()) select entry.ApiKey.GetConcatApiKeyString()).ToList();
+            apiKeyToAdd.RemoveAll(entry => duplicateKeys.Contains(entry.ApiKey.GetConcatApiKeyString()));
+            
+            // get APIAccountInfo from apiKeyDict for keys in duplicateKeys
+            var duplicateApiKeys = duplicateKeys.Select(key => apiKeyDict[key]).Select(info => new ApiKeyDto(info.ApiKey)).ToList();
+            
+            // If all API keys are duplicates, return an error
+            if (apiKeyToAdd.Count == 0)
+            {
+                return new AddApiKeysResponseDto
+                {
+                    IsSuccessful = false,
+                    ValidApiKeys = [],
+                    Error = "DUPLICATE_API_KEYS",
+                    DuplicateApiKeys = duplicateApiKeys
+                };
+            }
+            
+            _masterTrackerState.State.ApiAccountInfoList.AddRange(apiKeyToAdd);
+            await _masterTrackerState.WriteStateAsync();
+
+            return new AddApiKeysResponseDto
+            {
+                IsSuccessful = true,
+                ValidApiKeys = apiKeyToAdd.Select(entry => new ApiKeyDto(entry.ApiKey)).ToList(),
+                DuplicateApiKeys = duplicateApiKeys
+            };
+        } catch (Exception e)
+        {
+            return new AddApiKeysResponseDto
+            {
+                IsSuccessful = false,
+                Error = e.Message
+            };
+        }
     }
 
     //returns a list of apikeys that were removed
@@ -267,12 +296,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
         {
             var newInfo = new ApiKeyEntryDto
             {
-                ApiKey = new ApiKeyDto
-                {
-                    ApiKeyString = info.ApiKey.ApiKeyString.Substring(0, info.ApiKey.ApiKeyString.Length/2),
-                    ServiceProvider = info.ApiKey.ServiceProvider.ToString(),
-                    Url = info.ApiKey.Url
-                },
+                ApiKey = new ApiKeyDto(info.ApiKey),
                 Email = info.Email,
                 MaxQuota = info.MaxQuota,
                 Tier = info.Tier
@@ -673,12 +697,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
             FailedTimestamp = UnixTimeStampInSecondsToDateTime(i.FailedTimestamp).ToString(CultureInfo.InvariantCulture),
             CompletedTimestamp = UnixTimeStampInSecondsToDateTime(i.CompletedTimestamp).ToString(CultureInfo.InvariantCulture),
             Attempts = i.Attempts,
-            ApiKey = i.ApiKey == null? null: new ApiKeyDto
-            {
-                ApiKeyString = i.ApiKey.ApiKeyString[..(i.ApiKey.ApiKeyString.Length / 2)],
-                ServiceProvider = i.ApiKey.ServiceProvider.ToString(),
-                Url = i.ApiKey.Url
-            },
+            ApiKey = i.ApiKey == null? null: new ApiKeyDto(i.ApiKey),
             ChildId = i.ChildId
         });
         return ret;

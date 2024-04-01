@@ -29,6 +29,22 @@ public class ApiKey
         return $"{ServiceProvider}_{ApiKeyString}";
     }
     
+    public string GetObfuscatedApiKeyString()
+    {
+        if (ApiKeyString == null)
+        {
+            throw new ArgumentNullException(nameof(ApiKeyString));
+        }
+
+        var obfuscatedApiKeyString = new string(ApiKeyString.Take(ApiKeyString.Length / 2).Concat(Enumerable.Repeat('*', ApiKeyString.Length / 2)).ToArray());
+        return obfuscatedApiKeyString;
+    }
+    
+    public override string ToString()
+    {
+        return GetObfuscatedApiKeyString();
+    }
+    
     private static ImageGenerationServiceProvider GetServiceProvider(string serviceProvider)
     {
         return serviceProvider switch
