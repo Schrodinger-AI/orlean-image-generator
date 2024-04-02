@@ -95,7 +95,7 @@ namespace SiloHost
                         options.ClusterId = "dev";
                         options.ServiceId = "OrleansImageGeneratorService";
                     })
-                    .ConfigureEndpoints(IPAddress.Loopback, siloPort, gatewayPort)
+                    .ConfigureEndpoints(IPAddress.Any, siloPort, gatewayPort)
                     .ConfigureLogging(logging => logging.AddSerilog())
                     .UseDashboard(options =>
                     {
