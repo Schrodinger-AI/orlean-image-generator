@@ -17,12 +17,11 @@ Orlean Solution contains 3 projects
 2. SiloHost
 3. WebApiClient
 
-
 ## Project Setup Guide
 
 ### MySQL Docker
 
-- Start MySQL via docker using [docker-compose](./setup-guide/database/docker-compose.yml)
+- Start MongoDB via docker using [docker-compose](./setup-guide/database/docker-compose.yml)
 
 ### Database Setup
 
@@ -52,15 +51,12 @@ dotnet run
 
 Ensure the WebApiClient startup is successful
 
-
 ### Orleans Image Generation API - Usage
 
 1. Traits are to be configured via API, traits can be added by copying `traits.json` content in this director
-
 - or refer to the postman collection in this directory
 [orlean-image-generator-postman-collection](./setup-guide/postman/Orlean%20Image%20Generator.postman_collection.json)
 
 
 ## Image Generation Status Transition
-
 [Image-Generation-Status-Transition](./docs/image-generation-status-transition.MD)
