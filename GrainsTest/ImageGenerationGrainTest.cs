@@ -1,3 +1,6 @@
+using Grains.AzureOpenAI;
+using Grains.DalleOpenAI;
+
 namespace GrainsTest;
 
 using Grains;
@@ -28,8 +31,10 @@ public class ImageGenerationGrainTest(ClusterFixture fixture)
     [Fact]
     public async Task ShouldGenerateImageFromPromptAsync() {
         // Arrange
-        var mockDalleOpenAiImageGenerator = new Mock<IImageGenerator>();
-        var mockAzureOpenAiImageGenerator = new Mock<IImageGenerator>();
+        var mockDalleLogger = new Mock<ILogger<DalleOpenAIImageGenerator>>();
+        var mockDalleOpenAiImageGenerator = new Mock<DalleOpenAIImageGenerator>(mockDalleLogger.Object);
+        var mockAzureLogger = new Mock<ILogger<DalleOpenAIImageGenerator>>();
+        var mockAzureOpenAiImageGenerator = new Mock<AzureOpenAIImageGenerator>(mockAzureLogger.Object);
         var imageGenerators = new List<IImageGenerator> {
             mockDalleOpenAiImageGenerator.Object,
             mockAzureOpenAiImageGenerator.Object
@@ -46,7 +51,8 @@ public class ImageGenerationGrainTest(ClusterFixture fixture)
         );
         
         // Define mock behavior for DalleOpenAiImageGenerator to return a successful image
-        mockDalleOpenAiImageGenerator.Setup(o => o.GenerateImageFromPromptAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+        mockDalleOpenAiImageGenerator
+            .Setup(x => x.RunImageGenerationAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync(new ImageGenerationGrainResponse {
                 RequestId = "Img_123",
                 IsSuccessful = true,
