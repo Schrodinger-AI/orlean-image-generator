@@ -56,6 +56,11 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
         var imgS = Newtonsoft.Json.JsonConvert.SerializeObject(_imageSettings);
         _logger.LogInformation($"ImageGeneratorGrain Constructor : _imageSettings are: ${imgS}");
     }
+    
+    public new virtual IGrainFactory GrainFactory
+    {
+        get => base.GrainFactory;
+    }
 
     public override async Task OnActivateAsync(CancellationToken cancellationToken)
     {
