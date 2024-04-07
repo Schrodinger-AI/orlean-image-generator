@@ -58,6 +58,7 @@ namespace SiloHost
 
             var host = new HostBuilder()
                 .UseOrleans((ctx, siloBuilder) => siloBuilder
+                    .UseKubernetesHosting()
                     .UseMongoDBClient(connectionString)
                     .UseMongoDBClustering(options =>
                     {
