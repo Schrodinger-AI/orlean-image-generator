@@ -1,10 +1,9 @@
-using Grains.AzureOpenAI;
-using Grains.DalleOpenAI;
-
 namespace GrainsTest;
 
 using Grains;
-using Grains.ImageGenerator;
+using Grains.AzureOpenAI;
+using Grains.types;
+using Grains.usage_tracker;
 using Microsoft.Extensions.Options;
 using GrainsTest.utilities;
 using Microsoft.Extensions.Logging;
@@ -19,6 +18,10 @@ using Orleans.TestingHost;
 public class ImageGenerationGrainTest(ClusterFixture fixture)
 {
     private readonly TestCluster _cluster = fixture.Cluster;
+    readonly Mock<IDalleOpenAIImageGenerator> _mockDalleOpenAiImageGenerator = new();
+    readonly Mock<IAzureOpenAIImageGenerator> _mockAzureOpenAiImageGenerator = new ();
+    readonly Mock<IImageGenerationRequestStatusReceiver> _mockSchedulerGrain = new();
+    readonly Mock<IMultiImageGeneratorGrain> _mockParentGeneratorGrain = new();
 
     private static Mock<IPersistentState<ImageGenerationState>> GetImageGenerationState()
     {
@@ -31,38 +34,61 @@ public class ImageGenerationGrainTest(ClusterFixture fixture)
     [Fact]
     public async Task ShouldGenerateImageFromPromptAsync() {
         // Arrange
-        var mockDalleLogger = new Mock<ILogger<DalleOpenAIImageGenerator>>();
-        var mockDalleOpenAiImageGenerator = new Mock<DalleOpenAIImageGenerator>(mockDalleLogger.Object);
-        var mockAzureLogger = new Mock<ILogger<DalleOpenAIImageGenerator>>();
-        var mockAzureOpenAiImageGenerator = new Mock<AzureOpenAIImageGenerator>(mockAzureLogger.Object);
-        var imageGenerators = new List<IImageGenerator> {
-            mockDalleOpenAiImageGenerator.Object,
-            mockAzureOpenAiImageGenerator.Object
-        };
+        // Setup the mocks to do nothing when their methods are called
+        _mockSchedulerGrain.Setup(x => x.ReportFailedImageGenerationRequestAsync(It.IsAny<RequestStatus>())).Returns(Task.CompletedTask);
+        _mockParentGeneratorGrain.Setup(x => x.NotifyImageGenerationStatus(It.IsAny<string>(), It.IsAny<ImageGenerationStatus>(), It.IsAny<string>(), It.IsAny<ImageGenerationErrorCode>())).Returns(Task.CompletedTask);
+        
+        // Setup the mockGrainFactory to return the mock objects
+        var mockGrainFactory = new Mock<IGrainFactory>();
+        mockGrainFactory.Setup(x => x.GetGrain<IImageGenerationRequestStatusReceiver>(It.IsAny<string>(), It.IsAny<string>())).Returns(_mockSchedulerGrain.Object);
+        mockGrainFactory.Setup(x => x.GetGrain<IMultiImageGeneratorGrain>(It.IsAny<string>(), It.IsAny<string>())).Returns(_mockParentGeneratorGrain.Object);
+        
         var imageSettings = new ImageSettings();
+        imageSettings.Width = 512;
+        imageSettings.Height = 512;
         var mockImageSettingsOptions = Options.Create(imageSettings);
         var mockLogger = new Mock<ILogger<ImageGeneratorGrain>>();
         var mockImageGenerationState = GetImageGenerationState();
         var grain = new ImageGeneratorGrain(
+            mockGrainFactory.Object,
             mockImageGenerationState.Object,
             mockImageSettingsOptions,
-            imageGenerators,
+            _mockDalleOpenAiImageGenerator.Object,
+            _mockAzureOpenAiImageGenerator.Object,
             mockLogger.Object
         );
+        var mockMultiImageGeneratorGrain = new Mock<IMultiImageGeneratorGrain>();
+        var mockImageGenerationRequestStatusReceiver = new Mock<IImageGenerationRequestStatusReceiver>();
+        mockMultiImageGeneratorGrain.Setup(x => x.NotifyImageGenerationStatus(It.IsAny<string>(), It.IsAny<ImageGenerationStatus>(), It.IsAny<string>(), It.IsAny<ImageGenerationErrorCode>())).Returns(Task.CompletedTask);
+        mockImageGenerationRequestStatusReceiver.Setup(x => x.ReportFailedImageGenerationRequestAsync(It.IsAny<RequestStatus>())).Returns(Task.CompletedTask);
+        mockImageGenerationRequestStatusReceiver.Setup(x => x.ReportCompletedImageGenerationRequestAsync(It.IsAny<RequestStatus>())).Returns(Task.CompletedTask);
+        
+        string localImagePath = Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "..", "images", "file_example_PNG_500kB.png");
+        localImagePath = localImagePath.Replace("\\", "/");
         
         // Define mock behavior for DalleOpenAiImageGenerator to return a successful image
-        mockDalleOpenAiImageGenerator
-            .Setup(x => x.RunImageGenerationAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
-            .ReturnsAsync(new ImageGenerationGrainResponse {
-                RequestId = "Img_123",
-                IsSuccessful = true,
-                ErrorCode = null
+        _mockDalleOpenAiImageGenerator
+            .Setup(x => x.RunImageGenerationAsync(It.IsAny<string>(), It.IsAny<ApiKey>(), It.IsAny<int>(),
+                It.IsAny<ImageSettings>(), It.IsAny<string>()))
+            .ReturnsAsync(new ImageGenerationResponse
+            {
+                Created = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+                Data = new List<ImageGenerationData>
+                {
+                    new ImageGenerationData
+                    {
+                        RevisedPrompt = "test",
+                        Url = localImagePath
+                    }
+                },
+                Error = null
             });
 
         // Act
         var prompt = "test";
         var imageRequestId = "Img_123";
         var parentImageRequestId = "Parent_123";
+        await grain.SetImageGenerationServiceProvider(new ApiKey(apiKeyString: "", strServiceProvider: "DalleOpenAI",  url: ""));
         var image = await grain.GenerateImageFromPromptAsync(prompt, imageRequestId, parentImageRequestId);
         
         // Assert
@@ -71,6 +97,4 @@ public class ImageGenerationGrainTest(ClusterFixture fixture)
         Assert.True(image.IsSuccessful);
         Assert.Null(image.ErrorCode);
     }
-
-
 }
