@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/aspnet:8.0
+FROM mcr.microsoft.com/dotnet/aspnet:8.0.3-jammy-chiseled
 
 WORKDIR /app
 COPY bin/Release/net8.0/publish/ /app/
