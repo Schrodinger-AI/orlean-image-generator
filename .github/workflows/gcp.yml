@@ -13,7 +13,7 @@ env:
 
 jobs:
   build-dotnet:
-    runs-on: ubuntu-latest
+    runs-on: arc-runner-poc-orleans
     strategy:
       matrix:
         servicename: [SiloHost, WebApiClient]
@@ -32,7 +32,7 @@ jobs:
       
   build-and-push-image:
     needs: build-dotnet
-    runs-on: ubuntu-latest
+    runs-on: arc-runner-poc-orleans
     environment: development
     permissions:
       id-token: write
