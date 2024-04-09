@@ -49,14 +49,14 @@ public class ImageGenerationGrainTest(ClusterFixture fixture)
         var mockImageSettingsOptions = Options.Create(imageSettings);
         var mockLogger = new Mock<ILogger<ImageGeneratorGrain>>();
         var mockImageGenerationState = GetImageGenerationState();
-        var grain = new ImageGeneratorGrain(
-            mockGrainFactory.Object,
+        var grain = new Mock<ImageGeneratorGrain>(
             mockImageGenerationState.Object,
             mockImageSettingsOptions,
             _mockDalleOpenAiImageGenerator.Object,
             _mockAzureOpenAiImageGenerator.Object,
             mockLogger.Object
         );
+        
         var mockMultiImageGeneratorGrain = new Mock<IMultiImageGeneratorGrain>();
         var mockImageGenerationRequestStatusReceiver = new Mock<IImageGenerationRequestStatusReceiver>();
         mockMultiImageGeneratorGrain.Setup(x => x.NotifyImageGenerationStatus(It.IsAny<string>(), It.IsAny<ImageGenerationStatus>(), It.IsAny<string>(), It.IsAny<ImageGenerationErrorCode>())).Returns(Task.CompletedTask);
@@ -88,8 +88,8 @@ public class ImageGenerationGrainTest(ClusterFixture fixture)
         var prompt = "test";
         var imageRequestId = "Img_123";
         var parentImageRequestId = "Parent_123";
-        await grain.SetImageGenerationServiceProvider(new ApiKey(apiKeyString: "", strServiceProvider: "DalleOpenAI",  url: ""));
-        var image = await grain.GenerateImageFromPromptAsync(prompt, imageRequestId, parentImageRequestId);
+        await grain.Object.SetImageGenerationServiceProvider(new ApiKey(apiKeyString: "", strServiceProvider: "DalleOpenAI",  url: ""));
+        var image = await grain.Object.GenerateImageFromPromptAsync(prompt, imageRequestId, parentImageRequestId);
         
         // Assert
         Assert.NotNull(image);
