@@ -10,6 +10,7 @@ env:
   PROJECT_NUMBER: ${{ vars.PROJECT_NUMBER }}
   REPOSITORY: orlean-image-generator
   REPOSITORY_REGION: us-central1
+  DOTNET_INSTALL_DIR: "./.dotnet"
 
 jobs:
   build-dotnet:
