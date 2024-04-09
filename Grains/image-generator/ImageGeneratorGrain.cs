@@ -29,14 +29,11 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
     private readonly IDalleOpenAIImageGenerator _dalleOpenAiImageGenerator;
     
     private readonly IAzureOpenAIImageGenerator _azureOpenAiImageGenerator;
-    
-    private readonly IGrainFactory _grainFactory;
 
     private readonly ILogger<ImageGeneratorGrain> _logger;
 
     public ImageGeneratorGrain(
         [PersistentState("imageGenerationState", "MySqlSchrodingerImageStore")]
-        IGrainFactory grainFactory,
         IPersistentState<ImageGenerationState> imageGeneratorState,
         IOptions<ImageSettings> imageSettingsOptions,
         IDalleOpenAIImageGenerator dalleOpenAiImageGenerator,
@@ -44,7 +41,6 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
         ILogger<ImageGeneratorGrain> logger)
     {
         _imageGenerationState = imageGeneratorState;
-        _grainFactory = grainFactory;
         _logger = logger;
         _imageSettings = imageSettingsOptions.Value;
         _dalleOpenAiImageGenerator = dalleOpenAiImageGenerator;
@@ -80,8 +76,8 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
 
     private async Task CheckAndReportForInvalidStates()
     {
-        var parentGeneratorGrain = _grainFactory.GetGrain<IMultiImageGeneratorGrain>(_imageGenerationState.State.ParentRequestId);
-        var schedulerGrain = _grainFactory.GetGrain<IImageGenerationRequestStatusReceiver>("SchedulerGrain");
+        var parentGeneratorGrain = GrainFactory.GetGrain<IMultiImageGeneratorGrain>(_imageGenerationState.State.ParentRequestId);
+        var schedulerGrain = GrainFactory.GetGrain<IImageGenerationRequestStatusReceiver>("SchedulerGrain");
         
         if (_imageGenerationState.State.Status == ImageGenerationStatus.InProgress || _imageGenerationState.State.Status == ImageGenerationStatus.FailedCompletion)
         {
@@ -115,9 +111,8 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
 
     private async Task OnSuccessfulCompletion()
     {
-        var parentGeneratorGrain =
-            _grainFactory.GetGrain<IMultiImageGeneratorGrain>(_imageGenerationState.State.ParentRequestId);
-        var schedulerGrain = _grainFactory.GetGrain<IImageGenerationRequestStatusReceiver>("SchedulerGrain");
+        var parentGeneratorGrain = GrainFactory.GetGrain<IMultiImageGeneratorGrain>(_imageGenerationState.State.ParentRequestId);
+        var schedulerGrain = GrainFactory.GetGrain<IImageGenerationRequestStatusReceiver>("SchedulerGrain");
         
         // Handle the case where the image generation is successful
         _timer.Dispose();
@@ -180,9 +175,8 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
         _logger.LogInformation($"ImageGeneratorGrain - generatorId: {_imageGenerationState.State.RequestId} , imageGenerationResponse: {imageGenerationResponse}");
 
         //load the scheduler Grain and update with 
-        var parentGeneratorGrain =
-            _grainFactory.GetGrain<IMultiImageGeneratorGrain>(_imageGenerationState.State.ParentRequestId);
-        var schedulerGrain = _grainFactory.GetGrain<IImageGenerationRequestStatusReceiver>("SchedulerGrain");
+        var parentGeneratorGrain = GrainFactory.GetGrain<IMultiImageGeneratorGrain>(_imageGenerationState.State.ParentRequestId);
+        var schedulerGrain = GrainFactory.GetGrain<IImageGenerationRequestStatusReceiver>("SchedulerGrain");
 
         if (imageGenerationResponse.IsSuccessful)
         {
@@ -294,8 +288,8 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
             await _imageGenerationState.WriteStateAsync();
 
             //load the Parent Grain and update with status
-            var parentGeneratorGrain = _grainFactory.GetGrain<IMultiImageGeneratorGrain>(_imageGenerationState.State.ParentRequestId);
-            var schedulerGrain = _grainFactory.GetGrain<IImageGenerationRequestStatusReceiver>("SchedulerGrain");
+            var parentGeneratorGrain = GrainFactory.GetGrain<IMultiImageGeneratorGrain>(_imageGenerationState.State.ParentRequestId);
+            var schedulerGrain = GrainFactory.GetGrain<IImageGenerationRequestStatusReceiver>("SchedulerGrain");
             var requestStatus = new RequestStatus
             {
                 RequestId = _imageGenerationState.State.RequestId,
@@ -346,7 +340,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
         _logger.LogInformation($"ImageGeneratorGrain - UpdateImageAsync for generatorId: {_imageGenerationState.State.RequestId} with prompt: {prompt}");
         _imageGenerationState.State.Prompt = prompt;
         //notify schedulerGrain for adhoc image generation
-        var schedulerGrain = _grainFactory.GetGrain<IImageGenerationRequestStatusReceiver>("SchedulerGrain");
+        var schedulerGrain = GrainFactory.GetGrain<IImageGenerationRequestStatusReceiver>("SchedulerGrain");
         // notify the scheduler grain about the failed completion
         var requestStatus = new RequestStatus
         {
