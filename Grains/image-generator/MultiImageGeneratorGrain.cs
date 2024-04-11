@@ -23,6 +23,11 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
         _logger = logger;
     }
     
+    public new virtual IGrainFactory GrainFactory
+    {
+        get => base.GrainFactory;
+    }
+    
     public Task<ImageGenerationStatus> GetCurrentImageGenerationStatus()
     {
         var statusArray = new List<ImageGenerationStatus>();

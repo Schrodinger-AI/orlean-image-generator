@@ -38,11 +38,6 @@ public class ImageGenerationGrainTest(ClusterFixture fixture)
         _mockSchedulerGrain.Setup(x => x.ReportFailedImageGenerationRequestAsync(It.IsAny<RequestStatus>())).Returns(Task.CompletedTask);
         _mockParentGeneratorGrain.Setup(x => x.NotifyImageGenerationStatus(It.IsAny<string>(), It.IsAny<ImageGenerationStatus>(), It.IsAny<string>(), It.IsAny<ImageGenerationErrorCode>())).Returns(Task.CompletedTask);
         
-        // Setup the mockGrainFactory to return the mock objects
-        var mockGrainFactory = new Mock<IGrainFactory>();
-        mockGrainFactory.Setup(x => x.GetGrain<ISchedulerGrain>(It.IsAny<string>(), It.IsAny<string>())).Returns(_mockSchedulerGrain.Object);
-        mockGrainFactory.Setup(x => x.GetGrain<IMultiImageGeneratorGrain>(It.IsAny<string>(), It.IsAny<string>())).Returns(_mockParentGeneratorGrain.Object);
-        
         var imageSettings = new ImageSettings();
         imageSettings.Width = 512;
         imageSettings.Height = 512;
@@ -57,6 +52,11 @@ public class ImageGenerationGrainTest(ClusterFixture fixture)
             mockLogger.Object
         );
         
+        // Setup the mockGrainFactory to return the mock objects
+        var mockGrainFactory = new Mock<IGrainFactory>();
+        // grain.Setup(x => x.GrainFactory.GetGrain<ISchedulerGrain>(It.IsAny<string>(), It.IsAny<string>())).Returns(_mockSchedulerGrain.Object);
+        // grain.Setup(x => x.GrainFactory.GetGrain<IMultiImageGeneratorGrain>(It.IsAny<string>(), It.IsAny<string>())).Returns(_mockParentGeneratorGrain.Object);
+        //
         var mockMultiImageGeneratorGrain = new Mock<IMultiImageGeneratorGrain>();
         var mockImageGenerationRequestStatusReceiver = new Mock<IImageGenerationRequestStatusReceiver>();
         mockMultiImageGeneratorGrain.Setup(x => x.NotifyImageGenerationStatus(It.IsAny<string>(), It.IsAny<ImageGenerationStatus>(), It.IsAny<string>(), It.IsAny<ImageGenerationErrorCode>())).Returns(Task.CompletedTask);

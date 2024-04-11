@@ -43,6 +43,11 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
         _logger.LogInformation($"ImageGeneratorGrain Constructor : _imageSettings are: ${imgS}");
     }
     
+    public new virtual IGrainFactory GrainFactory
+    {
+        get => base.GrainFactory;
+    }
+    
     public override async Task OnActivateAsync(CancellationToken cancellationToken)
     {
         _logger.LogInformation("ImageGeneratorGrain - OnActivateAsync");

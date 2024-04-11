@@ -36,27 +36,6 @@ public class MultiImageGenerationGrainTest(ClusterFixture fixture)
     [Fact]
     public async Task ShouldGenerateMultipleImagesFromTraitsAsync() {
         // Arrange
-        var apiKeyString = "apiKey2apiKey2";
-        var apiKey1 = new ApiKey
-        {
-            ApiKeyString = apiKeyString,
-            ServiceProvider = ImageGenerationServiceProvider.DalleOpenAI,
-            Url = "some_url"
-        };
-        var timeMock = new Mock<TimeProvider>();
-        timeMock.SetupGet(tp => tp.UtcNow).Returns(DateTime.UtcNow);
-        var mockSchedulerState = GetMockSchedulerState(apiKey1);
-        var mockSchedulerGrain = new Mock<ISchedulerGrain>();
-
-        // Setup the mocks to do nothing when their methods are called
-        _mockSchedulerGrain.Setup(x => x.ReportFailedImageGenerationRequestAsync(It.IsAny<RequestStatus>())).Returns(Task.CompletedTask);
-        _mockParentGeneratorGrain.Setup(x => x.NotifyImageGenerationStatus(It.IsAny<string>(), It.IsAny<ImageGenerationStatus>(), It.IsAny<string>(), It.IsAny<ImageGenerationErrorCode>())).Returns(Task.CompletedTask);
-        
-        // Setup the mockGrainFactory to return the mock objects
-        var mockGrainFactory = new Mock<IGrainFactory>();
-        mockGrainFactory.Setup(x => x.GetGrain<ISchedulerGrain>(It.IsAny<string>(), It.IsAny<string>())).Returns(_mockSchedulerGrain.Object);
-        //mockGrainFactory.Setup(x => x.GetGrain<ISchedulerGrain>(It.IsAny<string>(), It.IsAny<string>())).Returns(_mockSchedulerGrain.Object);
-        mockGrainFactory.Setup(x => x.GetGrain<IMultiImageGeneratorGrain>(It.IsAny<string>(), It.IsAny<string>())).Returns(_mockParentGeneratorGrain.Object);
 
         var imageSettings = new ImageSettings();
         imageSettings.Width = 512;
@@ -71,11 +50,36 @@ public class MultiImageGenerationGrainTest(ClusterFixture fixture)
             _mockAzureOpenAiImageGenerator.Object,
             mockLogger.Object
         );
-        mockGrainFactory.Setup(x => x.GetGrain<IImageGeneratorGrain>(It.IsAny<string>(), It.IsAny<string>()))
-            .Returns(imageGeneratorGrain.Object);
+        
+        
+        var apiKeyString = "apiKey2apiKey2";
+        var apiKey1 = new ApiKey
+        {
+            ApiKeyString = apiKeyString,
+            ServiceProvider = ImageGenerationServiceProvider.DalleOpenAI,
+            Url = "some_url"
+        };
+        var timeMock = new Mock<TimeProvider>();
+        timeMock.SetupGet(tp => tp.UtcNow).Returns(DateTime.UtcNow);
+        var mockSchedulerState = GetMockSchedulerState(apiKey1);
+        var mockSchedulerGrain = new Mock<ISchedulerGrain>();
 
         var mockMultiLogger = new Mock<ILogger<MultiImageGeneratorGrain>>();
         var mockMultiImageGeneratorGrain = new Mock<MultiImageGeneratorGrain>(GetMultiImageGenerationState().Object, mockMultiLogger.Object);
+
+        // Setup the mockGrainFactory to return the mock objects
+        var mockGrainFactory = new Mock<IGrainFactory>();
+        mockMultiImageGeneratorGrain.Setup(x => x.GrainFactory.GetGrain<ISchedulerGrain>(It.IsAny<string>(), It.IsAny<string>())).Returns(_mockSchedulerGrain.Object);
+        //mockGrainFactory.Setup(x => x.GetGrain<ISchedulerGrain>(It.IsAny<string>(), It.IsAny<string>())).Returns(_mockSchedulerGrain.Object);
+        //mockGrainFactory.Setup(x => x.GetGrain<IMultiImageGeneratorGrain>(It.IsAny<string>(), It.IsAny<string>())).Returns(_mockParentGeneratorGrain.Object);
+        
+        // Setup the mocks to do nothing when their methods are called
+        _mockSchedulerGrain.Setup(x => x.ReportFailedImageGenerationRequestAsync(It.IsAny<RequestStatus>())).Returns(Task.CompletedTask);
+        _mockParentGeneratorGrain.Setup(x => x.NotifyImageGenerationStatus(It.IsAny<string>(), It.IsAny<ImageGenerationStatus>(), It.IsAny<string>(), It.IsAny<ImageGenerationErrorCode>())).Returns(Task.CompletedTask);
+
+        mockMultiImageGeneratorGrain.Setup(x => x.GrainFactory.GetGrain<IImageGeneratorGrain>(It.IsAny<string>(), It.IsAny<string>()))
+            .Returns(imageGeneratorGrain.Object);
+
         var mockImageGenerationRequestStatusReceiver = new Mock<IImageGenerationRequestStatusReceiver>();
         mockMultiImageGeneratorGrain.Setup(x => x.NotifyImageGenerationStatus(It.IsAny<string>(), It.IsAny<ImageGenerationStatus>(), It.IsAny<string>(), It.IsAny<ImageGenerationErrorCode>())).Returns(Task.CompletedTask);
         mockImageGenerationRequestStatusReceiver.Setup(x => x.ReportFailedImageGenerationRequestAsync(It.IsAny<RequestStatus>())).Returns(Task.CompletedTask);
