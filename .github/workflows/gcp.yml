@@ -63,19 +63,19 @@ jobs:
       #
       # Authenticate to Google Cloud using workload identity federation
       #
-      - id: 'auth'
-        name: 'Obtain access token by using workload identity federation'
-        uses: 'google-github-actions/auth@v2'
-        with:
-          token_format: "access_token"
-          credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}'
+      # - id: 'auth'
+      #   name: 'Obtain access token by using workload identity federation'
+      #   uses: 'google-github-actions/auth@v2'
+      #   with:
+      #     token_format: "access_token"
+      #     credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}'
 
-      - name: Login to GAR
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REPOSITORY_REGION }}-docker.pkg.dev
-          username: oauth2accesstoken
-          password: ${{ steps.auth.outputs.access_token }}
+      # - name: Login to GAR
+      #   uses: docker/login-action@v3
+      #   with:
+      #     registry: ${{ env.REPOSITORY_REGION }}-docker.pkg.dev
+      #     username: oauth2accesstoken
+      #     password: ${{ steps.auth.outputs.access_token }}
 
       - # Setting up Docker Buildx with docker-container driver is required
         # at the moment to be able to use a subdirectory with Git context
