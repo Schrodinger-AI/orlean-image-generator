@@ -3,7 +3,6 @@ using Azure;
 using Microsoft.Extensions.Logging;
 using Azure.AI.OpenAI;
 using Shared;
-using Grains.ImageGenerator;
 using Newtonsoft.Json;
 
 namespace Grains.AzureOpenAI;

@@ -20,7 +20,7 @@ public class ImageGenerationGrainTest(ClusterFixture fixture)
     private readonly TestCluster _cluster = fixture.Cluster;
     readonly Mock<IDalleOpenAIImageGenerator> _mockDalleOpenAiImageGenerator = new();
     readonly Mock<IAzureOpenAIImageGenerator> _mockAzureOpenAiImageGenerator = new ();
-    readonly Mock<IImageGenerationRequestStatusReceiver> _mockSchedulerGrain = new();
+    readonly Mock<ISchedulerGrain> _mockSchedulerGrain = new();
     readonly Mock<IMultiImageGeneratorGrain> _mockParentGeneratorGrain = new();
 
     private static Mock<IPersistentState<ImageGenerationState>> GetImageGenerationState()
@@ -40,7 +40,7 @@ public class ImageGenerationGrainTest(ClusterFixture fixture)
         
         // Setup the mockGrainFactory to return the mock objects
         var mockGrainFactory = new Mock<IGrainFactory>();
-        mockGrainFactory.Setup(x => x.GetGrain<IImageGenerationRequestStatusReceiver>(It.IsAny<string>(), It.IsAny<string>())).Returns(_mockSchedulerGrain.Object);
+        mockGrainFactory.Setup(x => x.GetGrain<ISchedulerGrain>(It.IsAny<string>(), It.IsAny<string>())).Returns(_mockSchedulerGrain.Object);
         mockGrainFactory.Setup(x => x.GetGrain<IMultiImageGeneratorGrain>(It.IsAny<string>(), It.IsAny<string>())).Returns(_mockParentGeneratorGrain.Object);
         
         var imageSettings = new ImageSettings();

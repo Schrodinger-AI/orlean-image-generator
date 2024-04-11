@@ -77,7 +77,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
     private async Task CheckAndReportForInvalidStates()
     {
         var parentGeneratorGrain = GrainFactory.GetGrain<IMultiImageGeneratorGrain>(_imageGenerationState.State.ParentRequestId);
-        var schedulerGrain = GrainFactory.GetGrain<IImageGenerationRequestStatusReceiver>("SchedulerGrain");
+        var schedulerGrain = GrainFactory.GetGrain<ISchedulerGrain>("SchedulerGrain");
         
         if (_imageGenerationState.State.Status == ImageGenerationStatus.InProgress || _imageGenerationState.State.Status == ImageGenerationStatus.FailedCompletion)
         {
@@ -289,7 +289,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
 
             //load the Parent Grain and update with status
             var parentGeneratorGrain = GrainFactory.GetGrain<IMultiImageGeneratorGrain>(_imageGenerationState.State.ParentRequestId);
-            var schedulerGrain = GrainFactory.GetGrain<IImageGenerationRequestStatusReceiver>("SchedulerGrain");
+            var schedulerGrain = GrainFactory.GetGrain<ISchedulerGrain>("SchedulerGrain");
             var requestStatus = new RequestStatus
             {
                 RequestId = _imageGenerationState.State.RequestId,

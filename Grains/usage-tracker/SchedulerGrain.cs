@@ -198,7 +198,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
         return Task.FromResult(result.ToList());
     }
 
-    public Task AddImageGenerationRequest(string requestId, string childId, long requestTimestamp)
+    public virtual Task AddImageGenerationRequest(string requestId, string childId, long requestTimestamp)
     {
         _logger.LogInformation($"[SchedulerGrain] Adding image generation request with ID: {requestId} for child ID: {childId}");
         _masterTrackerState.State.StartedImageGenerationRequests.Add(childId, new RequestAccountUsageInfo
