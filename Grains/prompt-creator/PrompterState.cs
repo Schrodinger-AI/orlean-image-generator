@@ -12,6 +12,6 @@ public class PrompterState
     [Id(2)]
     public string ValidationTestCase { get; set; }
     [Id(3)]
-    public bool ValiationOk { get; set; }
+    public bool ValidationOk { get; set; }
 
 }
