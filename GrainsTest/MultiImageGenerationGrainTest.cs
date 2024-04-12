@@ -36,7 +36,6 @@ public class MultiImageGenerationGrainTest(ClusterFixture fixture)
     [Fact]
     public async Task ShouldGenerateMultipleImagesFromTraitsAsync() {
         // Arrange
-
         var imageSettings = new ImageSettings();
         imageSettings.Width = 512;
         imageSettings.Height = 512;
@@ -50,7 +49,6 @@ public class MultiImageGenerationGrainTest(ClusterFixture fixture)
             _mockAzureOpenAiImageGenerator.Object,
             mockLogger.Object
         );
-        
         
         var apiKeyString = "apiKey2apiKey2";
         var apiKey1 = new ApiKey
@@ -68,10 +66,7 @@ public class MultiImageGenerationGrainTest(ClusterFixture fixture)
         var mockMultiImageGeneratorGrain = new Mock<MultiImageGeneratorGrain>(GetMultiImageGenerationState().Object, mockMultiLogger.Object);
 
         // Setup the mockGrainFactory to return the mock objects
-        var mockGrainFactory = new Mock<IGrainFactory>();
         mockMultiImageGeneratorGrain.Setup(x => x.GrainFactory.GetGrain<ISchedulerGrain>(It.IsAny<string>(), It.IsAny<string>())).Returns(_mockSchedulerGrain.Object);
-        //mockGrainFactory.Setup(x => x.GetGrain<ISchedulerGrain>(It.IsAny<string>(), It.IsAny<string>())).Returns(_mockSchedulerGrain.Object);
-        //mockGrainFactory.Setup(x => x.GetGrain<IMultiImageGeneratorGrain>(It.IsAny<string>(), It.IsAny<string>())).Returns(_mockParentGeneratorGrain.Object);
         
         // Setup the mocks to do nothing when their methods are called
         _mockSchedulerGrain.Setup(x => x.ReportFailedImageGenerationRequestAsync(It.IsAny<RequestStatus>())).Returns(Task.CompletedTask);
@@ -126,6 +121,16 @@ public class MultiImageGenerationGrainTest(ClusterFixture fixture)
         Assert.NotNull(multiImageGenerationGrainResponse);
         Assert.Equal("multi_123", multiImageGenerationGrainResponse.RequestId);
         Assert.True(multiImageGenerationGrainResponse.IsSuccessful);
+        Assert.Null(multiImageGenerationGrainResponse.Errors);
+
+        var multiImageQueryGrainResponse = await mockMultiImageGeneratorGrain.Object.QueryMultipleImagesAsync();
+
+        Assert.NotNull(multiImageQueryGrainResponse);
+        Assert.Null(multiImageQueryGrainResponse.Images);
+        Assert.Null(multiImageQueryGrainResponse.Errors);
+        
+        var imageGenerationStatus = await mockMultiImageGeneratorGrain.Object.GetCurrentImageGenerationStatus();
+        Assert.Equal(ImageGenerationStatus.InProgress, imageGenerationStatus);
     }
     
     private static Mock<IPersistentState<SchedulerState>> GetMockSchedulerState(ApiKey? apiKey = null)
@@ -148,7 +153,6 @@ public class MultiImageGenerationGrainTest(ClusterFixture fixture)
                 MaxQuota = DEFAULT_MAX_QUOTA
             }
         };
-                
         
         var mockSchedulerState = new Mock<IPersistentState<SchedulerState>>();
         mockSchedulerState.SetupGet(o => o.State).Returns(state);
