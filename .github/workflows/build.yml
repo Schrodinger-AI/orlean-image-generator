@@ -94,3 +94,28 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  dispatch:
+    runs-on: arc-runner-poc-orleans
+    needs: build-and-push-image
+    environment: development
+    strategy:
+      matrix:
+        servicename: [silohost, webapiclient]
+    steps:
+      - name: Deploy
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.TOK }}
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: 'poc-aaa',
+              repo: 'devops',
+              workflow_id: 'orleans-image-generator-deploy.yaml',
+              ref: 'main',
+              inputs: {
+                env: 'development',
+                appName: '${{ matrix.servicename }}',
+                commit_sha: 'sha-${{ github.short_sha }}',
+              }
+            })
