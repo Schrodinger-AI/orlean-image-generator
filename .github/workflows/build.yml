@@ -42,10 +42,15 @@ jobs:
       matrix:
         servicename: [SiloHost, WebApiClient]
     outputs:
-      image: ${{ steps.tag.outputs.tag }}
+      short_sha: ${{ steps.vars.outputs.short_sha }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Set short git commit SHA
+        id: vars
+        run: |
+          calculatedSha=$(git rev-parse --short ${{ github.sha }})
+          echo "short_sha=$calculatedSha" >> "$GITHUB_OUTPUT"
       - name: Download a single artifact
         uses: actions/download-artifact@v4
         with:
@@ -103,11 +108,6 @@ jobs:
       matrix:
         servicename: [silohost, webapiclient]
     steps:
-      - name: Set short git commit SHA
-        id: vars
-        run: |
-          calculatedSha=$(git rev-parse --short ${{ github.sha }})
-          echo "COMMIT_SHORT_SHA=$calculatedSha" >> $GITHUB_ENV
       - name: Deploy
         uses: actions/github-script@v6
         with:
@@ -121,6 +121,6 @@ jobs:
               inputs: {
                 env: 'development',
                 appName: '${{ matrix.servicename }}',
-                commit_sha: 'sha-${{ env.COMMIT_SHORT_SHA }}',
+                commit_sha: 'sha-${{ needs.build-and-push-image.outputs.short_sha }}',
               }
             })
