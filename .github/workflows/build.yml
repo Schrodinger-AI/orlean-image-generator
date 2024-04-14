@@ -103,6 +103,11 @@ jobs:
       matrix:
         servicename: [silohost, webapiclient]
     steps:
+      - name: Set short git commit SHA
+        id: vars
+        run: |
+          calculatedSha=$(git rev-parse --short ${{ github.sha }})
+          echo "COMMIT_SHORT_SHA=$calculatedSha" >> $GITHUB_ENV
       - name: Deploy
         uses: actions/github-script@v6
         with:
@@ -116,6 +121,6 @@ jobs:
               inputs: {
                 env: 'development',
                 appName: '${{ matrix.servicename }}',
-                commit_sha: 'sha-${{ github.short_sha }}',
+                commit_sha: 'sha-${{ env.COMMIT_SHORT_SHA }}',
               }
             })
