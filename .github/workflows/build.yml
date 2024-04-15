@@ -44,8 +44,6 @@ jobs:
         run: dotnet tool install --global dotnet-sonarscanner
       - name: Add .NET global tools to PATH
         run: echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
-      - name: Check SonarScanner installation
-        run: dotnet-sonarscanner --version
       - name: Begin SonarQube analysis
         run: dotnet-sonarscanner begin /k:"orlean-image-generator" /d:sonar.host.url="${{ secrets.SONAR_HOST_URL }}" /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
       - name: Build project for SonarQube analysis
