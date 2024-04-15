@@ -42,14 +42,16 @@ jobs:
           dotnet-version: '8.0'
       - name: Install SonarScanner for .NET
         run: dotnet tool install --global dotnet-sonarscanner
+      - name: Add .NET global tools to PATH
+        run: echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
+      - name: Check SonarScanner installation
+        run: dotnet-sonarscanner --version
       - name: Begin SonarQube analysis
-        run: dotnet sonarscanner begin /k:"orlean-image-generator" /d:sonar.host.url="${{ secrets.SONAR_HOST_URL }}" /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
-
+        run: dotnet-sonarscanner begin /k:"orlean-image-generator" /d:sonar.host.url="${{ secrets.SONAR_HOST_URL }}" /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
       - name: Build project for SonarQube analysis
         run: dotnet build ${{ matrix.servicename }}/${{ matrix.servicename }}.csproj --configuration Release
-
       - name: Complete SonarQube analysis
-        run: dotnet sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}" 
+        run: dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}" 
   build-and-push-image:
     needs: build-dotnet
     runs-on: arc-runner-poc-orleans
