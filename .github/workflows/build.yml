@@ -61,7 +61,7 @@ jobs:
           key: ${{ runner.os }}-sonar-scanner
           restore-keys: ${{ runner.os }}-sonar-scanner
       - name: Install SonarScanner for .NET
-        run: dotnet tool install --global dotnet-sonarscanner --tool-path ./.sonar/scanner
+        run: dotnet tool update dotnet-sonarscanner --tool-path ./.sonar/scanner
       - name: Add .NET global tools to PATH
         run: echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
       - name: Begin SonarQube analysis
