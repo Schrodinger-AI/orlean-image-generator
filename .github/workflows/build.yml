@@ -33,9 +33,6 @@ jobs:
   static-code-analysis:
     runs-on: arc-runner-poc-orleans
     environment: development
-    strategy:
-      matrix:
-        servicename: [SiloHost, WebApiClient]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -67,7 +64,7 @@ jobs:
       - name: Begin SonarQube analysis
         run: |
           ./.sonar/scanner/dotnet-sonarscanner begin /k:"orlean-image-generator" /d:sonar.host.url="${{ secrets.SONAR_HOST_URL }}" /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
-          dotnet build ${{ matrix.servicename }}/${{ matrix.servicename }}.csproj
+          dotnet build
           ./.sonar/scanner/dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}" 
   build-and-push-image:
     needs: build-dotnet
