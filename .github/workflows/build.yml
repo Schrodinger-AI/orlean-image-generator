@@ -46,11 +46,10 @@ jobs:
       - name: Add .NET global tools to PATH
         run: echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
       - name: Begin SonarQube analysis
-        run: dotnet-sonarscanner begin /k:"orlean-image-generator" /d:sonar.host.url="${{ secrets.SONAR_HOST_URL }}" /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
-      - name: Build project for SonarQube analysis
-        run: dotnet build ${{ matrix.servicename }}/${{ matrix.servicename }}.csproj --configuration Release
-      - name: Complete SonarQube analysis
-        run: dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}" 
+        run: |
+          dotnet-sonarscanner begin /k:"orlean-image-generator" /d:sonar.host.url="${{ secrets.SONAR_HOST_URL }}" /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+          dotnet build ${{ matrix.servicename }}/${{ matrix.servicename }}.csproj --configuration Release
+          dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}" 
   build-and-push-image:
     needs: build-dotnet
     runs-on: arc-runner-poc-orleans
