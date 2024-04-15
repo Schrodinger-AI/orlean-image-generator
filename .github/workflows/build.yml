@@ -32,6 +32,7 @@ jobs:
           retention-days: 1
   static-code-analysis:
     runs-on: arc-runner-poc-orleans
+    environment: development
     strategy:
       matrix:
         servicename: [SiloHost, WebApiClient]
