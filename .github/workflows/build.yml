@@ -38,18 +38,37 @@ jobs:
         servicename: [SiloHost, WebApiClient]
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0'
+      - name: Set up JDK 17
+        uses: actions/setup-java@v1
+        with:
+          java-version: 17
+      - name: Cache SonarQube packages
+        uses: actions/cache@v1
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+      - name: Cache SonarQube scanner
+        id: cache-sonar-scanner
+        uses: actions/cache@v1
+        with:
+          path: ./.sonar/scanner
+          key: ${{ runner.os }}-sonar-scanner
+          restore-keys: ${{ runner.os }}-sonar-scanner
       - name: Install SonarScanner for .NET
-        run: dotnet tool install --global dotnet-sonarscanner
+        run: dotnet tool install --global dotnet-sonarscanner --tool-path ./.sonar/scanner
       - name: Add .NET global tools to PATH
         run: echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
       - name: Begin SonarQube analysis
         run: |
-          dotnet-sonarscanner begin /k:"orlean-image-generator" /d:sonar.host.url="${{ secrets.SONAR_HOST_URL }}" /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
-          dotnet build ${{ matrix.servicename }}/${{ matrix.servicename }}.csproj --configuration Release
-          dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}" 
+          ./.sonar/scanner/dotnet-sonarscanner begin /k:"orlean-image-generator" /d:sonar.host.url="${{ secrets.SONAR_HOST_URL }}" /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+          dotnet build ${{ matrix.servicename }}/${{ matrix.servicename }}.csproj
+          ./.sonar/scanner/dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}" 
   build-and-push-image:
     needs: build-dotnet
     runs-on: arc-runner-poc-orleans
