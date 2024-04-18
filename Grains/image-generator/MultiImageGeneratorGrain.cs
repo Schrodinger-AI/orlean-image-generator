@@ -23,14 +23,19 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
         _logger = logger;
     }
     
-    private ImageGenerationStatus GetCurrentImageGenerationStatus()
+    public new virtual IGrainFactory GrainFactory
+    {
+        get => base.GrainFactory;
+    }
+    
+    public Task<ImageGenerationStatus> GetCurrentImageGenerationStatus()
     {
         var statusArray = new List<ImageGenerationStatus>();
         
         if(_multiImageGenerationState.State.ErrorCode == ImageGenerationErrorCode.content_violation)
         {
             _logger.LogInformation($"Computed finalStatus : MultiImageRequest: {_multiImageGenerationState.State.RequestId} failed due to content violation");
-            return ImageGenerationStatus.FailedCompletion;
+            return Task.FromResult(ImageGenerationStatus.FailedCompletion);
         }
         
         //get child grain references
@@ -43,7 +48,7 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
             // if status is inProgress, break loop and return the Status as InProgress
             if(imageGenerationTracker.Status == ImageGenerationStatus.InProgress)
             {
-                return imageGenerationTracker.Status;
+                return Task.FromResult(imageGenerationTracker.Status);
             }
             
             statusArray.Add(imageGenerationTracker.Status);
@@ -52,7 +57,7 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
         // if all statuses are successful, return true
         if (statusArray.All(status => status == ImageGenerationStatus.SuccessfulCompletion))
         {
-            return ImageGenerationStatus.SuccessfulCompletion;
+            return Task.FromResult(ImageGenerationStatus.SuccessfulCompletion);
         }
         
         if (statusArray.Any(state => state == ImageGenerationStatus.FailedCompletion))
@@ -62,16 +67,16 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
             {
                 if (tracker.ErrorCode == ImageGenerationErrorCode.content_violation)
                 {
-                    return ImageGenerationStatus.FailedCompletion;
+                    return Task.FromResult(ImageGenerationStatus.FailedCompletion);
                 }
             }
         }
         
         // else return inProgress
-        return ImageGenerationStatus.InProgress;
+        return Task.FromResult(ImageGenerationStatus.InProgress);
     }
 
-    public async Task NotifyImageGenerationStatus(string imageRequestId, ImageGenerationStatus status, string? error, ImageGenerationErrorCode? imageGenerationErrorCode)
+    public virtual async Task NotifyImageGenerationStatus(string imageRequestId, ImageGenerationStatus status, string? error, ImageGenerationErrorCode? imageGenerationErrorCode)
     {
         _logger.LogInformation($"NotifyImageGenerationStatus called with requestId: {imageRequestId}, status: {status}, error: {error}");
 
@@ -90,13 +95,13 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
         _multiImageGenerationState.State.imageGenerationTrackers[imageGenerationNotification.RequestId] =
             imageGenerationNotification;
 
-        ImageGenerationStatus currentStatus = GetCurrentImageGenerationStatus();
+        ImageGenerationStatus currentStatus = await GetCurrentImageGenerationStatus();
         _multiImageGenerationState.State.ImageGenerationStatus = currentStatus;
 
         await _multiImageGenerationState.WriteStateAsync();
     }
 
-    private async Task<string> GeneratePromptAsync(List<Attribute> attributes)
+    public virtual async Task<string> GeneratePromptAsync(List<Attribute> attributes)
     {
         var grain = GrainFactory.GetGrain<IConfiguratorGrain>(Constants.ConfiguratorIdentifier);
         var curConfigId = await grain.GetCurrentConfigIdAsync();
@@ -201,7 +206,7 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
             };
         }
         
-        ImageGenerationStatus imageGenerationStatus = GetCurrentImageGenerationStatus();
+        ImageGenerationStatus imageGenerationStatus = await GetCurrentImageGenerationStatus();
 
         if (imageGenerationStatus == ImageGenerationStatus.InProgress)
         {

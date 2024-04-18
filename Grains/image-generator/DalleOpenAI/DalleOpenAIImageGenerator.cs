@@ -1,14 +1,14 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
-using Grains.ImageGenerator;
+using Grains.AzureOpenAI;
 using Newtonsoft.Json;
 using Microsoft.Extensions.Logging;
 using Shared;
 
 namespace Grains.DalleOpenAI;
 
-public class DalleOpenAIImageGenerator : IImageGenerator
+public class DalleOpenAIImageGenerator : IDalleOpenAIImageGenerator
 {
     private readonly ILogger<ImageGeneratorGrain> _logger;
     

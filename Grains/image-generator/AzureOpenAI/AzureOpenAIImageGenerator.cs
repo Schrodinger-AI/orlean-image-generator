@@ -3,12 +3,11 @@ using Azure;
 using Microsoft.Extensions.Logging;
 using Azure.AI.OpenAI;
 using Shared;
-using Grains.ImageGenerator;
 using Newtonsoft.Json;
 
 namespace Grains.AzureOpenAI;
 
-public class AzureOpenAIImageGenerator : IImageGenerator
+public class AzureOpenAIImageGenerator : IAzureOpenAIImageGenerator
 {
     private readonly ILogger<ImageGeneratorGrain> _logger;
 
