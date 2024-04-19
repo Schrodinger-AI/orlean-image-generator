@@ -12,7 +12,7 @@ jobs:
     runs-on: arc-runner-poc-orleans
     permissions:
       pull-requests: write
-      contents: read
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
