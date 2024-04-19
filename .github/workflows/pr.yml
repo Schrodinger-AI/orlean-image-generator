@@ -1,4 +1,4 @@
-name: Publish Docker Image to GCP
+name: Pull Request pipeline
 
 on:
   pull_request:
@@ -11,7 +11,7 @@ jobs:
   build:
     runs-on: arc-runner-poc-orleans
     permissions:
-      contents: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4

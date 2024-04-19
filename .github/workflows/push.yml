@@ -1,4 +1,4 @@
-name: Publish Docker Image to GCP
+name: Build and Deploy
 
 on:
   push:
