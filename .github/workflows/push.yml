@@ -14,20 +14,24 @@ env:
 jobs:
   build-and-test:
     runs-on: arc-runner-poc-orleans
-    strategy:
-      matrix:
-        servicename: [SiloHost, WebApiClient]
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0'
-      - name: Restore
-        run: dotnet restore ${{ matrix.servicename }}/${{ matrix.servicename }}.csproj
-      - name: Build
-        run: dotnet build ${{ matrix.servicename }}/${{ matrix.servicename }}.csproj
       - name: Test
-        run: dotnet test ${{ matrix.servicename }}/${{ matrix.servicename }}.csproj
+        run: dotnet test --no-build --verbosity normal --collect:"XPlat Code Coverage" --logger trx --results-directory coverage
+      - name: Code Coverage Summary Report
+        uses: irongut/CodeCoverageSummary@v1.3.0
+        with:
+          filename: 'coverage/*/coverage.cobertura.xml'
+          badge: true
+          format: 'markdown'
+          output: 'both'
+      - name: Write to Job Summary
+        run: cat code-coverage-results.md >> $GITHUB_STEP_SUMMARY
   build-and-publish:
     needs: build-and-test
     runs-on: arc-runner-poc-orleans
