@@ -1,7 +1,6 @@
 name: Publish Docker Image to GCP
 
 on:
-  workflow_dispatch:
   push:
     branches: ['develop']
 
@@ -13,7 +12,24 @@ env:
   DOTNET_INSTALL_DIR: "./.dotnet"
 
 jobs:
-  build-dotnet:
+  build-and-test:
+    runs-on: arc-runner-poc-orleans
+    strategy:
+      matrix:
+        servicename: [SiloHost, WebApiClient]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0'
+      - name: Restore
+        run: dotnet restore ${{ matrix.servicename }}/${{ matrix.servicename }}.csproj
+      - name: Build
+        run: dotnet build ${{ matrix.servicename }}/${{ matrix.servicename }}.csproj
+      - name: Test
+        run: dotnet test ${{ matrix.servicename }}/${{ matrix.servicename }}.csproj
+  build-and-publish:
+    needs: build-and-test
     runs-on: arc-runner-poc-orleans
     strategy:
       matrix:
@@ -31,6 +47,7 @@ jobs:
           path: out/${{ matrix.servicename }}
           retention-days: 1
   static-code-analysis:
+    needs: build-and-test
     runs-on: arc-runner-poc-orleans
     environment: development
     steps:
@@ -67,7 +84,7 @@ jobs:
           dotnet build
           ./.sonar/scanner/dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}" 
   build-and-push-image:
-    needs: build-dotnet
+    needs: build-and-publish
     runs-on: arc-runner-poc-orleans
     environment: development
     permissions:
