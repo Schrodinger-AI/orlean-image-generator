@@ -1,11 +1,4 @@
-using System.Net;
-using System.Net.Http.Headers;
-using System.Text;
 using Grains.AzureOpenAI;
-using Grains.DalleOpenAI;
-using Grains.ImageGenerator;
-using Newtonsoft.Json;
-using Orleans;
 using Orleans.Runtime;
 using SixLabors.ImageSharp.Processing;
 using Shared;
@@ -26,9 +19,9 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
 
     private readonly ImageSettings _imageSettings;
     
-    private readonly IImageGenerator _dalleOpenAiImageGenerator;
+    private readonly IDalleOpenAIImageGenerator _dalleOpenAiImageGenerator;
     
-    private readonly IImageGenerator _azureOpenAiImageGenerator;
+    private readonly IAzureOpenAIImageGenerator _azureOpenAiImageGenerator;
 
     private readonly ILogger<ImageGeneratorGrain> _logger;
 
@@ -36,27 +29,25 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
         [PersistentState("imageGenerationState", "MySqlSchrodingerImageStore")]
         IPersistentState<ImageGenerationState> imageGeneratorState,
         IOptions<ImageSettings> imageSettingsOptions,
-        IEnumerable<IImageGenerator> imageGenerators,
+        IDalleOpenAIImageGenerator dalleOpenAiImageGenerator,
+        IAzureOpenAIImageGenerator azureOpenAiImageGenerator,
         ILogger<ImageGeneratorGrain> logger)
     {
         _imageGenerationState = imageGeneratorState;
         _logger = logger;
         _imageSettings = imageSettingsOptions.Value;
-        foreach (var imageGenerator in imageGenerators)
-        {
-            if (imageGenerator is DalleOpenAIImageGenerator)
-            {
-                _dalleOpenAiImageGenerator = imageGenerator;
-            }
-            else if (imageGenerator is AzureOpenAIImageGenerator)
-            {
-                _azureOpenAiImageGenerator = imageGenerator;
-            }
-        }
+        _dalleOpenAiImageGenerator = dalleOpenAiImageGenerator;
+        _azureOpenAiImageGenerator = azureOpenAiImageGenerator;
+        
         var imgS = Newtonsoft.Json.JsonConvert.SerializeObject(_imageSettings);
         _logger.LogInformation($"ImageGeneratorGrain Constructor : _imageSettings are: ${imgS}");
     }
-
+    
+    public new virtual IGrainFactory GrainFactory
+    {
+        get => base.GrainFactory;
+    }
+    
     public override async Task OnActivateAsync(CancellationToken cancellationToken)
     {
         _logger.LogInformation("ImageGeneratorGrain - OnActivateAsync");
@@ -84,7 +75,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
     private async Task CheckAndReportForInvalidStates()
     {
         var parentGeneratorGrain = GrainFactory.GetGrain<IMultiImageGeneratorGrain>(_imageGenerationState.State.ParentRequestId);
-        var schedulerGrain = GrainFactory.GetGrain<IImageGenerationRequestStatusReceiver>("SchedulerGrain");
+        var schedulerGrain = GrainFactory.GetGrain<ISchedulerGrain>("SchedulerGrain");
         
         if (_imageGenerationState.State.Status == ImageGenerationStatus.InProgress || _imageGenerationState.State.Status == ImageGenerationStatus.FailedCompletion)
         {
@@ -118,8 +109,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
 
     private async Task OnSuccessfulCompletion()
     {
-        var parentGeneratorGrain =
-            GrainFactory.GetGrain<IMultiImageGeneratorGrain>(_imageGenerationState.State.ParentRequestId);
+        var parentGeneratorGrain = GrainFactory.GetGrain<IMultiImageGeneratorGrain>(_imageGenerationState.State.ParentRequestId);
         var schedulerGrain = GrainFactory.GetGrain<IImageGenerationRequestStatusReceiver>("SchedulerGrain");
         
         // Handle the case where the image generation is successful
@@ -183,8 +173,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
         _logger.LogInformation($"ImageGeneratorGrain - generatorId: {_imageGenerationState.State.RequestId} , imageGenerationResponse: {imageGenerationResponse}");
 
         //load the scheduler Grain and update with 
-        var parentGeneratorGrain =
-            GrainFactory.GetGrain<IMultiImageGeneratorGrain>(_imageGenerationState.State.ParentRequestId);
+        var parentGeneratorGrain = GrainFactory.GetGrain<IMultiImageGeneratorGrain>(_imageGenerationState.State.ParentRequestId);
         var schedulerGrain = GrainFactory.GetGrain<IImageGenerationRequestStatusReceiver>("SchedulerGrain");
 
         if (imageGenerationResponse.IsSuccessful)
@@ -298,7 +287,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
 
             //load the Parent Grain and update with status
             var parentGeneratorGrain = GrainFactory.GetGrain<IMultiImageGeneratorGrain>(_imageGenerationState.State.ParentRequestId);
-            var schedulerGrain = GrainFactory.GetGrain<IImageGenerationRequestStatusReceiver>("SchedulerGrain");
+            var schedulerGrain = GrainFactory.GetGrain<ISchedulerGrain>("SchedulerGrain");
             var requestStatus = new RequestStatus
             {
                 RequestId = _imageGenerationState.State.RequestId,
@@ -401,8 +390,20 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
 
     private async Task<string> ConvertImageUrlToBase64(string imageUrl)
     {
-        using var httpClient = new HttpClient();
-        var imageBytes = await httpClient.GetByteArrayAsync(imageUrl);
+        byte[] imageBytes;
+
+        if (imageUrl.StartsWith("/"))
+        {
+            // If the URL is a local file path, read the file into a byte array
+            imageBytes = await File.ReadAllBytesAsync(imageUrl);
+        }
+        else
+        {
+            // If the URL is a web URL, download the image into a byte array
+            using var httpClient = new HttpClient();
+            imageBytes = await httpClient.GetByteArrayAsync(imageUrl);
+        }
+
         using var ms = new MemoryStream(imageBytes);
         using var output = new MemoryStream();
         using var image = SixLabors.ImageSharp.Image.Load(ms);

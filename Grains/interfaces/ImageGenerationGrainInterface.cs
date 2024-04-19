@@ -25,6 +25,8 @@ public interface IImageGeneratorGrain : ISchrodingerGrain, IGrainWithStringKey
     Task<ImageGenerationState> GetStateAsync();
     
     Task TriggerImageGenerationAsync();
+    
+    
 }
 
 public interface IMultiImageGeneratorGrain : ISchrodingerGrain, IGrainWithStringKey
@@ -36,6 +38,10 @@ public interface IMultiImageGeneratorGrain : ISchrodingerGrain, IGrainWithString
     Task NotifyImageGenerationStatus(string imageRequestId, ImageGenerationStatus status, string? error, ImageGenerationErrorCode? errorCode);
 
     Task<MultiImageQueryGrainResponse> QueryMultipleImagesAsync();
+
+    Task<ImageGenerationStatus> GetCurrentImageGenerationStatus();
+
+    Task<string> GeneratePromptAsync(List<Attribute> attributes);
     
     Task<bool> IsAlreadySubmitted();
 }

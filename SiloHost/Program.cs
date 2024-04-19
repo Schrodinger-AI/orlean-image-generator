@@ -12,6 +12,7 @@ using Newtonsoft.Json;
 using Orleans.Configuration;
 using Orleans.Providers.MongoDB.Configuration;
 using Orleans.Serialization;
+using OrleansDashboard;
 using Serilog;
 using Serilog.Formatting.Json;
 using Shared;
@@ -87,8 +88,8 @@ namespace SiloHost
                     .ConfigureServices(services =>
                     {
                         services.Configure<ImageSettings>(configuration.GetSection("ImageSettings"));
-                        services.AddTransient<IImageGenerator, DalleOpenAIImageGenerator>();
-                        services.AddTransient<IImageGenerator, AzureOpenAIImageGenerator>();
+                        services.AddScoped<IDalleOpenAIImageGenerator, DalleOpenAIImageGenerator>();
+                        services.AddScoped<IAzureOpenAIImageGenerator, AzureOpenAIImageGenerator>();
                         services.AddSingleton<TimeProvider, DefaultTimeProvider>();
                     })
                     .Configure<ClusterOptions>(options =>
