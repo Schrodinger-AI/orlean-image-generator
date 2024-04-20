@@ -1,5 +1,6 @@
 namespace Shared.Abstractions.Images;
 
+using System.Text.Json.Serialization;
 using Shared.Abstractions.Constants;
 
 [GenerateSerializer]

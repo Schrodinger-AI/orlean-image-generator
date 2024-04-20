@@ -1,6 +1,8 @@
 namespace Shared.Abstractions.Interfaces;
 
 using Shared.Abstractions.Constants;
+using Shared.Abstractions.Images;
+using Shared.Abstractions.ApiKeys;
 
 public interface ISchrodingerGrain : IGrainWithGuidKey
 {
@@ -13,14 +15,14 @@ public interface ISchrodingerGrain : IGrainWithGuidKey
 public interface IImageGeneratorGrain : ISchrodingerGrain, IGrainWithStringKey
 {
     Task SetImageGenerationServiceProvider(ApiKey apiKey);
-    Task<ImageGenerationGrainResponse> GenerateImageFromPromptAsync(string prompt, string imageRequestId, string parentRequestId);
+    Task<ImageGenerationGrainResponseDto> GenerateImageFromPromptAsync(string prompt, string imageRequestId, string parentRequestId);
 
     Task SetImageGenerationRequestData(string prompt, string imageRequestId, string parentRequestId);
     
     Task UpdatePromptAsync(string prompt);
 
-    Task<ImageQueryGrainResponse> QueryImageAsync();
-    Task<ImageGenerationState> GetStateAsync();
+    Task<ImageQueryGrainResponseDto> QueryImageAsync();
+    Task<ImageGenerationStateDto> GetStateAsync();
     
     Task TriggerImageGenerationAsync();
     
@@ -29,13 +31,13 @@ public interface IImageGeneratorGrain : ISchrodingerGrain, IGrainWithStringKey
 
 public interface IMultiImageGeneratorGrain : ISchrodingerGrain, IGrainWithStringKey
 {
-    Task<MultiImageGenerationGrainResponse> GenerateMultipleImagesAsync(List<Attribute> traits, int NumberOfImages, string multiImageRequestId);
+    Task<MultiImageGenerationGrainResponseDto> GenerateMultipleImagesAsync(List<Attribute> traits, int NumberOfImages, string multiImageRequestId);
 
     Task UpdatePromptAndAttributes(string prompt, List<Attribute> attributes);
 
     Task NotifyImageGenerationStatus(string imageRequestId, ImageGenerationStatus status, string? error, ImageGenerationErrorCode? errorCode);
 
-    Task<MultiImageQueryGrainResponse> QueryMultipleImagesAsync();
+    Task<MultiImageQueryGrainResponseDto> QueryMultipleImagesAsync();
 
     Task<ImageGenerationStatus> GetCurrentImageGenerationStatus();
 
