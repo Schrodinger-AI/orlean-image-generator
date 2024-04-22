@@ -1,7 +1,8 @@
 
 using Orleans;
 using Orleans.Runtime;
-using Shared;
+using Shared.Abstractions.Interfaces;
+using Shared.Abstractions.Trait;
 
 namespace Grains;
 
@@ -129,7 +130,6 @@ public class TraitConfigGrain : Grain, ITraitConfigGrain
         {
             return new UpdateTraitResponseNotOk(ex.Message);
         }
-
     }
 
     public async Task<ClearAllTraitsAPIResponse> ClearAllTraits()

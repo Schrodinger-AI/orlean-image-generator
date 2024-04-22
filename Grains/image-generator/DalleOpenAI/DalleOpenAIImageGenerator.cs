@@ -4,7 +4,10 @@ using System.Text;
 using Grains.AzureOpenAI;
 using Newtonsoft.Json;
 using Microsoft.Extensions.Logging;
-using Shared;
+using Shared.Abstractions.ApiKeys;
+using Grains.Errors;
+using Shared.Abstractions.Constants;
+using Shared.Abstractions.Images;
 
 namespace Grains.DalleOpenAI;
 

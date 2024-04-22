@@ -1,8 +1,9 @@
-using Grains;
 using Microsoft.AspNetCore.Mvc;
-using Orleans;
-using Shared;
-using Attribute = Shared.Attribute;
+using Shared.Abstractions.Constants;
+using Shared.Abstractions.Images;
+using Shared.Abstractions.Interfaces;
+using WebApi.Models;
+using Attribute = Shared.Abstractions.Images.Attribute;
 
 namespace WebApi.Controllers;
 
@@ -23,7 +24,7 @@ public class MultiImageGeneratorController : ControllerBase
 
 
     [HttpPost("inspect")]
-    public async Task<ImageGenerationState> Inspect(InspectGeneratorRequest request)
+    public async Task<ImageGenerationStateDto> Inspect(InspectGeneratorRequest request)
     {
         var grain = _client.GetGrain<IImageGeneratorGrain>(request.RequestId);
         var state = await grain.GetStateAsync();

@@ -1,0 +1,13 @@
+﻿<wpf:ResourceDictionary xml:space="preserve" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:s="clr-namespace:System;assembly=mscorlib" xmlns:ss="urn:shemas-jetbrains-com:settings-storage-xaml" xmlns:wpf="http://schemas.microsoft.com/winfx/2006/xaml/presentation">
+	<s:String x:Key="/Default/Environment/AssemblyExplorer/XmlDocument/@EntryValue">&lt;AssemblyExplorer&gt;
+  &lt;Assembly Path="/Users/lakshmi/Documents/projects/schrodinger/orleans/orlean-image-generator/Shared.Abstractions/bin/Debug/net8.0/Shared.Abstractions.dll" /&gt;
+&lt;/AssemblyExplorer&gt;</s:String>
+	
+	
+	
+	
+	
+	
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=a58760ae_002Da012_002D4152_002D966f_002D7d8bf4b5b03e/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="TickAsync_ShouldUpdateApiUsageStatus_WhenReportedRateLimitReached" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
+  &lt;Project Location="/Users/lakshmi/Documents/projects/schrodinger/orleans/orlean-image-generator/GrainsTest" Presentation="&amp;lt;GrainsTest&amp;gt;" /&gt;
+&lt;/SessionState&gt;</s:String></wpf:ResourceDictionary>

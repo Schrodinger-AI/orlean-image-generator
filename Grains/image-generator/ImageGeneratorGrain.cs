@@ -1,11 +1,14 @@
 using Grains.AzureOpenAI;
 using Orleans.Runtime;
 using SixLabors.ImageSharp.Processing;
-using Shared;
-using Grains.usage_tracker;
-using Grains.types;
+using Shared.Abstractions.Images;
+using Shared.Abstractions.ApiKeys;
+using Shared.Abstractions.Interfaces;
+using Shared.Abstractions.Constants;
+using Grains.Errors;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Shared.Abstractions.UsageTracker;
 
 namespace Grains;
 
@@ -213,13 +216,13 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
         return unixTimestamp;
     }
 
-    public async Task<ImageGenerationGrainResponse> GenerateImageFromPromptAsync(string prompt, string imageRequestId,
+    public async Task<ImageGenerationGrainResponseDto> GenerateImageFromPromptAsync(string prompt, string imageRequestId,
         string parentRequestId)
     {
         _logger.LogInformation(
             $"ImageGeneratorGrain - generatorId: {imageRequestId} , GenerateImageFromPromptAsync invoked with prompt: {prompt}");
         var imageGenerationRequestTimestamp = GetCurrentUTCTimeInSeconds();
-        ImageGenerationGrainResponse imageGenerationGrainResponse = null;
+        ImageGenerationGrainResponseDto imageGenerationGrainResponse = null;
         try
         {
             _imageGenerationState.State.ParentRequestId = parentRequestId;
@@ -270,7 +273,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
             // Store the task in a non-persistent dictionary
             await _imageGenerationState.WriteStateAsync();
 
-            imageGenerationGrainResponse = new ImageGenerationGrainResponse
+            imageGenerationGrainResponse = new ImageGenerationGrainResponseDto
             {
                 RequestId = imageRequestId,
                 IsSuccessful = true,
@@ -321,7 +324,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
             
             await _imageGenerationState.WriteStateAsync();
 
-            imageGenerationGrainResponse = new ImageGenerationGrainResponse
+            imageGenerationGrainResponse = new ImageGenerationGrainResponseDto
             {
                 RequestId = imageRequestId,
                 IsSuccessful = false,
@@ -352,29 +355,29 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
         await _imageGenerationState.WriteStateAsync();
     }
     
-    public async Task<ImageQueryGrainResponse> QueryImageAsync()
+    public async Task<ImageQueryGrainResponseDto> QueryImageAsync()
     {
         return _imageGenerationState.State.Status switch
         {
-            ImageGenerationStatus.Dormant => new ImageQueryGrainResponse
+            ImageGenerationStatus.Dormant => new ImageQueryGrainResponseDto
             {
                 Image = null, Status = ImageGenerationStatus.Dormant, Error = "Image generation not started"
             },
-            ImageGenerationStatus.InProgress => new ImageQueryGrainResponse
+            ImageGenerationStatus.InProgress => new ImageQueryGrainResponseDto
             {
                 Image = null, Status = _imageGenerationState.State.Status, Error = "Image generation in progress"
             },
             // Check if the ImageQueryResponse exists in the state
             ImageGenerationStatus.SuccessfulCompletion when _imageGenerationState.State.Image != null => new
-                ImageQueryGrainResponse
+                ImageQueryGrainResponseDto
                 {
                     Image = _imageGenerationState.State.Image, Status = _imageGenerationState.State.Status, Error = null
                 },
-            ImageGenerationStatus.FailedCompletion => new ImageQueryGrainResponse
+            ImageGenerationStatus.FailedCompletion => new ImageQueryGrainResponseDto
             {
                 Image = null, Status = _imageGenerationState.State.Status, Error = _imageGenerationState.State.Error
             },
-            _ => new ImageQueryGrainResponse
+            _ => new ImageQueryGrainResponseDto
             {
                 Image = null,
                 Status = ImageGenerationStatus.FailedCompletion,
@@ -383,9 +386,24 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
         };
     }
 
-    public async Task<ImageGenerationState> GetStateAsync()
+    public async Task<ImageGenerationStateDto> GetStateAsync()
     {
-        return await Task.FromResult(_imageGenerationState.State);
+        var state = _imageGenerationState.State;
+        var dto = new ImageGenerationStateDto
+        {
+            RequestId = state.RequestId,
+            ParentRequestId = state.ParentRequestId,
+            Status = state.Status,
+            Prompt = state.Prompt,
+            ImageUrl = state.ImageUrl,
+            Image = state.Image,
+            Error = state.Error,
+            ServiceProvider = state.ServiceProvider,
+            ImageGenerationTimestamp = state.ImageGenerationTimestamp,
+            ErrorCode = state.ErrorCode
+        };
+
+        return await Task.FromResult(dto);
     }
 
     private async Task<string> ConvertImageUrlToBase64(string imageUrl)

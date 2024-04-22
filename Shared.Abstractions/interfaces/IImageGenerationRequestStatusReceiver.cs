@@ -1,6 +1,7 @@
-using Grains.types;
 
-namespace Grains.usage_tracker;
+using Shared.Abstractions.UsageTracker;
+
+namespace Shared.Abstractions.Interfaces;
 
 public interface IImageGenerationRequestStatusReceiver : Orleans.IGrainWithStringKey
 {

@@ -1,5 +1,5 @@
-using Shared;
-using Attribute = Shared.Attribute;
+using Shared.Abstractions.Constants;
+using Attribute = Shared.Abstractions.Images.Attribute;
 
 namespace Grains;
 

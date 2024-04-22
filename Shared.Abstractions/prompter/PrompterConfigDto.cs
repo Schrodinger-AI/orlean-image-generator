@@ -1,10 +1,12 @@
 namespace Shared.Abstractions.Prompter
 {
+    using System.Text.Json.Serialization;
+
     /// <summary>
     /// Represents the configuration for a prompter.
     /// </summary>
     [GenerateSerializer]
-    public class PrompterConfig
+    public class PrompterConfigDto
     {
         /// <summary>
         /// Gets or sets the script content for the prompter.

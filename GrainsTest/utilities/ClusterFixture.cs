@@ -7,7 +7,8 @@ using Moq;
 using Orleans.Runtime;
 using Orleans.TestingHost;
 using Orleans.Timers;
-using Shared;
+using Shared.Abstractions.ApiKeys;
+using Shared.Abstractions.Constants;
 using Xunit;
 
 namespace GrainsTest.utilities;

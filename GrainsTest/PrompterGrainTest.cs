@@ -1,3 +1,5 @@
+using Shared.Abstractions.Prompter;
+
 namespace GrainsTest;
 
 using Grains;
@@ -6,8 +8,8 @@ using GrainsTest.utilities;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Orleans.Runtime;
-using Shared;
 using Xunit;
+using Attribute = Shared.Abstractions.Images.Attribute;
 
 [Collection(ClusterCollection.Name)]
 public class PrompterGrainStatusTest(ClusterFixture fixture)
@@ -40,7 +42,7 @@ public class PrompterGrainStatusTest(ClusterFixture fixture)
         };
       
         // Act
-        var result = await grain.GeneratePromptAsync(new PromptGenerationRequest
+        var result = await grain.GeneratePromptAsync(new PromptGenerationRequestDto
         {
             NewAttributes = attributes
         });

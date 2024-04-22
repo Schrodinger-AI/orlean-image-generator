@@ -4,7 +4,8 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using Orleans;
 using Orleans.Runtime;
-using Shared;
+using Shared.Abstractions.Interfaces;
+using Shared.Abstractions.Prompter;
 
 namespace Grains;
 
@@ -22,7 +23,7 @@ public class PrompterGrain : Grain, IPrompterGrain
         _logger = logger;
     }
 
-    public async Task<bool> SetConfigAsync(PrompterConfig config)
+    public async Task<bool> SetConfigAsync(PrompterConfigDto config)
     {
         _prompterState.State.ConfigText = config.ConfigText;
         _prompterState.State.ScriptContent = config.ScriptContent;
@@ -34,9 +35,9 @@ public class PrompterGrain : Grain, IPrompterGrain
         return _prompterState.State.ValidationOk;
     }
 
-    public async Task<PrompterConfig> GetConfigAsync()
+    public async Task<PrompterConfigDto> GetConfigAsync()
     {
-        return await Task.FromResult(new PrompterConfig
+        return await Task.FromResult(new PrompterConfigDto
         {
             ConfigText = _prompterState.State.ConfigText,
             ScriptContent = _prompterState.State.ScriptContent,
@@ -48,7 +49,7 @@ public class PrompterGrain : Grain, IPrompterGrain
     private async Task<bool> RunValidationTestAsync()
     {
         var validationPayload =
-            JsonConvert.DeserializeObject<PromptGenerationRequest>(_prompterState.State.ValidationTestCase);
+            JsonConvert.DeserializeObject<PromptGenerationRequestDto>(_prompterState.State.ValidationTestCase);
         if (validationPayload == null) return false;
 
         var res = await GeneratePromptAsync(validationPayload);
@@ -56,7 +57,7 @@ public class PrompterGrain : Grain, IPrompterGrain
     }
 
 
-    public async Task<string> GeneratePromptAsync(PromptGenerationRequest promptGenerationRequest)
+    public async Task<string> GeneratePromptAsync(PromptGenerationRequestDto promptGenerationRequest)
     {
         try
         {

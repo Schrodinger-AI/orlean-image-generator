@@ -1,8 +1,6 @@
-using Grains;
 using Microsoft.AspNetCore.Mvc;
-using Orleans;
-using Shared;
-using Attribute = Shared.Attribute;
+using Shared.Abstractions.Interfaces;
+using WebApi.Models;
 
 namespace WebApi.Controllers;
 

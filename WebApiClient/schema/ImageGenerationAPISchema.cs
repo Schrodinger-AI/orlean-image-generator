@@ -1,50 +1,10 @@
 using System.Text.Json.Serialization;
+using Shared.Abstractions.Images;
+using Attribute = Shared.Abstractions.Images.Attribute;
 
-namespace Shared
-{
-    [GenerateSerializer]
-    public class Attribute
-    {
-        [JsonPropertyName("traitType")]
-        [Id(0)]
-        public string TraitType { get; set; }
+namespace WebApi.Models;
 
-        [JsonPropertyName("value")]
-        [Id(1)]
-        public string Value { get; set; }
-    }
 
-    [GenerateSerializer]
-    public class ImageDescription
-    {
-        [JsonPropertyName("image")]
-        [Id(0)]
-        public string? Image { get; set; } = null;
-
-        [JsonPropertyName("attributes")]
-        [Id(1)]
-        public List<Attribute> Attributes { get; set; } = [];
-
-        [JsonPropertyName("extraData")]
-        [Id(2)]
-        public string? ExtraData { get; set; } = null;
-    }
-
-    [GenerateSerializer]
-    public class PromptGenerationRequest
-    {
-        [JsonPropertyName("identifier")]
-        [Id(0)]
-        public string Identifier { get; set; }
-        
-        [JsonPropertyName("newAttributes")]
-        [Id(1)]
-        public List<Attribute> NewAttributes { get; set; }
-
-        [JsonPropertyName("baseImage")]
-        [Id(2)]
-        public ImageDescription? BaseImage { get; set; }
-    }
     
     [GenerateSerializer]
     public class SetPromptConfigRequest
@@ -190,6 +150,4 @@ namespace Shared
         [JsonPropertyName("attributes")]
         public List<Attribute> Attributes { get; set; } = [];
     }
-
     
-}

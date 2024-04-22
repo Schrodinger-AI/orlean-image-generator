@@ -1,10 +1,11 @@
 using Grains.usage_tracker;
 using Microsoft.Extensions.Logging;
-using Orleans;
 using Orleans.Runtime;
-using Shared;
-using UnitTests.Grains;
-using Attribute = Shared.Attribute;
+using Shared.Abstractions.Constants;
+using Shared.Abstractions.Images;
+using Shared.Abstractions.Interfaces;
+using Shared.Abstractions.Prompter;
+using Attribute = Shared.Abstractions.Images.Attribute;
 
 namespace Grains;
 
@@ -106,13 +107,13 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
         var grain = GrainFactory.GetGrain<IConfiguratorGrain>(Constants.ConfiguratorIdentifier);
         var curConfigId = await grain.GetCurrentConfigIdAsync();
         var prompterGrain = GrainFactory.GetGrain<IPrompterGrain>(curConfigId);
-        return await prompterGrain.GeneratePromptAsync(new PromptGenerationRequest
+        return await prompterGrain.GeneratePromptAsync(new PromptGenerationRequestDto
         {
             NewAttributes = attributes
         });
     }
 
-    public async Task<MultiImageGenerationGrainResponse> GenerateMultipleImagesAsync(List<Attribute> traits,
+    public async Task<MultiImageGenerationGrainResponseDto> GenerateMultipleImagesAsync(List<Attribute> traits,
         int NumberOfImages, string multiImageRequestId)
     {
         _logger.LogInformation(
@@ -162,7 +163,7 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
             _multiImageGenerationState.State.IsSuccessful = IsSuccessful;
             await _multiImageGenerationState.WriteStateAsync();
 
-            return new MultiImageGenerationGrainResponse
+            return new MultiImageGenerationGrainResponseDto
             {
                 RequestId = multiImageRequestId,
                 Traits = traits,
@@ -175,7 +176,7 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
             _logger.LogError(ex, $"Error occurred in GenerateMultipleImagesAsync for MultiImageRequest: {multiImageRequestId}");
             _multiImageGenerationState.State.IsSuccessful = false;
             await _multiImageGenerationState.WriteStateAsync();
-            return new MultiImageGenerationGrainResponse
+            return new MultiImageGenerationGrainResponseDto
             {
                 RequestId = multiImageRequestId,
                 Traits = traits,
@@ -193,14 +194,14 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
         await _multiImageGenerationState.WriteStateAsync();
     }
     
-    public async Task<MultiImageQueryGrainResponse> QueryMultipleImagesAsync()
+    public async Task<MultiImageQueryGrainResponseDto> QueryMultipleImagesAsync()
     {
         _logger.LogInformation($"QueryMultipleImagesAsync called for MultiImageRequest: {_multiImageGenerationState.State.RequestId}");
 
         if (string.IsNullOrEmpty(_multiImageGenerationState.State.Prompt))
         {
             _logger.LogInformation($"MultiImageRequest: {_multiImageGenerationState.State.RequestId} is uninitialized");
-            return new MultiImageQueryGrainResponse()
+            return new MultiImageQueryGrainResponseDto()
             {
                 Uninitialized = true
             };
@@ -211,7 +212,7 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
         if (imageGenerationStatus == ImageGenerationStatus.InProgress)
         {
             _logger.LogInformation($"Some images for MultiImageRequest: {_multiImageGenerationState.State.RequestId} are still in progress");
-            return new MultiImageQueryGrainResponse
+            return new MultiImageQueryGrainResponseDto
             {
                 Status = ImageGenerationStatus.InProgress
             };
@@ -224,7 +225,7 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
             var errors = _multiImageGenerationState.State.imageGenerationTrackers
                 .Select(imageGenerationTracker => imageGenerationTracker.Value.Error).ToList();
             
-            return new MultiImageQueryGrainResponse
+            return new MultiImageQueryGrainResponseDto
             {
                 Status = ImageGenerationStatus.FailedCompletion,
                 Errors = errors,
@@ -263,13 +264,13 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
 
             if (allImages.Count != _multiImageGenerationState.State.ImageGenerationRequestIds.Count)
             {
-                return new MultiImageQueryGrainResponse {Status = ImageGenerationStatus.FailedCompletion, Errors = ["ImageData not found"]};
+                return new MultiImageQueryGrainResponseDto {Status = ImageGenerationStatus.FailedCompletion, Errors = ["ImageData not found"]};
             }
 
             //prepare MultiImageQueryGrainResponse based on finalStatus computed from imageGenerationTrackers
             _logger.LogInformation(
                 $"All images for MultiImageRequest: {_multiImageGenerationState.State.RequestId} are generated successfully");
-            return new MultiImageQueryGrainResponse
+            return new MultiImageQueryGrainResponseDto
             {
                 Images = allImages,
                 Status = ImageGenerationStatus.SuccessfulCompletion
@@ -277,7 +278,7 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
         } catch (Exception e)
         {
             _logger.LogError($"Error occurred in QueryMultipleImagesAsync for MultiImageRequest: {_multiImageGenerationState.State.RequestId}, exception: {e.Message}");
-            return new MultiImageQueryGrainResponse
+            return new MultiImageQueryGrainResponseDto
             {
                 Status = ImageGenerationStatus.InProgress
             };

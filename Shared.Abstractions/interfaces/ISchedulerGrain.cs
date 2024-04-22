@@ -1,7 +1,7 @@
-using Grains.types;
-using Shared;
+using Shared.Abstractions.AccountUsage;
+using Shared.Abstractions.ApiKeys;
 
-namespace Grains.usage_tracker;
+namespace Shared.Abstractions.Interfaces;
 
 public interface ISchedulerGrain : ISchrodingerGrain, Orleans.IGrainWithStringKey, IImageGenerationRequestStatusReceiver
 {

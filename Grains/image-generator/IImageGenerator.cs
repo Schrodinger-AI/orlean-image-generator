@@ -1,4 +1,5 @@
-using Shared;
+using Shared.Abstractions.ApiKeys;
+using Shared.Abstractions.Images;
 
 namespace Grains.ImageGenerator;
 

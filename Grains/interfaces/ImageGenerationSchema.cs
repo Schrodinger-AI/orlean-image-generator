@@ -1,6 +1,6 @@
 using System.Net;
 using System.Text.Json.Serialization;
-using Shared;
+using Shared.Abstractions.Constants;
 
 namespace Grains;
 

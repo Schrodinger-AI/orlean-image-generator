@@ -1,5 +1,6 @@
 namespace Shared.Abstractions.Interfaces;
 
+using Orleans;
 using Shared.Abstractions.Constants;
 using Shared.Abstractions.Images;
 using Shared.Abstractions.ApiKeys;

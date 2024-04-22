@@ -9,7 +9,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Grains\Grains.csproj" />
-    <ProjectReference Include="..\Shared\Shared.csproj" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="8.0.0" />

@@ -1,7 +1,8 @@
 using Orleans;
-using Shared;
-namespace Grains;
+using Shared.Abstractions.Trait;
 
+namespace Shared.Abstractions.Interfaces
+{
     public interface ITraitConfigGrain : ISchrodingerGrain, IGrainWithStringKey
     {
         Task<Dictionary<string, TraitEntry>> GetAllTraits();
@@ -16,3 +17,4 @@ namespace Grains;
 
         Task<Dictionary<string, TraitEntry>> GetTraitsMap(List<string> traitNames);
     }
+}

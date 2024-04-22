@@ -1,4 +1,5 @@
-using Shared;
+using Shared.Abstractions.Constants;
+using Shared.Abstractions.Images;
 
 namespace Grains;
 

@@ -1,8 +1,7 @@
-using Grains;
 using Microsoft.AspNetCore.Mvc;
-using Orleans;
-using Shared;
-using UnitTests.Grains;
+using Shared.Abstractions.Prompter;
+using Shared.Abstractions.Interfaces;
+using WebApi.Models;
 
 namespace WebApi.Controllers
 {
@@ -32,7 +31,7 @@ namespace WebApi.Controllers
                 }
 
                 var prompterGrain = _client.GetGrain<IPrompterGrain>(setPromptConfigRequest.Identifier);
-                var res = await prompterGrain.SetConfigAsync(new PrompterConfig
+                var res = await prompterGrain.SetConfigAsync(new PrompterConfigDto
                 {
                     ConfigText = setPromptConfigRequest.ConfigText,
                     ScriptContent = setPromptConfigRequest.ScriptContent,
@@ -69,7 +68,7 @@ namespace WebApi.Controllers
         }
 
         [HttpPost("generate")]
-        public async Task<PrompterResponse> Generate(PromptGenerationRequest promptGenerationRequest)
+        public async Task<PrompterResponse> Generate(PromptGenerationRequestDto promptGenerationRequest)
         {
             try
             {
@@ -126,7 +125,7 @@ namespace WebApi.Controllers
         {
             try
             {
-                List<PrompterConfig> result = new List<PrompterConfig>();
+                List<PrompterConfigDto> result = new List<PrompterConfigDto>();
                 var configuratorGrain = _client.GetGrain<IConfiguratorGrain>(_configuratorIdentifier);
                 var allConfigIds = await configuratorGrain.GetAllConfigIdsAsync();
                 foreach (var prompterGrain in allConfigIds.Select(

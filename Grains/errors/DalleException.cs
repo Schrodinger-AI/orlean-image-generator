@@ -1,4 +1,6 @@
-namespace Shared;
+namespace Grains.Errors;
+
+using Shared.Abstractions.Constants;
 
 public class ImageGenerationException : Exception
 {

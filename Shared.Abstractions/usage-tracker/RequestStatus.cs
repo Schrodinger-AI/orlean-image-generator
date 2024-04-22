@@ -1,6 +1,6 @@
-using Shared;
+using Shared.Abstractions.Constants;
 
-namespace Grains.types;
+namespace Shared.Abstractions.UsageTracker;
 
 public enum RequestStatusEnum
 {

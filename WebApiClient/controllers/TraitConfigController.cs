@@ -1,7 +1,6 @@
-using Grains;
 using Microsoft.AspNetCore.Mvc;
-using Orleans;
-using Shared;
+using Shared.Abstractions.Interfaces;
+using Shared.Abstractions.Trait;
 
 namespace WebApi.Controllers
 {

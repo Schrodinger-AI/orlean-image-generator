@@ -2,8 +2,11 @@ using System.Net;
 using Azure;
 using Microsoft.Extensions.Logging;
 using Azure.AI.OpenAI;
-using Shared;
+using Grains.Errors;
+using Shared.Abstractions.ApiKeys;
 using Newtonsoft.Json;
+using Shared.Abstractions.Constants;
+using Shared.Abstractions.Images;
 
 namespace Grains.AzureOpenAI;
 
