@@ -1,7 +1,5 @@
-FROM mcr.microsoft.com/dotnet/aspnet:8.0
+FROM cgr.dev/chainguard/aspnet-runtime:latest
 ARG servicename
-USER 1000
 WORKDIR /App
 COPY out/$servicename .
-ENV RUNCMD="dotnet $servicename.dll"
-CMD $RUNCMD
+ENTRYPOINT ["dotnet", "$servicename.dll"]
