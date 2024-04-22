@@ -1,15 +1,13 @@
+using Grains.ImageGenerator;
 using Shared.Abstractions.Constants;
 using Shared.Abstractions.Interfaces;
 
 namespace GrainsTest;
 
-using Grains;
-using Grains.usage_tracker;
 using GrainsTest.utilities;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Orleans.Runtime;
-using Shared;
 using Xunit;
 
 [Collection(ClusterCollection.Name)]

@@ -1,9 +1,8 @@
 using System.Collections.Immutable;
 using Shared.Abstractions.Interfaces;
 using Orleans.Runtime;
-using UnitTests.Grains;
 
-namespace Grains;
+namespace Grains.config;
 
 public class ConfiguratorGrain : Grain, IConfiguratorGrain
 {

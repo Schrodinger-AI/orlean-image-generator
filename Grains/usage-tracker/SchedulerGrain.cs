@@ -3,7 +3,6 @@ using Grains.types;
 using Microsoft.Extensions.Logging;
 using Orleans.Runtime;
 using Orleans.Timers;
-using Shared;
 using Shared.Abstractions.AccountUsage;
 using Shared.Abstractions.ApiKeys;
 using Shared.Abstractions.Constants;

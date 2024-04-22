@@ -1,5 +1,5 @@
 using System.Reflection;
-using Grains;
+using Grains.Constants;
 using Grains.types;
 using Grains.usage_tracker;
 using Microsoft.Extensions.DependencyInjection;
@@ -45,7 +45,7 @@ public sealed class ClusterCollection : ICollectionFixture<ClusterFixture>
 public class SiloConfigurator : ISiloConfigurator
 {
     public void Configure(ISiloBuilder siloBuilder) => siloBuilder
-        .AddMemoryGrainStorage(Constants.MySqlSchrodingerImageStore)
+        .AddMemoryGrainStorage(GrainConstants.MySqlSchrodingerImageStore)
         .ConfigureServices(services =>
         {
             var state = new SchedulerState();

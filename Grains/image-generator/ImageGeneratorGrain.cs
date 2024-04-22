@@ -1,4 +1,3 @@
-using Grains.AzureOpenAI;
 using Orleans.Runtime;
 using SixLabors.ImageSharp.Processing;
 using Shared.Abstractions.Images;
@@ -6,11 +5,13 @@ using Shared.Abstractions.ApiKeys;
 using Shared.Abstractions.Interfaces;
 using Shared.Abstractions.Constants;
 using Grains.Errors;
+using Grains.ImageGenerator.AzureOpenAI;
+using Grains.ImageGenerator.DalleOpenAI;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Shared.Abstractions.UsageTracker;
 
-namespace Grains;
+namespace Grains.ImageGenerator;
 
 public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
 {

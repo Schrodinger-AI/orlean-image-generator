@@ -1,3 +1,6 @@
+using Grains.ImageGenerator;
+using Grains.ImageGenerator.AzureOpenAI;
+using Grains.ImageGenerator.DalleOpenAI;
 using Shared.Abstractions.ApiKeys;
 using Shared.Abstractions.Constants;
 using Shared.Abstractions.Images;
@@ -7,15 +10,11 @@ using Shared.Abstractions.UsageTracker;
 namespace GrainsTest;
 
 using Grains;
-using Grains.AzureOpenAI;
-using Grains.types;
-using Grains.usage_tracker;
 using Microsoft.Extensions.Options;
 using GrainsTest.utilities;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Orleans.Runtime;
-using Shared;
 using Xunit;
 
 using Orleans.TestingHost;

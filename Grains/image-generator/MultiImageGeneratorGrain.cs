@@ -1,4 +1,4 @@
-using Grains.usage_tracker;
+using Grains.Constants;
 using Microsoft.Extensions.Logging;
 using Orleans.Runtime;
 using Shared.Abstractions.Constants;
@@ -7,7 +7,7 @@ using Shared.Abstractions.Interfaces;
 using Shared.Abstractions.Prompter;
 using Attribute = Shared.Abstractions.Images.Attribute;
 
-namespace Grains;
+namespace Grains.ImageGenerator;
 
 public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
 {
@@ -104,7 +104,7 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
 
     public virtual async Task<string> GeneratePromptAsync(List<Attribute> attributes)
     {
-        var grain = GrainFactory.GetGrain<IConfiguratorGrain>(Constants.ConfiguratorIdentifier);
+        var grain = GrainFactory.GetGrain<IConfiguratorGrain>(GrainConstants.ConfiguratorIdentifier);
         var curConfigId = await grain.GetCurrentConfigIdAsync();
         var prompterGrain = GrainFactory.GetGrain<IPrompterGrain>(curConfigId);
         return await prompterGrain.GeneratePromptAsync(new PromptGenerationRequestDto

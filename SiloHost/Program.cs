@@ -1,21 +1,15 @@
-using Grains;
-using Grains.AzureOpenAI;
-using Grains.DalleOpenAI;
-using Grains.ImageGenerator;
+using Grains.ImageGenerator.AzureOpenAI;
+using Grains.ImageGenerator.DalleOpenAI;
 using Grains.utilities;
-using Orleans;
-using System.Net;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json;
 using Orleans.Configuration;
 using Orleans.Providers.MongoDB.Configuration;
-using Orleans.Serialization;
-using OrleansDashboard;
 using Serilog;
 using Serilog.Formatting.Json;
-using Shared;
+using Shared.Abstractions.Images;
 using SiloHost.startup;
 using TimeProvider = Grains.utilities.TimeProvider;
 

@@ -8,7 +8,7 @@ using Newtonsoft.Json;
 using Shared.Abstractions.Constants;
 using Shared.Abstractions.Images;
 
-namespace Grains.AzureOpenAI;
+namespace Grains.ImageGenerator.AzureOpenAI;
 
 public class AzureOpenAIImageGenerator : IAzureOpenAIImageGenerator
 {

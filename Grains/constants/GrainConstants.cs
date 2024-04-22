@@ -1,6 +1,6 @@
-namespace Grains;
+namespace Grains.Constants;
 
-public static class Constants
+public static class GrainConstants
 {
     public const string MySqlSchrodingerImageStore = "MySqlSchrodingerImageStore";
 

@@ -1,7 +1,7 @@
 using Shared.Abstractions.Constants;
 using Attribute = Shared.Abstractions.Images.Attribute;
 
-namespace Grains;
+namespace Grains.ImageGenerator;
 
 [GenerateSerializer]
 public class MultiImageGenerationState

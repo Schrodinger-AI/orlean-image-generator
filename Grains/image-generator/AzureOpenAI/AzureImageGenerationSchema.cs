@@ -1,6 +1,5 @@
-using System.Net;
 using System.Text.Json.Serialization;
-namespace Grains.AzureOpenAI;
+namespace Grains.ImageGenerator.AzureOpenAI;
 
 public class ContentFilterResultDetail
 {

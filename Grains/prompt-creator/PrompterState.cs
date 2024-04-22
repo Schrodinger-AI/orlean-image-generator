@@ -1,5 +1,3 @@
-using Shared;
-
 namespace Grains;
 
 [GenerateSerializer]

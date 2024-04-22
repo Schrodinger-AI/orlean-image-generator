@@ -1,7 +1,6 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
-using Grains.AzureOpenAI;
 using Newtonsoft.Json;
 using Microsoft.Extensions.Logging;
 using Shared.Abstractions.ApiKeys;
@@ -9,7 +8,7 @@ using Grains.Errors;
 using Shared.Abstractions.Constants;
 using Shared.Abstractions.Images;
 
-namespace Grains.DalleOpenAI;
+namespace Grains.ImageGenerator.DalleOpenAI;
 
 public class DalleOpenAIImageGenerator : IDalleOpenAIImageGenerator
 {

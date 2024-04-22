@@ -1,4 +1,4 @@
-namespace UnitTests.Grains;
+namespace Grains.config;
 
 public class ConfiguratorGrainState
 {
