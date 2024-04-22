@@ -1,6 +1,6 @@
 FROM cgr.dev/chainguard/aspnet-runtime:latest
 ARG servicename
-WORKDIR /App
+WORKDIR /app
 COPY out/$servicename .
-ENV APPNAME=$servicename
-ENTRYPOINT dotnet $APPNAME.dll
+COPY $servicename.dll app.dll
+ENTRYPOINT ["dotnet", "app.dll"]
