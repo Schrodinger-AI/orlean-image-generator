@@ -1,5 +1,5 @@
-using Grains.ImageGenerator.AzureOpenAI;
-using Grains.ImageGenerator.DalleOpenAI;
+using Grains.image_generator.AzureOpenAI;
+using Grains.image_generator.DalleOpenAI;
 using Grains.utilities;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
