@@ -1,10 +1,9 @@
 using System.Text.Json.Serialization;
 using Shared.Abstractions.Constants;
 
-namespace Grains;
+namespace Grains.image_generator;
 
-
-public class ImageGenerationResponse
+public class AIImageGenerationResponse
 {
     [JsonPropertyName("created")]
     public long Created { get; set; }
@@ -13,7 +12,7 @@ public class ImageGenerationResponse
     public List<ImageGenerationData> Data { get; set; }
     
     [JsonPropertyName("error")]
-    public ImageGenerationError Error { get; set; }
+    public AIImageGenerationError Error { get; set; }
 }
 
 public class ImageGenerationData
@@ -25,7 +24,7 @@ public class ImageGenerationData
     public string Url { get; set; }
 }
 
-public class ImageGenerationError
+public class AIImageGenerationError
 {
     [JsonPropertyName("httpStatusCode")]
     public int HttpStatusCode { get; set; }

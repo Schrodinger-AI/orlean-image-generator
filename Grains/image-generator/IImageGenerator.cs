@@ -1,9 +1,9 @@
 using Shared.Abstractions.ApiKeys;
 using Shared.Abstractions.Images;
 
-namespace Grains.ImageGenerator;
+namespace Grains.image_generator;
 
 public interface IImageGenerator
 {
-    Task<ImageGenerationResponse> RunImageGenerationAsync(string prompt, ApiKey apikey, int numberOfImages, ImageSettings imageSettings, string requestId);
+    Task<AIImageGenerationResponse> RunImageGenerationAsync(string prompt, ApiKey apikey, int numberOfImages, ImageSettings imageSettings, string requestId);
 }

@@ -1,6 +1,6 @@
 using Shared.Abstractions.Trait;
 
-namespace Grains
+namespace Grains.trait_config
 {
     public class TraitState
     {

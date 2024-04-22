@@ -1,6 +1,6 @@
-using Grains.ImageGenerator;
-using Grains.ImageGenerator.AzureOpenAI;
-using Grains.ImageGenerator.DalleOpenAI;
+using Grains.image_generator;
+using Grains.image_generator.AzureOpenAI;
+using Grains.image_generator.DalleOpenAI;
 using Shared.Abstractions.ApiKeys;
 using Shared.Abstractions.Constants;
 using Shared.Abstractions.Images;
@@ -75,7 +75,7 @@ public class ImageGenerationGrainTest(ClusterFixture fixture)
         _mockDalleOpenAiImageGenerator
             .Setup(x => x.RunImageGenerationAsync(It.IsAny<string>(), It.IsAny<ApiKey>(), It.IsAny<int>(),
                 It.IsAny<ImageSettings>(), It.IsAny<string>()))
-            .ReturnsAsync(new ImageGenerationResponse
+            .ReturnsAsync(new AIImageGenerationResponse
             {
                 Created = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
                 Data = new List<ImageGenerationData>

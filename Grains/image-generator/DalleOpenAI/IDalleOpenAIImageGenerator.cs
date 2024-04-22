@@ -1,4 +1,4 @@
-namespace Grains.ImageGenerator.DalleOpenAI;
+namespace Grains.image_generator.DalleOpenAI;
 
 public interface IDalleOpenAIImageGenerator : IImageGenerator
 {

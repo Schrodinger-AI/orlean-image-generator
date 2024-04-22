@@ -7,7 +7,7 @@ using Orleans.Runtime;
 using Shared.Abstractions.Interfaces;
 using Shared.Abstractions.Prompter;
 
-namespace Grains;
+namespace Grains.Prompter;
 
 public class PrompterGrain : Grain, IPrompterGrain
 {

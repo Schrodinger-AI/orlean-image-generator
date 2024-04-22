@@ -1,4 +1,4 @@
-namespace Grains.ImageGenerator.AzureOpenAI;
+namespace Grains.image_generator.AzureOpenAI;
 
 public interface IAzureOpenAIImageGenerator : IImageGenerator
 {

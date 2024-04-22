@@ -8,7 +8,7 @@ using Newtonsoft.Json;
 using Shared.Abstractions.Constants;
 using Shared.Abstractions.Images;
 
-namespace Grains.ImageGenerator.AzureOpenAI;
+namespace Grains.image_generator.AzureOpenAI;
 
 public class AzureOpenAIImageGenerator : IAzureOpenAIImageGenerator
 {
@@ -20,7 +20,7 @@ public class AzureOpenAIImageGenerator : IAzureOpenAIImageGenerator
         _logger = logger;
     }
 
-    public async Task<ImageGenerationResponse> RunImageGenerationAsync(string prompt, ApiKey apikey, int numberOfImages, ImageSettings imageSettings, string requestId)
+    public async Task<AIImageGenerationResponse> RunImageGenerationAsync(string prompt, ApiKey apikey, int numberOfImages, ImageSettings imageSettings, string requestId)
     {
         Response<ImageGenerations> imageGenerationsResponse;
         Response rawResponse;
@@ -71,7 +71,7 @@ public class AzureOpenAIImageGenerator : IAzureOpenAIImageGenerator
         }
         catch (RequestFailedException reqExc)
         {
-            ImageGenerationError azureError;
+            AIImageGenerationError azureError;
             try
             {
                 azureError = HandleAzureRequestFailedException(reqExc);
@@ -91,14 +91,14 @@ public class AzureOpenAIImageGenerator : IAzureOpenAIImageGenerator
             throw new ImageGenerationException(ImageGenerationErrorCode.internal_error, e.Message);
         }
 
-        ImageGenerationResponse imageGenerationResponse;
+        AIImageGenerationResponse aiImageGenerationResponse;
         _logger.LogError("AzureImageGenerator - ImageGeneration ResponseCode : {httpStatusCode}", httpStatusCode);
 
         if (httpStatusCode == (int)HttpStatusCode.OK)
         {
             try
             {
-                imageGenerationResponse = new ImageGenerationResponse
+                aiImageGenerationResponse = new AIImageGenerationResponse
                 {
                     // get latest timestamp in seconds
                     Created =  (int)DateTimeOffset.Now.ToUnixTimeSeconds(),
@@ -115,7 +115,7 @@ public class AzureOpenAIImageGenerator : IAzureOpenAIImageGenerator
                 throw new ImageGenerationException(ImageGenerationErrorCode.api_call_failed, e.Message);
             }
         } else {
-            ImageGenerationError azureError;
+            AIImageGenerationError azureError;
             try
             {
                 azureError = HandleImageGenerationError(rawResponse);
@@ -131,12 +131,12 @@ public class AzureOpenAIImageGenerator : IAzureOpenAIImageGenerator
             throw new ImageGenerationException(azureError.ImageGenerationErrorCode, azureError.Message);
         }
 
-        _logger.LogInformation("AzureImageGenerator - generatorId: {requestId} , Azure API deserialized response: {imageGenerationResponse}", requestId, imageGenerationResponse);
+        _logger.LogInformation("AzureImageGenerator - generatorId: {requestId} , Azure API deserialized response: {imageGenerationResponse}", requestId, aiImageGenerationResponse);
 
-        return imageGenerationResponse;
+        return aiImageGenerationResponse;
     }
 
-    public ImageGenerationError HandleAzureRequestFailedException(Azure.RequestFailedException requestFailedException)
+    public AIImageGenerationError HandleAzureRequestFailedException(Azure.RequestFailedException requestFailedException)
     {
         ImageGenerationErrorCode imageGenerationErrorCode;
 
@@ -149,7 +149,7 @@ public class AzureOpenAIImageGenerator : IAzureOpenAIImageGenerator
             imageGenerationErrorCode = ImageGenerationErrorCode.bad_request;
         }
 
-        ImageGenerationError azureError = new ImageGenerationError
+        AIImageGenerationError azureError = new AIImageGenerationError
         {
             HttpStatusCode = requestFailedException.Status,
             ImageGenerationErrorCode = imageGenerationErrorCode,
@@ -160,7 +160,7 @@ public class AzureOpenAIImageGenerator : IAzureOpenAIImageGenerator
 
     }
 
-    public ImageGenerationError HandleImageGenerationError(Response rawResponse)
+    public AIImageGenerationError HandleImageGenerationError(Response rawResponse)
     {
         //get error message from rawResponse
         string responseJson = rawResponse.Content.ToString();
@@ -212,13 +212,13 @@ public class AzureOpenAIImageGenerator : IAzureOpenAIImageGenerator
                 break;
         }
 
-        ImageGenerationError azureImageGenerationError = new ImageGenerationError
+        AIImageGenerationError azureAiImageGenerationError = new AIImageGenerationError
         {
             HttpStatusCode = rawResponse.Status,
             ImageGenerationErrorCode = imageGenerationErrorCode,
             Message = azureError!.Message
         };
 
-        return azureImageGenerationError;
+        return azureAiImageGenerationError;
     }
 }

@@ -1,10 +1,9 @@
 
-using Orleans;
 using Orleans.Runtime;
 using Shared.Abstractions.Interfaces;
 using Shared.Abstractions.Trait;
 
-namespace Grains;
+namespace Grains.trait_config;
 
 public class TraitConfigGrain : Grain, ITraitConfigGrain
 {

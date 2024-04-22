@@ -1,9 +1,7 @@
+using Grains.Prompter;
 using Shared.Abstractions.Prompter;
 
 namespace GrainsTest;
-
-using Grains;
-using Grains.usage_tracker;
 using GrainsTest.utilities;
 using Microsoft.Extensions.Logging;
 using Moq;

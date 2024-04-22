@@ -2,7 +2,7 @@ using System.Net;
 using System.Text.Json.Serialization;
 using Shared.Abstractions.Constants;
 
-namespace Grains.ImageGenerator.DalleOpenAI;
+namespace Grains.image_generator.DalleOpenAI;
 
 public class Message
 {

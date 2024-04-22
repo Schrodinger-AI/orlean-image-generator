@@ -7,7 +7,7 @@ using Shared.Abstractions.Interfaces;
 using Shared.Abstractions.Prompter;
 using Attribute = Shared.Abstractions.Images.Attribute;
 
-namespace Grains.ImageGenerator;
+namespace Grains.image_generator;
 
 public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
 {

@@ -1,4 +1,4 @@
-namespace Grains;
+namespace Grains.Prompter;
 
 [GenerateSerializer]
 public class PrompterState

@@ -5,13 +5,13 @@ using Shared.Abstractions.ApiKeys;
 using Shared.Abstractions.Interfaces;
 using Shared.Abstractions.Constants;
 using Grains.Errors;
-using Grains.ImageGenerator.AzureOpenAI;
-using Grains.ImageGenerator.DalleOpenAI;
+using Grains.image_generator.AzureOpenAI;
+using Grains.image_generator.DalleOpenAI;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Shared.Abstractions.UsageTracker;
 
-namespace Grains.ImageGenerator;
+namespace Grains.image_generator;
 
 public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
 {
@@ -230,18 +230,18 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
             _imageGenerationState.State.RequestId = imageRequestId;
             _imageGenerationState.State.Prompt = prompt;
 
-            ImageGenerationResponse imageGenerationResponse;
+            AIImageGenerationResponse aiImageGenerationResponse;
             
             if (_apiKey?.ServiceProvider == ImageGenerationServiceProvider.DalleOpenAI)
             {
                 // Start the image data generation process
-                imageGenerationResponse = await _dalleOpenAiImageGenerator.RunImageGenerationAsync(prompt, _apiKey, 1,
+                aiImageGenerationResponse = await _dalleOpenAiImageGenerator.RunImageGenerationAsync(prompt, _apiKey, 1,
                     _imageSettings, _imageGenerationState.State.RequestId);
             }
             else if (_apiKey?.ServiceProvider == ImageGenerationServiceProvider.AzureOpenAI)
             {
                 // Start the image data generation process
-                imageGenerationResponse = await _azureOpenAiImageGenerator.RunImageGenerationAsync(prompt, _apiKey, 1,
+                aiImageGenerationResponse = await _azureOpenAiImageGenerator.RunImageGenerationAsync(prompt, _apiKey, 1,
                     _imageSettings, _imageGenerationState.State.RequestId);
             }
             else
@@ -250,11 +250,11 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
             }
 
             _logger.LogInformation(
-                $"ImageGeneratorGrain - generatorId: {imageRequestId} , imageGenerationResponse: {imageGenerationResponse}");
+                $"ImageGeneratorGrain - generatorId: {imageRequestId} , imageGenerationResponse: {aiImageGenerationResponse}");
 
-            _logger.LogDebug(imageGenerationResponse.ToString());
+            _logger.LogDebug(aiImageGenerationResponse.ToString());
             // Extract the URL from the result
-            var imageUrl = imageGenerationResponse.Data[0].Url;
+            var imageUrl = aiImageGenerationResponse.Data[0].Url;
 
             // Convert the image URL to base64
             var base64Image = await ConvertImageUrlToBase64(imageUrl);

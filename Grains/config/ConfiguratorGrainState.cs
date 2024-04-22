@@ -1,4 +1,4 @@
-namespace Grains.config;
+namespace Grains.Config;
 
 public class ConfiguratorGrainState
 {

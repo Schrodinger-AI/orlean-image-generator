@@ -2,7 +2,7 @@ using System.Collections.Immutable;
 using Shared.Abstractions.Interfaces;
 using Orleans.Runtime;
 
-namespace Grains.config;
+namespace Grains.Config;
 
 public class ConfiguratorGrain : Grain, IConfiguratorGrain
 {

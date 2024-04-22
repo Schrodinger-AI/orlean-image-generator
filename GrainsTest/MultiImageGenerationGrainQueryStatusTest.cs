@@ -1,4 +1,4 @@
-using Grains.ImageGenerator;
+using Grains.image_generator;
 using Shared.Abstractions.Constants;
 using Shared.Abstractions.Interfaces;
 
