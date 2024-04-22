@@ -3,4 +3,4 @@ ARG servicename
 WORKDIR /App
 COPY out/$servicename .
 ENV APPNAME=$servicename
-ENTRYPOINT ["dotnet", "${APPNAME}.dll"]
+ENTRYPOINT dotnet $APPNAME.dll
