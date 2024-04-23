@@ -1,6 +1,7 @@
 using Grains.usage_tracker;
 using Orleans;
 using Orleans.Runtime;
+using Shared.Abstractions.Interfaces;
 
 namespace SiloHost.startup;
 
