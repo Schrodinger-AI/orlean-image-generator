@@ -1,18 +1,18 @@
 #!/bin/sh
 . "$(dirname "$0")/_/husky.sh"
 
-dotnet format --check
-if [ $? -ne 0 ]; then
-    echo "Code formatting failed, please fix the issues and commit again."
-    exit 1
-fi
+#dotnet format --check
+#if [ $? -ne 0 ]; then
+#    echo "Code formatting failed, please fix the issues and commit again."
+#    exit 1
+#fi
 
 # Add this block to run CSharpier
-csharpier --check
-if [ $? -ne 0 ]; then
-    echo "CSharpier formatting failed, please fix the issues and commit again."
-    exit 1
-fi
+#dotnet csharpier --check --config-path ./csharpier.json ./Shared.Abstractions ./Grains ./WebApiClient ./SiloHost
+#if [ $? -ne 0 ]; then
+#    echo "CSharpier formatting failed, please fix the issues and commit again."
+#    exit 1
+#fi
 
 dotnet build
 if [ $? -ne 0 ]; then

@@ -1,7 +1,6 @@
-
 using Orleans.Runtime;
-using Shared.Abstractions.Interfaces;
-using Shared.Abstractions.Trait;
+using Schrodinger.Backend.Abstractions.Interfaces;
+using Schrodinger.Backend.Abstractions.Trait;
 
 namespace Grains.trait_config;
 
@@ -9,7 +8,10 @@ public class TraitConfigGrain : Grain, ITraitConfigGrain
 {
     private readonly IPersistentState<TraitState> _traitState;
 
-    public TraitConfigGrain([PersistentState("traitState", "MySqlSchrodingerImageStore")] IPersistentState<TraitState> traitState)
+    public TraitConfigGrain(
+        [PersistentState("traitState", "MySqlSchrodingerImageStore")]
+            IPersistentState<TraitState> traitState
+    )
     {
         _traitState = traitState;
     }
@@ -21,9 +23,13 @@ public class TraitConfigGrain : Grain, ITraitConfigGrain
 
     public Task<TraitEntry> GetTraitByName(string traitName)
     {
-        if (!_traitState.State.Traits.TryGetValue(traitName, out var traitEntry))
+        if (
+            !_traitState.State.Traits.TryGetValue(traitName, out var traitEntry)
+        )
         {
-            throw new KeyNotFoundException($"Attribute with name {traitName} not found.");
+            throw new KeyNotFoundException(
+                $"Attribute with name {traitName} not found."
+            );
         }
 
         return Task.FromResult(traitEntry);
@@ -35,7 +41,9 @@ public class TraitConfigGrain : Grain, ITraitConfigGrain
         {
             if (_traitState.State.Traits.ContainsKey(traitEntry.Name))
             {
-                throw new ArgumentException($"Attribute with name {traitEntry.Name} already exists.");
+                throw new ArgumentException(
+                    $"Attribute with name {traitEntry.Name} already exists."
+                );
             }
 
             _traitState.State.Traits[traitEntry.Name] = traitEntry;
@@ -52,7 +60,9 @@ public class TraitConfigGrain : Grain, ITraitConfigGrain
         }
     }
 
-    public async Task<AddTraitsAPIResponse> AddTraits(List<TraitEntry> traitEntries)
+    public async Task<AddTraitsAPIResponse> AddTraits(
+        List<TraitEntry> traitEntries
+    )
     {
         try
         {
@@ -66,9 +76,13 @@ public class TraitConfigGrain : Grain, ITraitConfigGrain
 
             await _traitState.WriteStateAsync();
 
-            List<string> traitNames = traitEntries.Select(trait => trait.Name).ToList();
+            List<string> traitNames = traitEntries
+                .Select(trait => trait.Name)
+                .ToList();
 
-            Dictionary<string, TraitEntry> traitMap = await GetTraitsMap(traitNames);
+            Dictionary<string, TraitEntry> traitMap = await GetTraitsMap(
+                traitNames
+            );
 
             // return the list of traits entered to the memory and persisted to db
             return new AddTraitsResponseOk(traitMap)
@@ -88,7 +102,9 @@ public class TraitConfigGrain : Grain, ITraitConfigGrain
         {
             if (!_traitState.State.Traits.ContainsKey(traitName))
             {
-                throw new ArgumentException($"Attribute with name {traitName} does not exist.");
+                throw new ArgumentException(
+                    $"Attribute with name {traitName} does not exist."
+                );
             }
 
             TraitEntry deletedTrait = _traitState.State.Traits[traitName];
@@ -108,13 +124,18 @@ public class TraitConfigGrain : Grain, ITraitConfigGrain
         }
     }
 
-    public async Task<UpdateTraitAPIResponse> UpdateTrait(string traitName, TraitEntry traitEntry)
+    public async Task<UpdateTraitAPIResponse> UpdateTrait(
+        string traitName,
+        TraitEntry traitEntry
+    )
     {
         try
         {
             if (!_traitState.State.Traits.ContainsKey(traitName))
             {
-                throw new ArgumentException($"Attribute with name {traitName} does not exist.");
+                throw new ArgumentException(
+                    $"Attribute with name {traitName} does not exist."
+                );
             }
 
             _traitState.State.Traits[traitName] = traitEntry;
@@ -149,20 +170,29 @@ public class TraitConfigGrain : Grain, ITraitConfigGrain
         }
     }
 
-    public Task<Dictionary<string, TraitEntry>> GetTraitsMap(List<string> traitNames)
+    public Task<Dictionary<string, TraitEntry>> GetTraitsMap(
+        List<string> traitNames
+    )
     {
         var traits = new Dictionary<string, TraitEntry>();
 
         foreach (var traitName in traitNames)
         {
             //get trait by name
-            if (_traitState.State.Traits.TryGetValue(traitName, out var traitEntry))
+            if (
+                _traitState.State.Traits.TryGetValue(
+                    traitName,
+                    out var traitEntry
+                )
+            )
             {
                 traits[traitName] = traitEntry;
             }
             else
             {
-                throw new KeyNotFoundException($"Attribute with name {traitName} not found.");
+                throw new KeyNotFoundException(
+                    $"Attribute with name {traitName} not found."
+                );
             }
         }
 

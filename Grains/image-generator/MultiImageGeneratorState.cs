@@ -1,5 +1,5 @@
-using Shared.Abstractions.Constants;
-using Attribute = Shared.Abstractions.Images.Attribute;
+using Schrodinger.Backend.Abstractions.Constants;
+using Attribute = Schrodinger.Backend.Abstractions.Images.Attribute;
 
 namespace Grains.image_generator;
 
@@ -20,13 +20,14 @@ public class MultiImageGenerationState
 
     [Id(4)]
     public List<string> ImageGenerationRequestIds = [];
-    
+
     [Id(5)]
-    public Dictionary<string, ImageGenerationTracker> imageGenerationTrackers = [];
-    
+    public Dictionary<string, ImageGenerationTracker> imageGenerationTrackers =
+    [];
+
     [Id(6)]
     public ImageGenerationStatus ImageGenerationStatus { get; set; }
-    
+
     [Id(7)]
     public ImageGenerationErrorCode? ErrorCode { get; set; }
 }
@@ -42,7 +43,7 @@ public class ImageGenerationTracker
 
     [Id(2)]
     public string? Error { get; set; }
-    
+
     [Id(3)]
     public ImageGenerationErrorCode? ErrorCode { get; set; }
 }

@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using Shared.Abstractions.Interfaces;
-using Shared.Abstractions.Trait;
+using Schrodinger.Backend.Abstractions.Interfaces;
+using Schrodinger.Backend.Abstractions.Trait;
 
 namespace WebApi.Controllers
 {

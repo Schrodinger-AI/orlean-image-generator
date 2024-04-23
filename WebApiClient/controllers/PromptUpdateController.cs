@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using Shared.Abstractions.Interfaces;
+using Schrodinger.Backend.Abstractions.Interfaces;
 using WebApi.Models;
 
 namespace WebApi.Controllers;

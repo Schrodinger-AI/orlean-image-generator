@@ -3,8 +3,8 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using Orleans.Runtime;
-using Shared.Abstractions.Interfaces;
-using Shared.Abstractions.Prompter;
+using Schrodinger.Backend.Abstractions.Interfaces;
+using Schrodinger.Backend.Abstractions.Prompter;
 
 namespace Grains.Prompter;
 
@@ -15,8 +15,9 @@ public class PrompterGrain : Grain, IPrompterGrain
 
     public PrompterGrain(
         [PersistentState("prompterState", "MySqlSchrodingerImageStore")]
-        IPersistentState<PrompterState> prompterState,
-        ILogger<PrompterGrain> logger)
+            IPersistentState<PrompterState> prompterState,
+        ILogger<PrompterGrain> logger
+    )
     {
         _prompterState = prompterState;
         _logger = logger;
@@ -36,27 +37,33 @@ public class PrompterGrain : Grain, IPrompterGrain
 
     public async Task<PrompterConfigDto> GetConfigAsync()
     {
-        return await Task.FromResult(new PrompterConfigDto
-        {
-            ConfigText = _prompterState.State.ConfigText,
-            ScriptContent = _prompterState.State.ScriptContent,
-            ValidationTestCase = _prompterState.State.ValidationTestCase,
-            ValidationOk = _prompterState.State.ValidationOk
-        });
+        return await Task.FromResult(
+            new PrompterConfigDto
+            {
+                ConfigText = _prompterState.State.ConfigText,
+                ScriptContent = _prompterState.State.ScriptContent,
+                ValidationTestCase = _prompterState.State.ValidationTestCase,
+                ValidationOk = _prompterState.State.ValidationOk
+            }
+        );
     }
 
     private async Task<bool> RunValidationTestAsync()
     {
         var validationPayload =
-            JsonConvert.DeserializeObject<PromptGenerationRequestDto>(_prompterState.State.ValidationTestCase);
-        if (validationPayload == null) return false;
+            JsonConvert.DeserializeObject<PromptGenerationRequestDto>(
+                _prompterState.State.ValidationTestCase
+            );
+        if (validationPayload == null)
+            return false;
 
         var res = await GeneratePromptAsync(validationPayload);
         return !string.IsNullOrEmpty(res);
     }
 
-
-    public async Task<string> GeneratePromptAsync(PromptGenerationRequestDto promptGenerationRequest)
+    public async Task<string> GeneratePromptAsync(
+        PromptGenerationRequestDto promptGenerationRequest
+    )
     {
         try
         {
@@ -64,7 +71,9 @@ public class PrompterGrain : Grain, IPrompterGrain
             var configText = _prompterState.State.ConfigText;
             var oldTraits = promptGenerationRequest.BaseImage?.Attributes ?? [];
 
-            var traits = oldTraits.Concat(promptGenerationRequest.NewAttributes).ToList();
+            var traits = oldTraits
+                .Concat(promptGenerationRequest.NewAttributes)
+                .ToList();
 
             using var engine = new V8ScriptEngine();
             engine.Execute(scriptContent);
@@ -73,11 +82,21 @@ public class PrompterGrain : Grain, IPrompterGrain
             {
                 ContractResolver = new CamelCasePropertyNamesContractResolver()
             };
-            var traitArgs = JsonConvert.SerializeObject(traits, serializerSettings);
+            var traitArgs = JsonConvert.SerializeObject(
+                traits,
+                serializerSettings
+            );
 
-            engine.Execute($"var config = JSON.parse('{configText.Replace("'", "\\'")}')");
-            engine.Execute($"var traitArgs = JSON.parse('{traitArgs.Replace("'", "\\'")}');");
-            var result = engine.Script.createPrompt(engine.Script.config, engine.Script.traitArgs);
+            engine.Execute(
+                $"var config = JSON.parse('{configText.Replace("'", "\\'")}')"
+            );
+            engine.Execute(
+                $"var traitArgs = JSON.parse('{traitArgs.Replace("'", "\\'")}');"
+            );
+            var result = engine.Script.createPrompt(
+                engine.Script.config,
+                engine.Script.traitArgs
+            );
 
             return await Task.FromResult(result.ToString());
         }
@@ -87,5 +106,4 @@ public class PrompterGrain : Grain, IPrompterGrain
             return string.Empty;
         }
     }
-    
 }

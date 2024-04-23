@@ -1,6 +1,6 @@
 namespace Grains.Errors;
 
-using Shared.Abstractions.Constants;
+using Schrodinger.Backend.Abstractions.Constants;
 
 public class ImageGenerationException : Exception
 {
@@ -13,12 +13,21 @@ public class ImageGenerationException : Exception
         ErrorCode = errorCode;
     }
 
-    public ImageGenerationException(ImageGenerationErrorCode errorCode, string message) : base(message)
+    public ImageGenerationException(
+        ImageGenerationErrorCode errorCode,
+        string message
+    )
+        : base(message)
     {
         ErrorCode = errorCode;
     }
 
-    public ImageGenerationException(ImageGenerationErrorCode errorCode, string message, Exception innerException) : base(message, innerException)
+    public ImageGenerationException(
+        ImageGenerationErrorCode errorCode,
+        string message,
+        Exception innerException
+    )
+        : base(message, innerException)
     {
         ErrorCode = errorCode;
     }

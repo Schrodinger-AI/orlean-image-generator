@@ -1,6 +1,6 @@
 using System.Net;
 using System.Text.Json.Serialization;
-using Shared.Abstractions.Constants;
+using Schrodinger.Backend.Abstractions.Constants;
 
 namespace Grains.image_generator.DalleOpenAI;
 

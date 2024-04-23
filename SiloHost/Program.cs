@@ -9,7 +9,7 @@ using Orleans.Configuration;
 using Orleans.Providers.MongoDB.Configuration;
 using Serilog;
 using Serilog.Formatting.Json;
-using Shared.Abstractions.Images;
+using Schrodinger.Backend.Abstractions.Images;
 using SiloHost.startup;
 using TimeProvider = Grains.utilities.TimeProvider;
 

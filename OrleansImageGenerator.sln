@@ -11,7 +11,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebApiClient", "WebApiClien
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GrainsTest", "GrainsTest\GrainsTest.csproj", "{38496551-1563-4212-B4F1-B27422E7FFAC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shared.Abstractions", "Shared.Abstractions\Shared.Abstractions.csproj", "{ADC023D7-329C-4440-83CE-DF626003D41A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Schrodinger.Backend.Abstractions", "Schrodinger.Backend.Abstractions\Schrodinger.Backend.Abstractions.csproj", "{ADC023D7-329C-4440-83CE-DF626003D41A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

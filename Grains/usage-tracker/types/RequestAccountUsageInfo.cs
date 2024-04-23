@@ -1,4 +1,4 @@
-using Shared.Abstractions.ApiKeys;
+using Schrodinger.Backend.Abstractions.ApiKeys;
 
 namespace Grains.types;
 

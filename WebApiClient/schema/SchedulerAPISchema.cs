@@ -1,5 +1,5 @@
 using System.Text.Json.Serialization;
-using Shared.Abstractions.ApiKeys;
+using Schrodinger.Backend.Abstractions.ApiKeys;
 
 namespace WebApi.Models;
 

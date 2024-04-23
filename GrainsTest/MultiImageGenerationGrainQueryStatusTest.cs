@@ -1,6 +1,6 @@
 using Grains.image_generator;
-using Shared.Abstractions.Constants;
-using Shared.Abstractions.Interfaces;
+using Schrodinger.Backend.Abstractions.Constants;
+using Schrodinger.Backend.Abstractions.Interfaces;
 
 namespace GrainsTest;
 

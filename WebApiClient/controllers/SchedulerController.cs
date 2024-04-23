@@ -1,8 +1,8 @@
 using System.Globalization;
 using Microsoft.AspNetCore.Mvc;
-using Shared.Abstractions.AccountUsage;
-using Shared.Abstractions.ApiKeys;
-using Shared.Abstractions.Interfaces;
+using Schrodinger.Backend.Abstractions.AccountUsage;
+using Schrodinger.Backend.Abstractions.ApiKeys;
+using Schrodinger.Backend.Abstractions.Interfaces;
 using WebApi.Models;
 
 namespace WebApi.Controllers;

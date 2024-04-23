@@ -1,5 +1,5 @@
 using System.Text.Json.Serialization;
-using Shared.Abstractions.Constants;
+using Schrodinger.Backend.Abstractions.Constants;
 
 namespace Grains.image_generator;
 
@@ -10,7 +10,7 @@ public class AIImageGenerationResponse
 
     [JsonPropertyName("data")]
     public List<ImageGenerationData> Data { get; set; }
-    
+
     [JsonPropertyName("error")]
     public AIImageGenerationError Error { get; set; }
 }
@@ -28,13 +28,13 @@ public class AIImageGenerationError
 {
     [JsonPropertyName("httpStatusCode")]
     public int HttpStatusCode { get; set; }
-    
-    [JsonPropertyName("code")] 
+
+    [JsonPropertyName("code")]
     public string Code { get; set; }
-    
+
     [JsonPropertyName("imageGenerationErrorCode")]
     public ImageGenerationErrorCode ImageGenerationErrorCode { get; set; }
 
-    [JsonPropertyName("message")] 
+    [JsonPropertyName("message")]
     public string Message { get; set; }
 }

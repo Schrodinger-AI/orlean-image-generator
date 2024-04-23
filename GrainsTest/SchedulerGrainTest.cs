@@ -4,10 +4,10 @@ using GrainsTest.utilities;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Orleans.Runtime;
-using Shared.Abstractions.ApiKeys;
-using Shared.Abstractions.Constants;
-using Shared.Abstractions.Interfaces;
-using Shared.Abstractions.UsageTracker;
+using Schrodinger.Backend.Abstractions.ApiKeys;
+using Schrodinger.Backend.Abstractions.Constants;
+using Schrodinger.Backend.Abstractions.Interfaces;
+using Schrodinger.Backend.Abstractions.UsageTracker;
 using Xunit;
 using TimeProvider = Grains.utilities.TimeProvider;
 

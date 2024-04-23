@@ -1,12 +1,12 @@
 using Grains.image_generator;
 using Grains.image_generator.AzureOpenAI;
 using Grains.image_generator.DalleOpenAI;
-using Shared.Abstractions.ApiKeys;
-using Shared.Abstractions.Constants;
-using Shared.Abstractions.Images;
-using Shared.Abstractions.Interfaces;
-using Shared.Abstractions.UsageTracker;
-using Attribute = Shared.Abstractions.Images.Attribute;
+using Schrodinger.Backend.Abstractions.ApiKeys;
+using Schrodinger.Backend.Abstractions.Constants;
+using Schrodinger.Backend.Abstractions.Images;
+using Schrodinger.Backend.Abstractions.Interfaces;
+using Schrodinger.Backend.Abstractions.UsageTracker;
+using Attribute = Schrodinger.Backend.Abstractions.Images.Attribute;
 
 namespace GrainsTest;
 

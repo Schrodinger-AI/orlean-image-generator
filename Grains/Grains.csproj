@@ -35,7 +35,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Shared.Abstractions\Shared.Abstractions.csproj" />
+    <ProjectReference Include="..\Schrodinger.Backend.Abstractions\Schrodinger.Backend.Abstractions.csproj" />
   </ItemGroup>
 
   <ItemGroup>

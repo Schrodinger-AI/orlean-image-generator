@@ -1,7 +1,7 @@
 using Grains.usage_tracker;
 using Orleans;
 using Orleans.Runtime;
-using Shared.Abstractions.Interfaces;
+using Schrodinger.Backend.Abstractions.Interfaces;
 
 namespace SiloHost.startup;
 

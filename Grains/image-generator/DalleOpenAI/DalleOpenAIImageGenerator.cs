@@ -3,10 +3,10 @@ using System.Net.Http.Headers;
 using System.Text;
 using Newtonsoft.Json;
 using Microsoft.Extensions.Logging;
-using Shared.Abstractions.ApiKeys;
+using Schrodinger.Backend.Abstractions.ApiKeys;
 using Grains.Errors;
-using Shared.Abstractions.Constants;
-using Shared.Abstractions.Images;
+using Schrodinger.Backend.Abstractions.Constants;
+using Schrodinger.Backend.Abstractions.Images;
 
 namespace Grains.image_generator.DalleOpenAI;
 
