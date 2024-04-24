@@ -1,10 +1,10 @@
-using Schrodinger.Backend.Grains.image_generator;
+using Schrodinger.Backend.Grains.ImageGenerator;
 using Schrodinger.Backend.Abstractions.Constants;
 using Schrodinger.Backend.Abstractions.Interfaces;
 
 namespace GrainsTest;
 
-using GrainsTest.utilities;
+using GrainsTest.Utilities;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Orleans.Runtime;

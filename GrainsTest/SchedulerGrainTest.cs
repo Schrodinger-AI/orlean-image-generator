@@ -1,6 +1,6 @@
-using Schrodinger.Backend.Grains.types;
-using Schrodinger.Backend.Grains.usage_tracker;
-using GrainsTest.utilities;
+using Schrodinger.Backend.Grains.UsageTracker.Types;
+using Schrodinger.Backend.Grains.UsageTracker;
+using GrainsTest.Utilities;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Orleans.Runtime;
@@ -9,7 +9,7 @@ using Schrodinger.Backend.Abstractions.Constants;
 using Schrodinger.Backend.Abstractions.Interfaces;
 using Schrodinger.Backend.Abstractions.UsageTracker;
 using Xunit;
-using TimeProvider = Schrodinger.Backend.Grains.utilities.TimeProvider;
+using TimeProvider = Schrodinger.Backend.Grains.Utilities.TimeProvider;
 
 namespace GrainsTest;
 using Orleans.TestingHost;

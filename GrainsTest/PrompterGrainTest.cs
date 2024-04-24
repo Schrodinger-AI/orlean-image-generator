@@ -2,7 +2,7 @@ using Schrodinger.Backend.Grains.Prompter;
 using Schrodinger.Backend.Abstractions.Prompter;
 
 namespace GrainsTest;
-using GrainsTest.utilities;
+using GrainsTest.Utilities;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Orleans.Runtime;

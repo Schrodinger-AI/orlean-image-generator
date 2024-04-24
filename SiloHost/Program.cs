@@ -1,6 +1,4 @@
-using Schrodinger.Backend.Grains.image_generator.AzureOpenAI;
-using Schrodinger.Backend.Grains.image_generator.DalleOpenAI;
-using Schrodinger.Backend.Grains.utilities;
+using Schrodinger.Backend.Grains.Utilities;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -10,8 +8,10 @@ using Orleans.Providers.MongoDB.Configuration;
 using Serilog;
 using Serilog.Formatting.Json;
 using Schrodinger.Backend.Abstractions.Images;
+using Schrodinger.Backend.Grains.ImageGenerator.Ai.AzureOpenAi;
+using Schrodinger.Backend.Grains.ImageGenerator.Ai.DalleOpenAi;
 using SiloHost.startup;
-using TimeProvider = Schrodinger.Backend.Grains.utilities.TimeProvider;
+using TimeProvider = Schrodinger.Backend.Grains.Utilities.TimeProvider;
 
 namespace SiloHost
 {
@@ -81,8 +81,8 @@ namespace SiloHost
                     .ConfigureServices(services =>
                     {
                         services.Configure<ImageSettings>(configuration.GetSection("ImageSettings"));
-                        services.AddScoped<IDalleOpenAIImageGenerator, DalleOpenAIImageGenerator>();
-                        services.AddScoped<IAzureOpenAIImageGenerator, AzureOpenAIImageGenerator>();
+                        services.AddScoped<IDalleOpenAiImageGenerator, DalleOpenAiImageGenerator>();
+                        services.AddScoped<IAzureOpenAiImageGenerator, AzureOpenAiImageGenerator>();
                         services.AddSingleton<TimeProvider, DefaultTimeProvider>();
                     })
                     .Configure<ClusterOptions>(options =>

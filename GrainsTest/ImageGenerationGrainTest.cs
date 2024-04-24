@@ -1,17 +1,18 @@
-using Schrodinger.Backend.Grains.image_generator;
-using Schrodinger.Backend.Grains.image_generator.AzureOpenAI;
-using Schrodinger.Backend.Grains.image_generator.DalleOpenAI;
+using Schrodinger.Backend.Grains.ImageGenerator;
 using Schrodinger.Backend.Abstractions.ApiKeys;
 using Schrodinger.Backend.Abstractions.Constants;
 using Schrodinger.Backend.Abstractions.Images;
 using Schrodinger.Backend.Abstractions.Interfaces;
 using Schrodinger.Backend.Abstractions.UsageTracker;
+using Schrodinger.Backend.Grains.ImageGenerator.Ai;
+using Schrodinger.Backend.Grains.ImageGenerator.Ai.AzureOpenAi;
+using Schrodinger.Backend.Grains.ImageGenerator.Ai.DalleOpenAi;
 
 namespace GrainsTest;
 
 using Schrodinger.Backend.Grains;
 using Microsoft.Extensions.Options;
-using GrainsTest.utilities;
+using GrainsTest.Utilities;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Orleans.Runtime;
@@ -23,8 +24,8 @@ using Orleans.TestingHost;
 public class ImageGenerationGrainTest(ClusterFixture fixture)
 {
     private readonly TestCluster _cluster = fixture.Cluster;
-    readonly Mock<IDalleOpenAIImageGenerator> _mockDalleOpenAiImageGenerator = new();
-    readonly Mock<IAzureOpenAIImageGenerator> _mockAzureOpenAiImageGenerator = new ();
+    readonly Mock<IDalleOpenAiImageGenerator> _mockDalleOpenAiImageGenerator = new();
+    readonly Mock<IAzureOpenAiImageGenerator> _mockAzureOpenAiImageGenerator = new ();
     readonly Mock<ISchedulerGrain> _mockSchedulerGrain = new();
     readonly Mock<IMultiImageGeneratorGrain> _mockParentGeneratorGrain = new();
 
@@ -75,7 +76,7 @@ public class ImageGenerationGrainTest(ClusterFixture fixture)
         _mockDalleOpenAiImageGenerator
             .Setup(x => x.RunImageGenerationAsync(It.IsAny<string>(), It.IsAny<ApiKey>(), It.IsAny<int>(),
                 It.IsAny<ImageSettings>(), It.IsAny<string>()))
-            .ReturnsAsync(new AIImageGenerationResponse
+            .ReturnsAsync(new AiImageGenerationResponse
             {
                 Created = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
                 Data = new List<ImageGenerationData>

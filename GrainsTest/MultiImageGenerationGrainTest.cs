@@ -1,25 +1,26 @@
-using Schrodinger.Backend.Grains.image_generator;
-using Schrodinger.Backend.Grains.image_generator.AzureOpenAI;
-using Schrodinger.Backend.Grains.image_generator.DalleOpenAI;
+using Schrodinger.Backend.Grains.ImageGenerator;
 using Schrodinger.Backend.Abstractions.ApiKeys;
 using Schrodinger.Backend.Abstractions.Constants;
 using Schrodinger.Backend.Abstractions.Images;
 using Schrodinger.Backend.Abstractions.Interfaces;
 using Schrodinger.Backend.Abstractions.UsageTracker;
+using Schrodinger.Backend.Grains.ImageGenerator.Ai;
+using Schrodinger.Backend.Grains.ImageGenerator.Ai.AzureOpenAi;
+using Schrodinger.Backend.Grains.ImageGenerator.Ai.DalleOpenAi;
 using Attribute = Schrodinger.Backend.Abstractions.Images.Attribute;
 
 namespace GrainsTest;
 
 using Schrodinger.Backend.Grains;
-using Schrodinger.Backend.Grains.types;
-using Schrodinger.Backend.Grains.usage_tracker;
+using Schrodinger.Backend.Grains.UsageTracker.Types;
+using Schrodinger.Backend.Grains.UsageTracker;
 using Microsoft.Extensions.Options;
-using GrainsTest.utilities;
+using GrainsTest.Utilities;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Orleans.Runtime;
 using Xunit;
-using TimeProvider = Schrodinger.Backend.Grains.utilities.TimeProvider;
+using TimeProvider = Schrodinger.Backend.Grains.Utilities.TimeProvider;
 
 using Orleans.TestingHost;
 
@@ -27,8 +28,8 @@ using Orleans.TestingHost;
 public class MultiImageGenerationGrainTest(ClusterFixture fixture)
 {
     private readonly TestCluster _cluster = fixture.Cluster;
-    readonly Mock<IDalleOpenAIImageGenerator> _mockDalleOpenAiImageGenerator = new();
-    readonly Mock<IAzureOpenAIImageGenerator> _mockAzureOpenAiImageGenerator = new ();
+    readonly Mock<IDalleOpenAiImageGenerator> _mockDalleOpenAiImageGenerator = new();
+    readonly Mock<IAzureOpenAiImageGenerator> _mockAzureOpenAiImageGenerator = new ();
     readonly Mock<ISchedulerGrain> _mockSchedulerGrain = new();
     readonly Mock<IMultiImageGeneratorGrain> _mockParentGeneratorGrain = new();
     private const int DEFAULT_MAX_QUOTA = 2;
@@ -106,7 +107,7 @@ public class MultiImageGenerationGrainTest(ClusterFixture fixture)
         _mockDalleOpenAiImageGenerator
             .Setup(x => x.RunImageGenerationAsync(It.IsAny<string>(), It.IsAny<ApiKey>(), It.IsAny<int>(),
                 It.IsAny<ImageSettings>(), It.IsAny<string>()))
-            .ReturnsAsync(new AIImageGenerationResponse
+            .ReturnsAsync(new AiImageGenerationResponse
             {
                 Created = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
                 Data = new List<ImageGenerationData>
