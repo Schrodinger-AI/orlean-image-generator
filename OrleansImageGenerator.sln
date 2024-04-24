@@ -7,9 +7,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Schrodinger.Backend.Grains"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SiloHost", "SiloHost\SiloHost.csproj", "{9A34C4B9-3F24-4107-B953-5E38F6F85418}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebApiClient", "WebApiClient\WebApiClient.csproj", "{F3606A64-42D6-4379-B317-204CC22FAB52}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Schrodinger.Backend.WebApiClient", "Schrodinger.Backend.WebApiClient\Schrodinger.Backend.WebApiClient.csproj", "{F3606A64-42D6-4379-B317-204CC22FAB52}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GrainsTest", "GrainsTest\GrainsTest.csproj", "{38496551-1563-4212-B4F1-B27422E7FFAC}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Schrodinger.Backend.GrainsTest", "Schrodinger.Backend.GrainsTest\Schrodinger.Backend.GrainsTest.csproj", "{38496551-1563-4212-B4F1-B27422E7FFAC}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Schrodinger.Backend.Abstractions", "Schrodinger.Backend.Abstractions\Schrodinger.Backend.Abstractions.csproj", "{ADC023D7-329C-4440-83CE-DF626003D41A}"
 EndProject
