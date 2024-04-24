@@ -1,4 +1,4 @@
-using Grains.Prompter;
+using Schrodinger.Backend.Grains.Prompter;
 using Schrodinger.Backend.Abstractions.Prompter;
 
 namespace GrainsTest;

@@ -1,6 +1,6 @@
-using Grains.image_generator.AzureOpenAI;
-using Grains.image_generator.DalleOpenAI;
-using Grains.utilities;
+using Schrodinger.Backend.Grains.image_generator.AzureOpenAI;
+using Schrodinger.Backend.Grains.image_generator.DalleOpenAI;
+using Schrodinger.Backend.Grains.utilities;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -11,7 +11,7 @@ using Serilog;
 using Serilog.Formatting.Json;
 using Schrodinger.Backend.Abstractions.Images;
 using SiloHost.startup;
-using TimeProvider = Grains.utilities.TimeProvider;
+using TimeProvider = Schrodinger.Backend.Grains.utilities.TimeProvider;
 
 namespace SiloHost
 {

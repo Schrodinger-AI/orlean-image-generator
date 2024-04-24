@@ -1,4 +1,4 @@
-using Grains.image_generator;
+using Schrodinger.Backend.Grains.image_generator;
 using Schrodinger.Backend.Abstractions.Constants;
 using Schrodinger.Backend.Abstractions.Interfaces;
 

@@ -1,6 +1,6 @@
-using Grains.image_generator;
-using Grains.image_generator.AzureOpenAI;
-using Grains.image_generator.DalleOpenAI;
+using Schrodinger.Backend.Grains.image_generator;
+using Schrodinger.Backend.Grains.image_generator.AzureOpenAI;
+using Schrodinger.Backend.Grains.image_generator.DalleOpenAI;
 using Schrodinger.Backend.Abstractions.ApiKeys;
 using Schrodinger.Backend.Abstractions.Constants;
 using Schrodinger.Backend.Abstractions.Images;
@@ -10,16 +10,16 @@ using Attribute = Schrodinger.Backend.Abstractions.Images.Attribute;
 
 namespace GrainsTest;
 
-using Grains;
-using Grains.types;
-using Grains.usage_tracker;
+using Schrodinger.Backend.Grains;
+using Schrodinger.Backend.Grains.types;
+using Schrodinger.Backend.Grains.usage_tracker;
 using Microsoft.Extensions.Options;
 using GrainsTest.utilities;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Orleans.Runtime;
 using Xunit;
-using TimeProvider = Grains.utilities.TimeProvider;
+using TimeProvider = Schrodinger.Backend.Grains.utilities.TimeProvider;
 
 using Orleans.TestingHost;
 
