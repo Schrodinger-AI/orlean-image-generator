@@ -5,7 +5,7 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Schrodinger.Backend.Grains", "Schrodinger.Backend.Grains\Schrodinger.Backend.Grains.csproj", "{DFA5753E-93ED-44AE-B3E2-82F4D1B27A5E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SiloHost", "SiloHost\SiloHost.csproj", "{9A34C4B9-3F24-4107-B953-5E38F6F85418}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Schrodinger.Backend.SiloHost", "Schrodinger.Backend.SiloHost\Schrodinger.Backend.SiloHost.csproj", "{9A34C4B9-3F24-4107-B953-5E38F6F85418}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Schrodinger.Backend.WebApiClient", "Schrodinger.Backend.WebApiClient\Schrodinger.Backend.WebApiClient.csproj", "{F3606A64-42D6-4379-B317-204CC22FAB52}"
 EndProject

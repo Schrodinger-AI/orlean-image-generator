@@ -5,7 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <InvariantGlobalization>true</InvariantGlobalization>
-    <RootNamespace>WebApiClient</RootNamespace>
+    <RootNamespace>Schrodinger.Backend.WebApiClient</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>

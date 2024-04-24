@@ -1,9 +1,7 @@
-using Schrodinger.Backend.Grains.UsageTracker;
-using Orleans;
 using Orleans.Runtime;
 using Schrodinger.Backend.Abstractions.Interfaces;
 
-namespace SiloHost.startup;
+namespace Schrodinger.Backend.SiloHost.startup;
 
 public class SchedulerGrainStartupTask : IStartupTask
 {
