@@ -1,8 +1,9 @@
 using System.Globalization;
 using Microsoft.AspNetCore.Mvc;
-using Schrodinger.Backend.Abstractions.AccountUsage;
-using Schrodinger.Backend.Abstractions.ApiKeys;
-using Schrodinger.Backend.Abstractions.Interfaces;
+using Schrodinger.Backend.Abstractions.Interfaces.ApiKeys;
+using Schrodinger.Backend.Abstractions.Interfaces.Images;
+using Schrodinger.Backend.Abstractions.Types.AccountUsage;
+using Schrodinger.Backend.Abstractions.Types.ApiKeys;
 using WebApi.Models;
 
 namespace WebApi.Controllers;

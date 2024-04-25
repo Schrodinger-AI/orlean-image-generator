@@ -1,5 +1,5 @@
 
-using Schrodinger.Backend.Abstractions.UsageTracker;
+using Schrodinger.Backend.Abstractions.Types.UsageTracker;
 
 namespace Schrodinger.Backend.Grains.Interfaces;
 

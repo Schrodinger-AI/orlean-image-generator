@@ -3,11 +3,11 @@ using Schrodinger.Backend.Grains.UsageTracker.Types;
 using Microsoft.Extensions.Logging;
 using Orleans.Runtime;
 using Orleans.Timers;
-using Schrodinger.Backend.Abstractions.AccountUsage;
-using Schrodinger.Backend.Abstractions.ApiKeys;
+using Schrodinger.Backend.Abstractions.Types.AccountUsage;
+using Schrodinger.Backend.Abstractions.Types.ApiKeys;
 using Schrodinger.Backend.Abstractions.Constants;
-using Schrodinger.Backend.Abstractions.Interfaces;
-using Schrodinger.Backend.Abstractions.UsageTracker;
+using Schrodinger.Backend.Abstractions.Interfaces.Images;
+using Schrodinger.Backend.Abstractions.Types.UsageTracker;
 using Schrodinger.Backend.Grains.Interfaces;
 
 // ReSharper disable TooManyChainedReferences

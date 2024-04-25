@@ -7,7 +7,7 @@ using Moq;
 using Orleans.Runtime;
 using Orleans.TestingHost;
 using Orleans.Timers;
-using Schrodinger.Backend.Abstractions.ApiKeys;
+using Schrodinger.Backend.Abstractions.Types.ApiKeys;
 using Schrodinger.Backend.Abstractions.Constants;
 using Xunit;
 

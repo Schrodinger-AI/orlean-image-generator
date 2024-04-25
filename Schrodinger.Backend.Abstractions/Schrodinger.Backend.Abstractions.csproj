@@ -12,4 +12,8 @@
         <PackageReference Include="Microsoft.Orleans.Sdk" Version="7.2.6" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Types\" />
+    </ItemGroup>
+
 </Project>

@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
-using Schrodinger.Backend.Abstractions.Images;
-using Attribute = Schrodinger.Backend.Abstractions.Images.Attribute;
+using Schrodinger.Backend.Abstractions.Types.Images;
+using Attribute = Schrodinger.Backend.Abstractions.Types.Images.Attribute;
 
 namespace WebApi.Models;
 

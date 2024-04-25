@@ -3,10 +3,10 @@ using Azure;
 using Microsoft.Extensions.Logging;
 using Azure.AI.OpenAI;
 using Schrodinger.Backend.Grains.Errors;
-using Schrodinger.Backend.Abstractions.ApiKeys;
 using Newtonsoft.Json;
 using Schrodinger.Backend.Abstractions.Constants;
-using Schrodinger.Backend.Abstractions.Images;
+using Schrodinger.Backend.Abstractions.Types.ApiKeys;
+using Schrodinger.Backend.Abstractions.Types.Images;
 
 namespace Schrodinger.Backend.Grains.ImageGenerator.Ai.AzureOpenAi;
 

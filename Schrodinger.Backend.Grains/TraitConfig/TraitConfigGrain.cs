@@ -1,5 +1,5 @@
 using Orleans.Runtime;
-using Schrodinger.Backend.Abstractions.Trait;
+using Schrodinger.Backend.Abstractions.Types.Trait;
 using Schrodinger.Backend.Grains.Interfaces;
 
 namespace Schrodinger.Backend.Grains.TraitConfig;

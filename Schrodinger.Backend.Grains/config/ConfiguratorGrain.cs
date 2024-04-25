@@ -1,6 +1,6 @@
 using System.Collections.Immutable;
 using Orleans.Runtime;
-using Schrodinger.Backend.Abstractions.Interfaces;
+using Schrodinger.Backend.Abstractions.Interfaces.Config;
 
 namespace Schrodinger.Backend.Grains.Config;
 

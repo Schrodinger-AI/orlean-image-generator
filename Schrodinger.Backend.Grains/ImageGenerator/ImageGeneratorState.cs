@@ -1,5 +1,5 @@
 using Schrodinger.Backend.Abstractions.Constants;
-using Schrodinger.Backend.Abstractions.Images;
+using Schrodinger.Backend.Abstractions.Types.Images;
 
 namespace Schrodinger.Backend.Grains.ImageGenerator;
 

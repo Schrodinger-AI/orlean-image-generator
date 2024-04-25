@@ -1,4 +1,4 @@
-using Schrodinger.Backend.Abstractions.ApiKeys;
+using Schrodinger.Backend.Abstractions.Types.ApiKeys;
 
 namespace Schrodinger.Backend.Grains.UsageTracker.Types;
 

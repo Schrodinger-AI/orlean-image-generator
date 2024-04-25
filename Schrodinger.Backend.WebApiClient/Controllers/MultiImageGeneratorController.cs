@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Schrodinger.Backend.Abstractions.Constants;
-using Schrodinger.Backend.Abstractions.Images;
-using Schrodinger.Backend.Abstractions.Interfaces;
+using Schrodinger.Backend.Abstractions.Types.Images;
+using Schrodinger.Backend.Abstractions.Interfaces.Images;
 using WebApi.Models;
-using Attribute = Schrodinger.Backend.Abstractions.Images.Attribute;
+using Attribute = Schrodinger.Backend.Abstractions.Types.Images.Attribute;
 
 namespace WebApi.Controllers;
 

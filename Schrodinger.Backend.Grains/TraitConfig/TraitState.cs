@@ -1,4 +1,4 @@
-using Schrodinger.Backend.Abstractions.Trait;
+using Schrodinger.Backend.Abstractions.Types.Trait;
 
 namespace Schrodinger.Backend.Grains.TraitConfig
 {

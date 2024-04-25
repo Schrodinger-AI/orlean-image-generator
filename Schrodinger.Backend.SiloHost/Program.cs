@@ -7,7 +7,7 @@ using Orleans.Configuration;
 using Orleans.Providers.MongoDB.Configuration;
 using Serilog;
 using Serilog.Formatting.Json;
-using Schrodinger.Backend.Abstractions.Images;
+using Schrodinger.Backend.Abstractions.Types.Images;
 using Schrodinger.Backend.Grains.ImageGenerator.Ai.AzureOpenAi;
 using Schrodinger.Backend.Grains.ImageGenerator.Ai.DalleOpenAi;
 using Schrodinger.Backend.SiloHost.startup;

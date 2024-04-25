@@ -1,5 +1,5 @@
 using Schrodinger.Backend.Grains.Prompter;
-using Schrodinger.Backend.Abstractions.Prompter;
+using Schrodinger.Backend.Abstractions.Types.Prompter;
 
 namespace GrainsTest;
 using GrainsTest.Utilities;
@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Orleans.Runtime;
 using Xunit;
-using Attribute = Schrodinger.Backend.Abstractions.Images.Attribute;
+using Attribute = Schrodinger.Backend.Abstractions.Types.Images.Attribute;
 
 [Collection(ClusterCollection.Name)]
 public class PrompterGrainStatusTest(ClusterFixture fixture)

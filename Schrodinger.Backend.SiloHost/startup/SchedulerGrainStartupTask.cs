@@ -1,5 +1,5 @@
 using Orleans.Runtime;
-using Schrodinger.Backend.Abstractions.Interfaces;
+using Schrodinger.Backend.Abstractions.Interfaces.StartupTask;
 
 namespace Schrodinger.Backend.SiloHost.startup;
 

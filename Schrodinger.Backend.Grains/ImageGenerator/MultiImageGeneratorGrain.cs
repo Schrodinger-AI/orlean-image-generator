@@ -2,11 +2,13 @@ using Schrodinger.Backend.Grains.Constants;
 using Microsoft.Extensions.Logging;
 using Orleans.Runtime;
 using Schrodinger.Backend.Abstractions.Constants;
-using Schrodinger.Backend.Abstractions.Images;
-using Schrodinger.Backend.Abstractions.Interfaces;
-using Schrodinger.Backend.Abstractions.Prompter;
+using Schrodinger.Backend.Abstractions.Types.Images;
+using Schrodinger.Backend.Abstractions.Interfaces.Config;
+using Schrodinger.Backend.Abstractions.Interfaces.Images;
+using Schrodinger.Backend.Abstractions.Interfaces.Prompter;
+using Schrodinger.Backend.Abstractions.Types.Prompter;
 using Schrodinger.Backend.Grains.Interfaces;
-using Attribute = Schrodinger.Backend.Abstractions.Images.Attribute;
+using Attribute = Schrodinger.Backend.Abstractions.Types.Images.Attribute;
 
 namespace Schrodinger.Backend.Grains.ImageGenerator;
 

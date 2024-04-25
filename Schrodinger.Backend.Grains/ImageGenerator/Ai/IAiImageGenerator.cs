@@ -1,5 +1,5 @@
-using Schrodinger.Backend.Abstractions.ApiKeys;
-using Schrodinger.Backend.Abstractions.Images;
+using Schrodinger.Backend.Abstractions.Types.ApiKeys;
+using Schrodinger.Backend.Abstractions.Types.Images;
 
 namespace Schrodinger.Backend.Grains.ImageGenerator.Ai;
 

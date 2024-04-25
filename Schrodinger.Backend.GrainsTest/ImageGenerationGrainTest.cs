@@ -1,9 +1,9 @@
 using Schrodinger.Backend.Grains.ImageGenerator;
-using Schrodinger.Backend.Abstractions.ApiKeys;
+using Schrodinger.Backend.Abstractions.Types.ApiKeys;
 using Schrodinger.Backend.Abstractions.Constants;
-using Schrodinger.Backend.Abstractions.Images;
-using Schrodinger.Backend.Abstractions.Interfaces;
-using Schrodinger.Backend.Abstractions.UsageTracker;
+using Schrodinger.Backend.Abstractions.Interfaces.Images;
+using Schrodinger.Backend.Abstractions.Types.Images;
+using Schrodinger.Backend.Abstractions.Types.UsageTracker;
 using Schrodinger.Backend.Grains.ImageGenerator.Ai;
 using Schrodinger.Backend.Grains.ImageGenerator.Ai.AzureOpenAi;
 using Schrodinger.Backend.Grains.ImageGenerator.Ai.DalleOpenAi;

@@ -3,8 +3,8 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using Orleans.Runtime;
-using Schrodinger.Backend.Abstractions.Interfaces;
-using Schrodinger.Backend.Abstractions.Prompter;
+using Schrodinger.Backend.Abstractions.Interfaces.Prompter;
+using Schrodinger.Backend.Abstractions.Types.Prompter;
 
 namespace Schrodinger.Backend.Grains.Prompter;
 

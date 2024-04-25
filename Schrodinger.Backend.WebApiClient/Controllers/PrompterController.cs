@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
-using Schrodinger.Backend.Abstractions.Prompter;
-using Schrodinger.Backend.Abstractions.Interfaces;
+using Schrodinger.Backend.Abstractions.Interfaces.Config;
+using Schrodinger.Backend.Abstractions.Types.Prompter;
+using Schrodinger.Backend.Abstractions.Interfaces.Prompter;
 using WebApi.Models;
 
 namespace WebApi.Controllers
