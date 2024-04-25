@@ -1,18 +1,13 @@
-using Grains;
 using Grains.AzureOpenAI;
 using Grains.DalleOpenAI;
-using Grains.ImageGenerator;
 using Grains.utilities;
-using Orleans;
-using System.Net;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json;
 using Orleans.Configuration;
 using Orleans.Providers.MongoDB.Configuration;
-using Orleans.Serialization;
-using OrleansDashboard;
+using ProofService.interfaces;
 using Serilog;
 using Serilog.Formatting.Json;
 using Shared;
@@ -90,6 +85,7 @@ namespace SiloHost
                         services.AddScoped<IDalleOpenAIImageGenerator, DalleOpenAIImageGenerator>();
                         services.AddScoped<IAzureOpenAIImageGenerator, AzureOpenAIImageGenerator>();
                         services.AddSingleton<TimeProvider, DefaultTimeProvider>();
+                        services.Configure<ZkProverSetting>(configuration.GetSection("ProverSetting"));
                     })
                     .Configure<ClusterOptions>(options =>
                     {

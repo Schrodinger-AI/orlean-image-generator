@@ -32,6 +32,14 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="AElf.Types" Version="1.6.0" />
+    <PackageReference Include="AElf.Client" Version="1.2.3" />
+    <PackageReference Include="AElf.CSharp.Core" Version="1.6.0" />
+    <PackageReference Include="AElf.Sdk.CSharp" Version="1.6.0" />
+    <PackageReference Include="Groth16.Net" Version="1.0.10" />
+    <PackageReference Include="RestSharp" Version="110.2.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="7.0.3" />
   </ItemGroup>
 
   <ItemGroup>
