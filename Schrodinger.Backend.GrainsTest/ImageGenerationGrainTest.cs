@@ -7,6 +7,7 @@ using Schrodinger.Backend.Abstractions.UsageTracker;
 using Schrodinger.Backend.Grains.ImageGenerator.Ai;
 using Schrodinger.Backend.Grains.ImageGenerator.Ai.AzureOpenAi;
 using Schrodinger.Backend.Grains.ImageGenerator.Ai.DalleOpenAi;
+using Schrodinger.Backend.Grains.Interfaces;
 
 namespace GrainsTest;
 
@@ -26,7 +27,7 @@ public class ImageGenerationGrainTest(ClusterFixture fixture)
     private readonly TestCluster _cluster = fixture.Cluster;
     readonly Mock<IDalleOpenAiImageGenerator> _mockDalleOpenAiImageGenerator = new();
     readonly Mock<IAzureOpenAiImageGenerator> _mockAzureOpenAiImageGenerator = new ();
-    readonly Mock<ISchedulerGrain> _mockSchedulerGrain = new();
+    readonly Mock<ISchedulerManagerGrain> _mockSchedulerGrain = new();
     readonly Mock<IMultiImageGeneratorGrain> _mockParentGeneratorGrain = new();
 
     private static Mock<IPersistentState<ImageGenerationState>> GetImageGenerationState()

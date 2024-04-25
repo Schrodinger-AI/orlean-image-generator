@@ -1,7 +1,7 @@
 
 using Schrodinger.Backend.Abstractions.UsageTracker;
 
-namespace Schrodinger.Backend.Abstractions.Interfaces;
+namespace Schrodinger.Backend.Grains.Interfaces;
 
 public interface IImageGenerationRequestStatusReceiver : Orleans.IGrainWithStringKey
 {

@@ -41,7 +41,6 @@
 
   <ItemGroup>
     <Folder Include="dalle-prompt-builder\" />
-    <Folder Include="Interfaces\" />
   </ItemGroup>
 
 </Project>

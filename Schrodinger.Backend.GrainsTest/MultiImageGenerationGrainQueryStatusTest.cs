@@ -1,6 +1,7 @@
 using Schrodinger.Backend.Grains.ImageGenerator;
 using Schrodinger.Backend.Abstractions.Constants;
 using Schrodinger.Backend.Abstractions.Interfaces;
+using Schrodinger.Backend.Grains.Interfaces;
 
 namespace GrainsTest;
 
@@ -13,14 +14,14 @@ using Xunit;
 [Collection(ClusterCollection.Name)]
 public class MultiImageGenerationGrainQueryStatusTest(ClusterFixture fixture)
 {
-    readonly Mock<ISchedulerGrain> _mockSchedulerGrain = new();
+    readonly Mock<ISchedulerManagerGrain> _mockSchedulerGrain = new();
 
     [Fact]
     public async Task ShouldGetCurrentStatus_As_SuccessfulCompletion() {
         var mockMultiLogger = new Mock<ILogger<MultiImageGeneratorGrain>>();
         var mockMultiImageGeneratorGrain = new Mock<MultiImageGeneratorGrain>(initializeMultiImageGenerationState().Object, mockMultiLogger.Object);
         // Setup the mockGrainFactory to return the mock objects
-        mockMultiImageGeneratorGrain.Setup(x => x.GrainFactory.GetGrain<ISchedulerGrain>(It.IsAny<string>(), It.IsAny<string>())).Returns(_mockSchedulerGrain.Object);
+        mockMultiImageGeneratorGrain.Setup(x => x.GrainFactory.GetGrain<ISchedulerManagerGrain>(It.IsAny<string>(), It.IsAny<string>())).Returns(_mockSchedulerGrain.Object);
 
         var imageGenerationStatus = await mockMultiImageGeneratorGrain.Object.GetCurrentImageGenerationStatus();
 
@@ -34,7 +35,7 @@ public class MultiImageGenerationGrainQueryStatusTest(ClusterFixture fixture)
         multiImageGenerationState.State.imageGenerationTrackers["testRequestId2"].Status = ImageGenerationStatus.InProgress;
         var mockMultiImageGeneratorGrain = new Mock<MultiImageGeneratorGrain>(multiImageGenerationState, mockMultiLogger.Object);
         // Setup the mockGrainFactory to return the mock objects
-        mockMultiImageGeneratorGrain.Setup(x => x.GrainFactory.GetGrain<ISchedulerGrain>(It.IsAny<string>(), It.IsAny<string>())).Returns(_mockSchedulerGrain.Object);
+        mockMultiImageGeneratorGrain.Setup(x => x.GrainFactory.GetGrain<ISchedulerManagerGrain>(It.IsAny<string>(), It.IsAny<string>())).Returns(_mockSchedulerGrain.Object);
 
         var imageGenerationStatus = await mockMultiImageGeneratorGrain.Object.GetCurrentImageGenerationStatus();
 
@@ -48,7 +49,7 @@ public class MultiImageGenerationGrainQueryStatusTest(ClusterFixture fixture)
         multiImageGenerationState.State.imageGenerationTrackers["testRequestId2"].Status = ImageGenerationStatus.FailedCompletion;
         var mockMultiImageGeneratorGrain = new Mock<MultiImageGeneratorGrain>(multiImageGenerationState, mockMultiLogger.Object);
         // Setup the mockGrainFactory to return the mock objects
-        mockMultiImageGeneratorGrain.Setup(x => x.GrainFactory.GetGrain<ISchedulerGrain>(It.IsAny<string>(), It.IsAny<string>())).Returns(_mockSchedulerGrain.Object);
+        mockMultiImageGeneratorGrain.Setup(x => x.GrainFactory.GetGrain<ISchedulerManagerGrain>(It.IsAny<string>(), It.IsAny<string>())).Returns(_mockSchedulerGrain.Object);
 
         var imageGenerationStatus = await mockMultiImageGeneratorGrain.Object.GetCurrentImageGenerationStatus();
 
@@ -63,7 +64,7 @@ public class MultiImageGenerationGrainQueryStatusTest(ClusterFixture fixture)
         multiImageGenerationState.State.imageGenerationTrackers["testRequestId2"].ErrorCode = ImageGenerationErrorCode.content_violation;
         var mockMultiImageGeneratorGrain = new Mock<MultiImageGeneratorGrain>(multiImageGenerationState, mockMultiLogger.Object);
         // Setup the mockGrainFactory to return the mock objects
-        mockMultiImageGeneratorGrain.Setup(x => x.GrainFactory.GetGrain<ISchedulerGrain>(It.IsAny<string>(), It.IsAny<string>())).Returns(_mockSchedulerGrain.Object);
+        mockMultiImageGeneratorGrain.Setup(x => x.GrainFactory.GetGrain<ISchedulerManagerGrain>(It.IsAny<string>(), It.IsAny<string>())).Returns(_mockSchedulerGrain.Object);
 
         var imageGenerationStatus = await mockMultiImageGeneratorGrain.Object.GetCurrentImageGenerationStatus();
 

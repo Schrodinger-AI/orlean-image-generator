@@ -7,6 +7,7 @@ using Schrodinger.Backend.Abstractions.UsageTracker;
 using Schrodinger.Backend.Grains.ImageGenerator.Ai;
 using Schrodinger.Backend.Grains.ImageGenerator.Ai.AzureOpenAi;
 using Schrodinger.Backend.Grains.ImageGenerator.Ai.DalleOpenAi;
+using Schrodinger.Backend.Grains.Interfaces;
 using Attribute = Schrodinger.Backend.Abstractions.Images.Attribute;
 
 namespace GrainsTest;
@@ -30,7 +31,7 @@ public class MultiImageGenerationGrainTest(ClusterFixture fixture)
     private readonly TestCluster _cluster = fixture.Cluster;
     readonly Mock<IDalleOpenAiImageGenerator> _mockDalleOpenAiImageGenerator = new();
     readonly Mock<IAzureOpenAiImageGenerator> _mockAzureOpenAiImageGenerator = new ();
-    readonly Mock<ISchedulerGrain> _mockSchedulerGrain = new();
+    readonly Mock<ISchedulerManagerGrain> _mockSchedulerGrain = new();
     readonly Mock<IMultiImageGeneratorGrain> _mockParentGeneratorGrain = new();
     private const int DEFAULT_MAX_QUOTA = 2;
 
@@ -69,13 +70,13 @@ public class MultiImageGenerationGrainTest(ClusterFixture fixture)
         var timeMock = new Mock<TimeProvider>();
         timeMock.SetupGet(tp => tp.UtcNow).Returns(DateTime.UtcNow);
         var mockSchedulerState = GetMockSchedulerState(apiKey1);
-        var mockSchedulerGrain = new Mock<ISchedulerGrain>();
+        var mockSchedulerGrain = new Mock<ISchedulerManagerGrain>();
 
         var mockMultiLogger = new Mock<ILogger<MultiImageGeneratorGrain>>();
         var mockMultiImageGeneratorGrain = new Mock<MultiImageGeneratorGrain>(GetMultiImageGenerationState().Object, mockMultiLogger.Object);
 
         // Setup the mockGrainFactory to return the mock objects
-        mockMultiImageGeneratorGrain.Setup(x => x.GrainFactory.GetGrain<ISchedulerGrain>(It.IsAny<string>(), It.IsAny<string>())).Returns(_mockSchedulerGrain.Object);
+        mockMultiImageGeneratorGrain.Setup(x => x.GrainFactory.GetGrain<ISchedulerManagerGrain>(It.IsAny<string>(), It.IsAny<string>())).Returns(_mockSchedulerGrain.Object);
         
         // Setup the mocks to do nothing when their methods are called
         _mockSchedulerGrain.Setup(x => x.ReportFailedImageGenerationRequestAsync(It.IsAny<RequestStatus>())).Returns(Task.CompletedTask);

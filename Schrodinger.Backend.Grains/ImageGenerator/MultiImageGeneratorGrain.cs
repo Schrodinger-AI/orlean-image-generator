@@ -5,6 +5,7 @@ using Schrodinger.Backend.Abstractions.Constants;
 using Schrodinger.Backend.Abstractions.Images;
 using Schrodinger.Backend.Abstractions.Interfaces;
 using Schrodinger.Backend.Abstractions.Prompter;
+using Schrodinger.Backend.Grains.Interfaces;
 using Attribute = Schrodinger.Backend.Abstractions.Images.Attribute;
 
 namespace Schrodinger.Backend.Grains.ImageGenerator;
@@ -189,7 +190,7 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
             );
 
             _multiImageGenerationState.State.Prompt = prompt;
-            var schedulerGrain = GrainFactory.GetGrain<ISchedulerGrain>(
+            var schedulerGrain = GrainFactory.GetGrain<ISchedulerManagerGrain>(
                 "SchedulerGrain"
             );
 

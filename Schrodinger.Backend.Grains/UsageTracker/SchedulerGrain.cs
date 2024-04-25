@@ -8,6 +8,7 @@ using Schrodinger.Backend.Abstractions.ApiKeys;
 using Schrodinger.Backend.Abstractions.Constants;
 using Schrodinger.Backend.Abstractions.Interfaces;
 using Schrodinger.Backend.Abstractions.UsageTracker;
+using Schrodinger.Backend.Grains.Interfaces;
 
 // ReSharper disable TooManyChainedReferences
 
@@ -19,7 +20,7 @@ namespace Schrodinger.Backend.Grains.UsageTracker;
 /// loaded account for the next job.
 /// </summary>
 [KeepAlive]
-public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
+public class SchedulerGrain : Grain, ISchedulerManagerGrain, IDisposable, IRemindable
 {
     private const string REMINDER_NAME = "SchedulerReminder";
     public const long RATE_LIMIT_DURATION = 63; // 1 minute and 3 seconds, 3 seconds for the buffer
@@ -76,7 +77,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
     )
     {
         _timer = RegisterTimer(
-            asyncCallback: _ => this.AsReference<ISchedulerGrain>().TickAsync(),
+            asyncCallback: _ => this.AsReference<ISchedulerManagerGrain>().TickAsync(),
             null,
             dueTime: TimeSpan.Zero,
             period: TimeSpan.FromSeconds(1)
@@ -763,7 +764,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable, IRemindable
 
     private async Task FlushTimerAsync()
     {
-        await this.AsReference<ISchedulerGrain>().FlushAsync();
+        await this.AsReference<ISchedulerManagerGrain>().FlushAsync();
     }
 
     private static List<string> RemoveProcessedRequests(

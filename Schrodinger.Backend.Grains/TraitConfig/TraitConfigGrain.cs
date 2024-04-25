@@ -1,10 +1,10 @@
 using Orleans.Runtime;
-using Schrodinger.Backend.Abstractions.Interfaces;
 using Schrodinger.Backend.Abstractions.Trait;
+using Schrodinger.Backend.Grains.Interfaces;
 
 namespace Schrodinger.Backend.Grains.TraitConfig;
 
-public class TraitConfigGrain : Grain, ITraitConfigGrain
+public class TraitConfigGrain : Grain, ITraitConfigManagerGrain
 {
     private readonly IPersistentState<TraitState> _traitState;
 

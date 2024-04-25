@@ -27,7 +27,7 @@ public class SchedulerController : ControllerBase
     {
         try
         {
-            var grain = _client.GetGrain<ISchedulerGrain>("SchedulerGrain");
+            var grain = _client.GetGrain<IAPIKeyGrain>("SchedulerGrain");
             var addApiKeysResponseDto = await grain.AddApiKeys(apiKeyEntries);
             
             if(addApiKeysResponseDto.IsSuccessful)
@@ -53,7 +53,7 @@ public class SchedulerController : ControllerBase
         {
             var apiKeys = apiKeyDtos.Select(dto => new ApiKey(dto.ApiKeyString, dto.ServiceProvider, dto.Url)).ToList();
 
-            var grain = _client.GetGrain<ISchedulerGrain>("SchedulerGrain");
+            var grain = _client.GetGrain<IAPIKeyGrain>("SchedulerGrain");
             var removeApiKeys = await grain.RemoveApiKeys(apiKeys);
             
             var removedApiKeyDtos = removeApiKeys.Select(apiKey => new ApiKeyDto(apiKey)).ToList();
@@ -68,7 +68,7 @@ public class SchedulerController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<ApiKeyEntryDto[]>> GetAllApiKeys()
     {
-        var grain = _client.GetGrain<ISchedulerGrain>("SchedulerGrain");
+        var grain = _client.GetGrain<IAPIKeyGrain>("SchedulerGrain");
         var apiAccountInfos = await grain.GetAllApiKeys();
         
         return Ok(apiAccountInfos.ToArray());
@@ -79,7 +79,7 @@ public class SchedulerController : ControllerBase
     {
         try
         {
-            var grain = _client.GetGrain<ISchedulerGrain>("SchedulerGrain");
+            var grain = _client.GetGrain<IAPIKeyGrain>("SchedulerGrain");
             var usageInfo = await grain.GetApiKeysUsageInfo();
 
             var apiKeyUsageInfoDtos = usageInfo.Select(i => new ApiKeyUsageInfoDto
@@ -110,7 +110,7 @@ public class SchedulerController : ControllerBase
     {
         try
         {
-            var grain = _client.GetGrain<ISchedulerGrain>("SchedulerGrain");
+            var grain = _client.GetGrain<IImageGenerationRequestManager>("SchedulerGrain");
             var isOverloaded = await grain.IsOverloaded();
             return new IsOverloadedResponseOk(isOverloaded);
         }
@@ -125,7 +125,7 @@ public class SchedulerController : ControllerBase
     {
         try
         {
-            var grain = _client.GetGrain<ISchedulerGrain>("SchedulerGrain");
+            var grain = _client.GetGrain<IImageGenerationRequestManager>("SchedulerGrain");
             var success = await grain.ForceRequestExecution(childId);
             return new ForceRequestExecutionResponseOk(success);
         }
@@ -140,7 +140,7 @@ public class SchedulerController : ControllerBase
     {
         try
         {
-            var grain = _client.GetGrain<ISchedulerGrain>("SchedulerGrain");
+            var grain = _client.GetGrain<IImageGenerationRequestManager>("SchedulerGrain");
             var states = await grain.GetImageGenerationStates();
             
             return new ImageGenerationStatesResponseOk<Dictionary<string, List<RequestAccountUsageInfoDto>>>(states);
@@ -156,7 +156,7 @@ public class SchedulerController : ControllerBase
     {
         try
         {
-            var grain = _client.GetGrain<ISchedulerGrain>("SchedulerGrain");
+            var grain = _client.GetGrain<IImageGenerationRequestManager>("SchedulerGrain");
             var blockedRequests = await grain.GetBlockedImageGenerationRequestsAsync();
             
             return new BlockedRequestResponseOk<List<BlockedRequestInfoDto>>(blockedRequests);

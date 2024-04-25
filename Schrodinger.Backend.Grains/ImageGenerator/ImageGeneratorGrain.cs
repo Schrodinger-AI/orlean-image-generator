@@ -10,6 +10,7 @@ using Schrodinger.Backend.Abstractions.Images;
 using Schrodinger.Backend.Abstractions.Interfaces;
 using Schrodinger.Backend.Abstractions.UsageTracker;
 using Schrodinger.Backend.Grains.ImageGenerator.Ai;
+using Schrodinger.Backend.Grains.Interfaces;
 using SixLabors.ImageSharp.Processing;
 
 namespace Schrodinger.Backend.Grains.ImageGenerator;
@@ -103,7 +104,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
             GrainFactory.GetGrain<IMultiImageGeneratorGrain>(
                 _imageGenerationState.State.ParentRequestId
             );
-        var schedulerGrain = GrainFactory.GetGrain<ISchedulerGrain>(
+        var schedulerGrain = GrainFactory.GetGrain<ISchedulerManagerGrain>(
             "SchedulerGrain"
         );
 
@@ -420,7 +421,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
                 GrainFactory.GetGrain<IMultiImageGeneratorGrain>(
                     _imageGenerationState.State.ParentRequestId
                 );
-            var schedulerGrain = GrainFactory.GetGrain<ISchedulerGrain>(
+            var schedulerGrain = GrainFactory.GetGrain<ISchedulerManagerGrain>(
                 "SchedulerGrain"
             );
             var requestStatus = new RequestStatus

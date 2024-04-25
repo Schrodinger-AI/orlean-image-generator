@@ -12,7 +12,7 @@ public class SchedulerGrainStartupTask : IStartupTask
 
     public async Task Execute(CancellationToken cancellationToken)
     {
-        var grain = _grainFactory.GetGrain<ISchedulerGrain>("SchedulerGrain");
+        var grain = _grainFactory.GetGrain<ISchedulerGrainStartupTask>("SchedulerGrain");
         //forcefully activate the grain
         await grain.Activate();
     }
