@@ -13,6 +13,7 @@ using Orleans.Configuration;
 using Orleans.Providers.MongoDB.Configuration;
 using Orleans.Serialization;
 using OrleansDashboard;
+using ProofService.interfaces;
 using Serilog;
 using Serilog.Formatting.Json;
 using Shared;
@@ -91,6 +92,8 @@ namespace SiloHost
                         services.AddScoped<IDalleOpenAIImageGenerator, DalleOpenAIImageGenerator>();
                         services.AddScoped<IAzureOpenAIImageGenerator, AzureOpenAIImageGenerator>();
                         services.AddSingleton<TimeProvider, DefaultTimeProvider>();
+                        services.Configure<ZkProverSetting>(configuration.GetSection("ProverSetting"));
+                        services.Configure<ContractClient>(configuration.GetSection("ContractClient"));
                     })
                     .Configure<ClusterOptions>(options =>
                     {
