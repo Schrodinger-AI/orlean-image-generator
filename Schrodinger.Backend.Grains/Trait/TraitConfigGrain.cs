@@ -2,7 +2,7 @@ using Orleans.Runtime;
 using Schrodinger.Backend.Abstractions.Types.Trait;
 using Schrodinger.Backend.Grains.Interfaces;
 
-namespace Schrodinger.Backend.Grains.TraitConfig;
+namespace Schrodinger.Backend.Grains.Trait;
 
 public class TraitConfigGrain : Grain, ITraitConfigManagerGrain
 {

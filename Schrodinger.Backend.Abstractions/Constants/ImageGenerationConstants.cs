@@ -36,13 +36,4 @@ namespace Schrodinger.Backend.Abstractions.Constants
         SuccessfulCompletion,
         Blocked,
     }
-
-    /// <summary>
-    /// Represents the possible statuses of an API key.
-    /// </summary>
-    public enum ApiKeyStatus
-    {
-        Active,
-        OnHold
-    }
 }

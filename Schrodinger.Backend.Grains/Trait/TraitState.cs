@@ -1,6 +1,6 @@
 using Schrodinger.Backend.Abstractions.Types.Trait;
 
-namespace Schrodinger.Backend.Grains.TraitConfig
+namespace Schrodinger.Backend.Grains.Trait
 {
     public class TraitState
     {
