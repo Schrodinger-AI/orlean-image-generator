@@ -1,0 +1,6 @@
+@Schrodinger.Backend.WebApiClient_HostAddress = http://localhost:5069
+
+GET {{Schrodinger.Backend.WebApiClient_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

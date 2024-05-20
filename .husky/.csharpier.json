@@ -1,0 +1,8 @@
+{
+  "PrintWidth": 80,
+  "TabWidth": 4,
+  "UseTabs": false,
+  "EndOfLine": "lf",
+  "BracketSpacing": true,
+  "Semicolons": true
+}
