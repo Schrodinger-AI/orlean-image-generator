@@ -91,3 +91,17 @@ public class IsOverloadedResponseFailed(string error) : IsOverloadedResponse
     [JsonPropertyName("error")]
     public string Error { get; set; } = error;
 }
+
+public abstract class ForceRequestExecutionResponse { }
+
+public class ForceRequestExecutionResponseOk(bool successful) : ForceRequestExecutionResponse
+{
+    [JsonPropertyName("Successful")]
+    public bool Successful { get; set; } = successful;
+}
+
+public class ForceRequestExecutionResponseFailed(string error) : ForceRequestExecutionResponse
+{
+    [JsonPropertyName("error")]
+    public string Error { get; set; } = error;
+}
