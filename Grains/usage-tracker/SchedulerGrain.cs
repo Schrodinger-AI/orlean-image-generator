@@ -166,6 +166,25 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         return addedApiKeys;
     }
 
+    public Task<bool> ForceRequestExecution(string childId)
+    {
+        RequestAccountUsageInfo? requestInfo = null;
+        if (_masterTrackerState.State.PendingImageGenerationRequests.ContainsKey(childId))
+        {
+            requestInfo = _masterTrackerState.State.PendingImageGenerationRequests[childId];
+            _masterTrackerState.State.PendingImageGenerationRequests.Remove(childId);
+        }
+    
+        // not found in pending or blocked
+        if (requestInfo == null)
+        {
+            return Task.FromResult(false);
+        }
+    
+        _masterTrackerState.State.StartedImageGenerationRequests.Add(childId, requestInfo);
+        return Task.FromResult(true);
+    }
+
     //returns a list of apikeys that were removed
     public async Task<List<string>> RemoveApiKeys(List<string> apiKey)
     {
