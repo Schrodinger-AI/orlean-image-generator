@@ -1,8 +1,9 @@
 name: Create and publish a Docker image
 
 on:
+  workflow_dispatch:
   push:
-    branches: ["develop"]
+    branches: ["develop", "hotfix/*"]
 
 jobs:
   build-dotnet:
@@ -54,6 +55,7 @@ jobs:
           tags: |
             type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'develop') }}
             type=ref,event=tag
+            type=ref,event=branch
             type=ref,event=pr
             type=sha
       - name: Build and push
