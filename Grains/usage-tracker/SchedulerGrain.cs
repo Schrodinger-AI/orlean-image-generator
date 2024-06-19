@@ -1,5 +1,6 @@
 using Grains.types;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Orleans;
 using Orleans.Runtime;
 using Orleans.Timers;
@@ -401,6 +402,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
     private async Task<List<string>> ProcessRequest(IEnumerable<RequestAccountUsageInfo> sortedRequests, IDictionary<string, int> apiQuota)
     {
         List<string> requestIdToRemove = new();
+        _logger.LogInformation("[SchedulerGrain] Api quota info: {info}",JsonConvert.SerializeObject(apiQuota) );
         foreach (var info in sortedRequests)
         {
             var requestId = info.ChildId;
@@ -413,6 +415,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
             }
 
             info.ApiKey = GetApiKey(apiQuota);
+            _logger.LogInformation($"[SchedulerGrain] Pick api key: {info.ApiKey} for childId: {info.ChildId} and requestId: {info.RequestId}" );
             
             // if there are no available api keys, we will try again in the next scheduling
             if (string.IsNullOrEmpty(info.ApiKey))
