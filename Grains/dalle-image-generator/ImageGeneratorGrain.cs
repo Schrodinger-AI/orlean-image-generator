@@ -126,13 +126,32 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
             // Handle the case where the image generation is already in progress
             return;
         }
-
+        
+        //load the scheduler Grain and update with 
+        var parentGeneratorGrain =
+            GrainFactory.GetGrain<IMultiImageGeneratorGrain>(_imageGenerationState.State.ParentRequestId);
+        var schedulerGrain = GrainFactory.GetGrain<IImageGenerationRequestStatusReceiver>("SchedulerGrain");
+        
         // Check if the image generation is not already completed
         if (_imageGenerationState.State.Status == ImageGenerationStatus.SuccessfulCompletion)
         {
             _logger.LogInformation($"ImageGeneratorGrain - generatorId: {_imageGenerationState.State.RequestId} , image generation is successful");
             // Handle the case where the image generation is already completed
             _timer.Dispose();
+            
+            // notify about successful completion to parentGrain
+            await parentGeneratorGrain.NotifyImageGenerationStatus(_imageGenerationState.State.RequestId,
+                ImageGenerationStatus.SuccessfulCompletion, null);
+            
+            //notify the scheduler grain about the successful completion
+            var requestStatus = new RequestStatus
+            {
+                RequestId = _imageGenerationState.State.RequestId,
+                Status = RequestStatusEnum.Completed
+            };
+
+            await schedulerGrain.ReportCompletedImageGenerationRequestAsync(requestStatus);
+            
             return;
         }
 
@@ -147,9 +166,6 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
         _logger.LogInformation($"ImageGeneratorGrain - generatorId: {_imageGenerationState.State.RequestId} , imageGenerationResponse: {imageGenerationResponse}");
 
         //load the scheduler Grain and update with 
-        var parentGeneratorGrain =
-            GrainFactory.GetGrain<IMultiImageGeneratorGrain>(_imageGenerationState.State.ParentRequestId);
-        var schedulerGrain = GrainFactory.GetGrain<IImageGenerationRequestStatusReceiver>("SchedulerGrain");
 
         if (imageGenerationResponse.IsSuccessful)
         {
