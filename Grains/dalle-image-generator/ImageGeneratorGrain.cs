@@ -110,7 +110,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
 
     public async Task TriggerImageGenerationAsync()
     {
-        _logger.LogInformation($"ImageGeneratorGrain - TriggerImageGenerationAsync with ApiKey: {_apiKey}");
+        _logger.LogInformation($"ImageGeneratorGrain - trigger imageGeneration with ApiKey: {_apiKey}");
 
         // Check if the API key exists in memory
         if (string.IsNullOrEmpty(_apiKey))
@@ -135,7 +135,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
         // Check if the image generation is not already completed
         if (_imageGenerationState.State.Status == ImageGenerationStatus.SuccessfulCompletion)
         {
-            _logger.LogInformation($"ImageGeneratorGrain - generatorId: {_imageGenerationState.State.RequestId} , image generation is successful");
+            _logger.LogInformation($"ImageGeneratorGrain - generatorId: {_imageGenerationState.State.RequestId} , image generation has already been successful");
             // Handle the case where the image generation is already completed
             _timer.Dispose();
             
