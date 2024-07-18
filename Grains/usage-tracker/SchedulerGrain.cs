@@ -415,7 +415,7 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
             }
 
             info.ApiKey = GetApiKey(apiQuota);
-            _logger.LogInformation($"[SchedulerGrain] Pick api key: {info.ApiKey} for childId: {info.ChildId} and requestId: {info.RequestId}" );
+            _logger.LogInformation($"[SchedulerGrain] Pick api key: {info.ApiKey} for childId: {info.ChildId} and UniqueRequestId: {info.RequestId}" );
             
             // if there are no available api keys, we will try again in the next scheduling
             if (string.IsNullOrEmpty(info.ApiKey))

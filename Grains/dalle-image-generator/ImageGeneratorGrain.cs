@@ -110,7 +110,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
 
     public async Task TriggerImageGenerationAsync()
     {
-        _logger.LogInformation($"ImageGeneratorGrain - trigger imageGeneration with ApiKey: {_apiKey}");
+        _logger.LogInformation($"ImageGeneratorGrain - trigger imageGeneration with ApiKey: {_apiKey}, UniqueRequestId: {_imageGenerationState.State.ParentRequestId}");
 
         // Check if the API key exists in memory
         if (string.IsNullOrEmpty(_apiKey))
@@ -187,6 +187,8 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
             };
 
             await schedulerGrain.ReportCompletedImageGenerationRequestAsync(requestStatus);
+            
+            _logger.LogInformation($"ImageGeneratorGrain - report complete finish, generatorId: {_imageGenerationState.State.RequestId} , UniqueRequestId: {_imageGenerationState.State.ParentRequestId}");
         }
         else
         {
@@ -225,7 +227,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
         string parentRequestId)
     {
         _logger.LogInformation(
-            $"ImageGeneratorGrain - generatorId: {imageRequestId} , GenerateImageFromPromptAsync invoked with prompt: {prompt}");
+            $"ImageGeneratorGrain - generatorId: {imageRequestId}, UniqueRequestId: {parentRequestId} , GenerateImageFromPromptAsync invoked with prompt: {prompt}");
         var dalleRequestTimestamp = GetCurrentUTCTimeInSeconds();
         try
         {
@@ -236,7 +238,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
             // Start the image data generation process
             var dalleResponse = await RunDalleAsync(prompt);
 
-            _logger.LogInformation($"ImageGeneratorGrain - generatorId: {imageRequestId} , dalleResponse: {dalleResponse}");
+            _logger.LogInformation($"ImageGeneratorGrain - generatorId: {imageRequestId}, UniqueRequestId: {parentRequestId} , dalleResponse: {dalleResponse}");
 
             _logger.LogDebug(dalleResponse.ToString());
             // Extract the URL from the result
@@ -258,6 +260,8 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
 
             // Store the task in a non-persistent dictionary
             await _imageGenerationState.WriteStateAsync();
+            
+            _logger.LogInformation($"ImageGeneratorGrain - generator finish, generatorId: {imageRequestId}, UniqueRequestId: {parentRequestId}");
 
             return new ImageGenerationGrainResponse
             {

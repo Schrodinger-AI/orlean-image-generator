@@ -93,7 +93,7 @@ public class MultiImageGeneratorGrain : Grain, IMultiImageGeneratorGrain
                 _multiImageGenerationState.State.ImageGenerationRequestIds.Add(imageRequestId);
 
                 _logger.LogInformation(
-                    $"For MultiImageRequest: {multiImageRequestId} ImageRequest: {imageRequestId} added to the list of imageGenerationRequestIds");
+                    $"For MultiImageRequest: {multiImageRequestId} UniqueRequestId: {imageRequestId} added to the list of imageGenerationRequestIds");
 
                 await schedulerGrain.AddImageGenerationRequest(multiImageRequestId, imageRequestId, unixTimestamp);
             }
