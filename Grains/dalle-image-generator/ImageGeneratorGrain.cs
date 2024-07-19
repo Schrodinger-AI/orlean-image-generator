@@ -240,7 +240,7 @@ public class ImageGeneratorGrain : Grain, IImageGeneratorGrain, IDisposable
 
             _logger.LogInformation($"ImageGeneratorGrain - generatorId: {imageRequestId}, UniqueRequestId: {parentRequestId} , dalleResponse: {dalleResponse}");
 
-            _logger.LogDebug(dalleResponse.ToString());
+            _logger.LogInformation(dalleResponse.ToString());
             // Extract the URL from the result
             var imageUrl = dalleResponse.Data[0].Url;
 
