@@ -3,15 +3,15 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Grains", "Grains\Grains.csproj", "{DFA5753E-93ED-44AE-B3E2-82F4D1B27A5E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Schrodinger.Backend.Grains", "Schrodinger.Backend.Grains\Schrodinger.Backend.Grains.csproj", "{DFA5753E-93ED-44AE-B3E2-82F4D1B27A5E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SiloHost", "SiloHost\SiloHost.csproj", "{9A34C4B9-3F24-4107-B953-5E38F6F85418}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Schrodinger.Backend.SiloHost", "Schrodinger.Backend.SiloHost\Schrodinger.Backend.SiloHost.csproj", "{9A34C4B9-3F24-4107-B953-5E38F6F85418}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebApiClient", "WebApiClient\WebApiClient.csproj", "{F3606A64-42D6-4379-B317-204CC22FAB52}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Schrodinger.Backend.WebApiClient", "Schrodinger.Backend.WebApiClient\Schrodinger.Backend.WebApiClient.csproj", "{F3606A64-42D6-4379-B317-204CC22FAB52}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shared", "Shared\Shared.csproj", "{D41AF428-E1AD-4FF1-BCBE-1E507213AABF}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Schrodinger.Backend.GrainsTest", "Schrodinger.Backend.GrainsTest\Schrodinger.Backend.GrainsTest.csproj", "{38496551-1563-4212-B4F1-B27422E7FFAC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GrainsTest", "GrainsTest\GrainsTest.csproj", "{38496551-1563-4212-B4F1-B27422E7FFAC}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Schrodinger.Backend.Abstractions", "Schrodinger.Backend.Abstractions\Schrodinger.Backend.Abstractions.csproj", "{ADC023D7-329C-4440-83CE-DF626003D41A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -34,13 +34,13 @@ Global
 		{F3606A64-42D6-4379-B317-204CC22FAB52}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F3606A64-42D6-4379-B317-204CC22FAB52}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F3606A64-42D6-4379-B317-204CC22FAB52}.Release|Any CPU.Build.0 = Release|Any CPU
-		{D41AF428-E1AD-4FF1-BCBE-1E507213AABF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D41AF428-E1AD-4FF1-BCBE-1E507213AABF}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{D41AF428-E1AD-4FF1-BCBE-1E507213AABF}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{D41AF428-E1AD-4FF1-BCBE-1E507213AABF}.Release|Any CPU.Build.0 = Release|Any CPU
 		{38496551-1563-4212-B4F1-B27422E7FFAC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{38496551-1563-4212-B4F1-B27422E7FFAC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{38496551-1563-4212-B4F1-B27422E7FFAC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{38496551-1563-4212-B4F1-B27422E7FFAC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ADC023D7-329C-4440-83CE-DF626003D41A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ADC023D7-329C-4440-83CE-DF626003D41A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ADC023D7-329C-4440-83CE-DF626003D41A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ADC023D7-329C-4440-83CE-DF626003D41A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
