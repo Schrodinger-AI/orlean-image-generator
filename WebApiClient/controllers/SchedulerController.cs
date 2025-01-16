@@ -184,16 +184,20 @@ public class SchedulerController : ControllerBase
     }
 
     [HttpPost("clear-failed")]
-    public async Task ClearFailedList()
+    public async Task<long> ClearFailedList()
     {
         var grain = _client.GetGrain<ISchedulerGrain>("SchedulerGrain"); 
+        var failedRequest = await grain.GetFailedImageGenerationRequestsAsync();
         await grain.ClearFailedRequest();
+        return failedRequest.Count;
     }
     
     [HttpPost("clear-pending")]
-    public async Task RemovePending()
+    public async Task<long> RemovePending()
     {
         var grain = _client.GetGrain<ISchedulerGrain>("SchedulerGrain"); 
+        var pendingRequest = await grain.GetPendingImageGenerationRequestsAsync();
         await grain.ClearPendingRequest();
+        return pendingRequest.Count;
     }
 }
