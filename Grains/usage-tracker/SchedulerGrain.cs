@@ -518,5 +518,17 @@ public class SchedulerGrain : Grain, ISchedulerGrain, IDisposable
         _flushTimer?.Dispose();
     }
 
+    public async Task ClearFailedRequest()
+    {
+        _masterTrackerState.State.FailedImageGenerationRequests.Clear();
+        await _masterTrackerState.WriteStateAsync();
+    }
+    
+    public async Task ClearPendingRequest()
+    {
+        _masterTrackerState.State.PendingImageGenerationRequests.Clear();
+        await _masterTrackerState.WriteStateAsync();
+    }
+
     #endregion
 }
